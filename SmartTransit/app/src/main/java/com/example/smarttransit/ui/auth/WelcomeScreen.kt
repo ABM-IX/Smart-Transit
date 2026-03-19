@@ -1,233 +1,184 @@
 package com.example.smarttransit.ui.auth
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.smarttransit.ui.theme.Black
+import com.example.smarttransit.ui.theme.LightGrey
+import com.example.smarttransit.ui.theme.MidGrey
+import com.example.smarttransit.ui.theme.White
 
 @Composable
 fun WelcomeScreen(
     onLoginClick: () -> Unit,
     onRegisterClick: () -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "bg")
-    val gradientOffset by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(8000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ), label = "grad"
-    )
-
-    var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { visible = true }
-
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0A0F1E))
+            .background(White)
+            .padding(horizontal = 24.dp, vertical = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Animated gradient orbs
-        Box(
-            modifier = Modifier
-                .size(300.dp)
-                .offset(x = (-50).dp + (100 * gradientOffset).dp, y = 100.dp)
-                .alpha(0.3f)
-                .blur(80.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF06B6D4))
-        )
-        Box(
-            modifier = Modifier
-                .size(250.dp)
-                .offset(x = 150.dp, y = (400 + 50 * gradientOffset).dp)
-                .alpha(0.2f)
-                .blur(80.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF3B82F6))
-        )
-        Box(
-            modifier = Modifier
-                .size(200.dp)
-                .offset(x = 50.dp, y = (600 - 30 * gradientOffset).dp)
-                .alpha(0.15f)
-                .blur(80.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF8B5CF6))
+        Spacer(modifier = Modifier.weight(0.22f))
+
+        SmartTransitWordmark(size = 72.dp, hero = true)
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text(
+            text = "SmartTransit",
+            style = MaterialTheme.typography.displayLarge.copy(
+                fontSize = 32.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = (-0.5).sp
+            ),
+            color = Black
         )
 
-        AnimatedVisibility(
-            visible = visible,
-            enter = fadeIn(animationSpec = tween(800)) + slideInVertically(
-                initialOffsetY = { it / 4 },
-                animationSpec = tween(800, easing = EaseOutCubic)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Gaborone, Botswana",
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 12.sp,
+                letterSpacing = 1.sp
+            ),
+            color = MidGrey
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            FeatureChip("Bus")
+            FeatureChip("Combi")
+            FeatureChip("Taxi")
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+        HorizontalDivider(color = LightGrey, thickness = 1.dp)
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Button(
+            onClick = onLoginClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Black,
+                contentColor = White
+            ),
+            elevation = null
+        ) {
+            Text(
+                text = "Get Started",
+                style = MaterialTheme.typography.titleMedium,
+                color = White
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            Text(
+                text = "->",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = White
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedButton(
+            onClick = onRegisterClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp),
+            shape = RoundedCornerShape(14.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Black),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = White,
+                contentColor = Black
             )
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Spacer(Modifier.weight(1f))
-
-                // Logo
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color.Transparent,
-                    modifier = Modifier.size(80.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(Color(0xFF06B6D4), Color(0xFF3B82F6))
-                                ),
-                                shape = RoundedCornerShape(20.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.DirectionsBus,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(24.dp))
-
-                Text(
-                    "SmartTransit",
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
-                    letterSpacing = (-1).sp
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                Text(
-                    "Seamless Urban Mobility",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = Color(0xFF9CA3AF),
-                    letterSpacing = 2.sp,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                // Feature highlights
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(24.dp),
-                    modifier = Modifier.padding(vertical = 16.dp)
-                ) {
-                    FeatureChip("🚌 Bus")
-                    FeatureChip("🚐 Combi")
-                    FeatureChip("🚕 Taxi")
-                }
-
-                Spacer(Modifier.weight(1f))
-
-                // Buttons
-                Button(
-                    onClick = onLoginClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF3B82F6)
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 8.dp,
-                        pressedElevation = 2.dp
-                    )
-                ) {
-                    Text(
-                        "Get Started",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Icon(Icons.Default.ArrowForward, null, modifier = Modifier.size(20.dp))
-                }
-
-                Spacer(Modifier.height(14.dp))
-
-                OutlinedButton(
-                    onClick = onRegisterClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color.White
-                    ),
-                    border = ButtonDefaults.outlinedButtonBorder(true).copy(
-                        brush = Brush.linearGradient(
-                            listOf(Color(0xFF374151), Color(0xFF4B5563))
-                        )
-                    )
-                ) {
-                    Text(
-                        "Create Account",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                Spacer(Modifier.height(32.dp))
-
-                Text(
-                    "Gaborone, Botswana 🇧🇼",
-                    fontSize = 12.sp,
-                    color = Color(0xFF6B7280),
-                    letterSpacing = 1.sp
-                )
-            }
+            Text(
+                text = "Create Account",
+                style = MaterialTheme.typography.titleMedium,
+                color = Black
+            )
         }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Text(
+            text = "Smart Transit | Public Transport Platform",
+            style = MaterialTheme.typography.labelSmall,
+            color = MidGrey,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
 @Composable
-private fun FeatureChip(text: String) {
+private fun FeatureChip(label: String) {
     Surface(
+        color = White,
         shape = RoundedCornerShape(20.dp),
-        color = Color(0xFF1F2937).copy(alpha = 0.7f),
-        border = ButtonDefaults.outlinedButtonBorder(true).copy(
-            brush = Brush.linearGradient(
-                listOf(Color(0xFF374151), Color(0xFF1F2937))
-            )
-        )
+        border = androidx.compose.foundation.BorderStroke(1.dp, Black)
     ) {
         Text(
-            text,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            fontSize = 13.sp,
-            color = Color(0xFFD1D5DB),
-            fontWeight = FontWeight.Medium
+            text = label,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.labelLarge.copy(fontSize = 12.sp),
+            color = Black
+        )
+    }
+}
+
+@Composable
+private fun SmartTransitWordmark(size: androidx.compose.ui.unit.Dp, hero: Boolean = false) {
+    Box(
+        modifier = Modifier.size(size),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "ST",
+            style = if (hero) {
+                MaterialTheme.typography.displayMedium.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = (-1).sp
+                )
+            } else {
+                MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = (-0.6).sp
+                )
+            },
+            color = Black
         )
     }
 }

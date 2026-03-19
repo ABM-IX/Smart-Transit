@@ -10,7 +10,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,11 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -37,11 +37,20 @@ import com.example.smarttransit.model.UserRole
 import com.example.smarttransit.network.SocketHandler
 import com.example.smarttransit.ui.components.ConnectionBadge
 import com.example.smarttransit.ui.components.SmartTransitMap
+import com.example.smarttransit.ui.theme.AccentGreen
+import com.example.smarttransit.ui.theme.AccentRed
+import com.example.smarttransit.ui.theme.Black
+import com.example.smarttransit.ui.theme.Disabled
+import com.example.smarttransit.ui.theme.LightGrey
+import com.example.smarttransit.ui.theme.MidGrey
+import com.example.smarttransit.ui.theme.OffWhite
+import com.example.smarttransit.ui.theme.White
 import com.google.android.gms.location.*
 import io.socket.client.Socket
 import org.json.JSONObject
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.net.URL
@@ -252,37 +261,62 @@ fun DriverDashboard(initialRole: UserRole) {
     }
 
     Scaffold(
+        containerColor = White,
         topBar = {
-            TopAppBar(
-                title = { 
-                    Column {
-                        Text(currentRole.name.replace("_", " "), style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            if (isConnected) "Connected" else "Disconnected", 
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (isConnected) Color.Green else Color.Red
-                        )
-                    }
-                },
-                actions = {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 8.dp)) {
-                        Text(if (isOnline) "Online" else "Offline", style = MaterialTheme.typography.bodySmall)
-                        Switch(checked = isOnline, onCheckedChange = { isOnline = it }, modifier = Modifier.scale(0.8f))
-                    }
-                }
+            DriverTopBar(
+                title = currentRole.name.replace("_", " "),
+                isOnline = isOnline,
+                onToggleOnline = { isOnline = it }
             )
         },
         bottomBar = {
-            NavigationBar {
-                NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 }, icon = { Icon(Icons.Default.Map, "") }, label = { Text("Map") })
-                NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 }, icon = { Icon(Icons.Default.Route, "") }, label = { Text("Route") })
-                NavigationBarItem(selected = selectedTab == 2, onClick = { selectedTab = 2 }, icon = { Icon(Icons.Default.Notifications, "") }, label = { Text("Alerts") })
-                NavigationBarItem(selected = selectedTab == 3, onClick = { selectedTab = 3 }, icon = { Icon(Icons.Default.Person, "") }, label = { Text("Profile") })
+            Surface(
+                color = White,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(BorderStroke(0.5.dp, LightGrey)),
+                shadowElevation = 0.dp,
+                tonalElevation = 0.dp
+            ) {
+                NavigationBar(containerColor = White, tonalElevation = 0.dp) {
+                    NavigationBarItem(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        icon = { Icon(Icons.Default.Map, "") },
+                        label = { Text("Map") },
+                        colors = driverNavItemColors()
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        icon = { Icon(Icons.Default.Route, "") },
+                        label = { Text("Route") },
+                        colors = driverNavItemColors()
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == 2,
+                        onClick = { selectedTab = 2 },
+                        icon = { Icon(Icons.Default.Notifications, "") },
+                        label = { Text("Alerts") },
+                        colors = driverNavItemColors()
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == 3,
+                        onClick = { selectedTab = 3 },
+                        icon = { Icon(Icons.Default.Person, "") },
+                        label = { Text("Profile") },
+                        colors = driverNavItemColors()
+                    )
+                }
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            ConnectionBadge()
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .background(White)
+        ) {
             when (selectedTab) {
                 3 -> DriverProfileScreen()
                 else -> {
@@ -347,37 +381,67 @@ fun DriverProfileScreen() {
     var serverUrl by remember { mutableStateOf(SocketHandler.getCurrentUrl()) }
     var isEditing by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("Driver Settings", style = MaterialTheme.typography.headlineSmall)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(White)
+            .padding(horizontal = 24.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        Text("Driver Profile", style = MaterialTheme.typography.headlineMedium, color = Black)
 
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Connection Settings", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = White),
+            border = BorderStroke(1.dp, LightGrey),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Server URL", style = MaterialTheme.typography.labelSmall, color = MidGrey)
 
                 if (isEditing) {
                     OutlinedTextField(
                         value = serverUrl,
                         onValueChange = { serverUrl = it },
                         label = { Text("Server URL") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = driverFieldColors()
                     )
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        TextButton(onClick = { isEditing = false; serverUrl = SocketHandler.getCurrentUrl() }) { Text("Cancel") }
-                        Button(onClick = {
-                            SocketHandler.init(context, serverUrl)
-                            SocketHandler.establishConnection()
-                            isEditing = false
-                            Toast.makeText(context, "Reconnecting to $serverUrl", Toast.LENGTH_SHORT).show()
-                        }) { Text("Save") }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End)) {
+                        OutlinedButton(
+                            onClick = { isEditing = false; serverUrl = SocketHandler.getCurrentUrl() },
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(1.dp, Black),
+                            colors = ButtonDefaults.outlinedButtonColors(containerColor = White, contentColor = Black)
+                        ) { Text("Cancel") }
+                        Button(
+                            onClick = {
+                                SocketHandler.init(context, serverUrl)
+                                SocketHandler.establishConnection()
+                                isEditing = false
+                                Toast.makeText(context, "Reconnecting to $serverUrl", Toast.LENGTH_SHORT).show()
+                            },
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Black, contentColor = White),
+                            elevation = null
+                        ) { Text("Save") }
                     }
                 } else {
-                    Text("Server: $serverUrl", style = MaterialTheme.typography.bodyMedium)
-                    Button(onClick = { isEditing = true }) { Text("Edit Server URL") }
+                    Text(serverUrl, style = MaterialTheme.typography.bodyMedium, color = Black)
+                    Button(
+                        onClick = { isEditing = true },
+                        modifier = Modifier.fillMaxWidth().height(54.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Black, contentColor = White),
+                        elevation = null
+                    ) { Text("Edit Server URL") }
                 }
                 Text(
                     "Note: For local development, use http://192.168.0.182:3000",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = MidGrey
                 )
             }
         }
@@ -452,29 +516,37 @@ fun RouteSetupScreen(role: UserRole, onRouteSet: (String) -> Unit) {
                 it.end.contains(searchQuery, ignoreCase = true)
         }
 
-    Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(White)
+            .padding(horizontal = 24.dp, vertical = 20.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(
-                if (isBus) "Select Bus Destination" else "Select Combi Route",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                "Select Route",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = Black
             )
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(if (isBus) "Search destination" else "Search route") },
-                leadingIcon = { Icon(Icons.Default.Search, null) },
-                singleLine = true
+                leadingIcon = { Icon(Icons.Default.Search, null, tint = Black) },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                colors = driverFieldColors()
             )
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = Black, strokeWidth = 2.dp)
                 }
             } else if (filtered.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No ${if (isBus) "bus destinations" else "combi routes"} found", color = Color.Gray)
+                    Text("No ${if (isBus) "bus destinations" else "combi routes"} found", color = MidGrey)
                 }
             } else {
                 LazyColumn(
@@ -483,16 +555,21 @@ fun RouteSetupScreen(role: UserRole, onRouteSet: (String) -> Unit) {
                 ) {
                     items(filtered) { r ->
                         Card(
-                            modifier = Modifier.fillMaxWidth().clickable {
-                                onRouteSet(r.routeId)
-                                Toast.makeText(context, "Selected: ${r.name}", Toast.LENGTH_SHORT).show()
-                            }
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onRouteSet(r.routeId)
+                                    Toast.makeText(context, "Selected: ${r.name}", Toast.LENGTH_SHORT).show()
+                                },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = White),
+                            border = BorderStroke(1.dp, LightGrey),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                         ) {
-                            Column(modifier = Modifier.padding(14.dp)) {
-                                Text(r.name, fontWeight = FontWeight.Bold)
-                                Text("From: ${r.start}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                                Text("To: ${r.end}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                                Text("ID: ${r.routeId}", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(r.name, fontWeight = FontWeight.Bold, color = Black)
+                                Text("${r.start} → ${r.end}", style = MaterialTheme.typography.bodyMedium, color = MidGrey)
+                                Text("ID ${r.routeId}", style = MaterialTheme.typography.labelSmall, color = MidGrey)
                             }
                         }
                     }
@@ -504,10 +581,16 @@ fun RouteSetupScreen(role: UserRole, onRouteSet: (String) -> Unit) {
 
 @Composable
 fun OfflineScreen() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Default.CloudOff, null, modifier = Modifier.size(64.dp), tint = Color.Gray)
-            Text("You are currently offline", style = MaterialTheme.typography.titleMedium)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(White),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Icon(Icons.Default.CloudOff, null, modifier = Modifier.size(64.dp), tint = Black)
+            Text("You're offline", style = MaterialTheme.typography.titleMedium, color = Black)
+            Text("Check your connection", style = MaterialTheme.typography.bodyMedium, color = MidGrey)
         }
     }
 }
@@ -523,7 +606,7 @@ fun DriverInterface(
     isConnected: Boolean, driverId: String, onRemoveHail: (String) -> Unit,
     onTripMetricsUpdate: (Int, Int) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().background(White)) {
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             val hailPoints = hails.mapNotNull { 
                 it.optJSONObject("pickupLoc")?.let { loc -> LatLng(loc.optDouble("lat"), loc.optDouble("lng")) }
@@ -534,13 +617,18 @@ fun DriverInterface(
             
             if (!isConnected) {
                 Surface(
-                    color = Color.Red.copy(alpha = 0.7f),
-                    modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
+                    color = White,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, AccentRed),
+                    shadowElevation = 2.dp
                 ) {
                     Text(
                         "Connection Lost. Reconnecting...",
-                        color = Color.White,
-                        modifier = Modifier.padding(4.dp),
+                        color = AccentRed,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                         style = MaterialTheme.typography.labelSmall,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
@@ -548,8 +636,18 @@ fun DriverInterface(
             }
         }
 
-        Surface(tonalElevation = 8.dp, modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Surface(
+            color = White,
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(BorderStroke(0.5.dp, LightGrey))
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 if (role == UserRole.DRIVER_TAXI) {
                     TaxiDriverActions(hails, driverId, routeId, onRemoveHail, onTripMetricsUpdate)
                 } else {
@@ -574,34 +672,51 @@ fun BusCombiDriverActions(
 ) {
     if (!sessionStarted) {
         val locationLabel = if (role == UserRole.DRIVER_BUS) "Location: $routeId" else "Route: $routeId"
-        Text(locationLabel, fontWeight = FontWeight.Bold)
+        Text(locationLabel, fontWeight = FontWeight.Bold, color = Black)
         Button(
             onClick = onToggleSession, 
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = MaterialTheme.shapes.large
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Black, contentColor = White),
+            elevation = null
         ) { 
             Text(if (role == UserRole.DRIVER_BUS) "Start Location Session" else "Start Route Session", fontSize = MaterialTheme.typography.titleMedium.fontSize) 
         }
     } else {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
-                Text("Active Service", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                Text("ACTIVE SERVICE", color = MidGrey, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                 val locationLabel = if (role == UserRole.DRIVER_BUS) "Location: $routeId" else "Route: $routeId"
-                Text(locationLabel, style = MaterialTheme.typography.titleMedium)
+                Text(locationLabel, style = MaterialTheme.typography.titleMedium, color = Black)
             }
-            FilledTonalButton(onClick = onToggleSession, colors = ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer)) { Text("End Shift") }
+            OutlinedButton(
+                onClick = onToggleSession,
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, Black),
+                colors = ButtonDefaults.outlinedButtonColors(containerColor = White, contentColor = Black)
+            ) { Text("End Shift") }
         }
         
         if (stopRequestCount > 0) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                shape = MaterialTheme.shapes.medium,
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                colors = CardDefaults.cardColors(containerColor = White),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, LightGrey),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.NotificationsActive, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(32.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .height(48.dp)
+                            .background(AccentRed, RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                    )
                     Spacer(Modifier.width(12.dp))
-                    Text("$stopRequestCount STOP REQUESTS", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("STOP REQUESTS", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, color = AccentRed)
+                        Text("$stopRequestCount", fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.headlineMedium, color = AccentRed)
+                    }
                     Spacer(Modifier.weight(1f))
                     IconButton(onClick = onClearStopRequests) { Icon(Icons.Default.Close, null) }
                 }
@@ -610,13 +725,20 @@ fun BusCombiDriverActions(
 
         if (hails.isNotEmpty()) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
-                shape = MaterialTheme.shapes.medium
+                colors = CardDefaults.cardColors(containerColor = White),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, LightGrey),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.WavingHand, null, modifier = Modifier.size(32.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .height(48.dp)
+                            .background(Black, RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                    )
                     Spacer(Modifier.width(12.dp))
-                    Text("${hails.size} Active Hails", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Text("${hails.size} Active Hails", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, color = Black)
                     Spacer(Modifier.weight(1f))
                     TextButton(onClick = onClearHails) { Text("Clear") }
                 }
@@ -639,25 +761,54 @@ fun BusCombiDriverActions(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text("Passenger Tally", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("$passengerCount Boarded", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text("PASSENGER TALLY", style = MaterialTheme.typography.labelSmall, color = MidGrey)
+                Text("$passengerCount", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = Black)
             }
             Row {
                 FilledIconButton(
                     onClick = { if (passengerCount > 0) { passengerCount--; onUpdateOccupancy(passengerCount.toString()) } },
-                    modifier = Modifier.size(56.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                    modifier = Modifier.size(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = Black, contentColor = White)
                 ) {
-                    Icon(Icons.Default.Remove, "Remove Passenger", modifier = Modifier.size(32.dp))
+                    Icon(Icons.Default.Remove, "Remove Passenger", modifier = Modifier.size(24.dp))
                 }
                 Spacer(Modifier.width(16.dp))
                 FilledIconButton(
                     onClick = { passengerCount++; onUpdateOccupancy(passengerCount.toString()) },
-                    modifier = Modifier.size(56.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    modifier = Modifier.size(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = Black, contentColor = White)
                 ) {
-                    Icon(Icons.Default.Add, "Add Passenger", modifier = Modifier.size(32.dp))
+                    Icon(Icons.Default.Add, "Add Passenger", modifier = Modifier.size(24.dp))
                 }
+            }
+        }
+    }
+}
+
+fun reverseGeocode(lat: Double, lng: Double, onResult: (String) -> Unit) {
+    kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        try {
+            val url = java.net.URL("https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng&zoom=16&addressdetails=1")
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            conn.setRequestProperty("User-Agent", "SmartTransit/1.0")
+            conn.connectTimeout = 3000
+            conn.readTimeout = 3000
+            val body = conn.inputStream.bufferedReader().readText()
+            val obj = org.json.JSONObject(body)
+            val address = obj.optJSONObject("address")
+            val label = when {
+                address?.has("road") == true && address.has("suburb") ->
+                    "${address.optString("road")}, ${address.optString("suburb")}"
+                address?.has("road") == true ->
+                    "${address.optString("road")}, ${address.optString("city", address.optString("town", ""))}"
+                else -> obj.optString("display_name", "").split(",").take(2).joinToString(", ")
+            }
+            withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(label.trim().trimEnd(',')) }
+        } catch (_: Exception) {
+            withContext(kotlinx.coroutines.Dispatchers.Main) {
+                onResult("${String.format("%.4f", lat)}, ${String.format("%.4f", lng)}")
             }
         }
     }
@@ -676,21 +827,36 @@ fun TaxiDriverActions(
     var revenue by remember { mutableIntStateOf(0) }
     var totalEarnings by remember { mutableIntStateOf(0) }
     var tripsCompleted by remember { mutableIntStateOf(0) }
+    var pickupAddress by remember { mutableStateOf("Locating…") }
+    var destinationAddress by remember { mutableStateOf("Locating…") }
 
-    // Earnings summary
+    val latestHailForGeo = hails.lastOrNull()
+    LaunchedEffect(latestHailForGeo?.optString("passengerId")) {
+        pickupAddress = "Locating…"
+        destinationAddress = "Locating…"
+        latestHailForGeo?.optJSONObject("pickupLoc")?.let { loc ->
+            reverseGeocode(loc.optDouble("lat"), loc.optDouble("lng")) { pickupAddress = it }
+        }
+        latestHailForGeo?.optJSONObject("destinationLoc")?.let { loc ->
+            reverseGeocode(loc.optDouble("lat"), loc.optDouble("lng")) { destinationAddress = it }
+        }
+    }
+
     if (tripsCompleted > 0 || activeTaxiTripId != null) {
         Card(
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = White),
+            border = BorderStroke(1.dp, LightGrey),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             Row(modifier = Modifier.padding(14.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text("Today's Earnings", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                    Text("P$totalEarnings", fontWeight = FontWeight.Bold, fontSize = 24.sp)
+                    Text("TODAY'S EARNINGS", style = MaterialTheme.typography.labelSmall, color = MidGrey, letterSpacing = 1.sp)
+                    Text("P$totalEarnings", fontWeight = FontWeight.ExtraBold, fontSize = 28.sp, color = Black)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("Trips", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                    Text("$tripsCompleted", fontWeight = FontWeight.Bold, fontSize = 24.sp)
+                    Text("TRIPS", style = MaterialTheme.typography.labelSmall, color = MidGrey, letterSpacing = 1.sp)
+                    Text("$tripsCompleted", fontWeight = FontWeight.ExtraBold, fontSize = 28.sp, color = Black)
                 }
             }
         }
@@ -707,84 +873,60 @@ fun TaxiDriverActions(
         val destination = latestHail.optJSONObject("destinationLoc")
 
         Card(
-            shape = RoundedCornerShape(18.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = White),
+            border = BorderStroke(1.dp, LightGrey),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
-            Column {
-                // Header
-                Box(
-                    modifier = Modifier.fillMaxWidth()
-                        .background(
-                            Brush.linearGradient(
-                                listOf(Color(0xFFF59E0B), Color(0xFFEF4444))
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .height(44.dp)
+                            .background(AccentGreen, RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("New Ride Request", fontWeight = FontWeight.Bold, color = Black, fontSize = 16.sp)
+                        Text(serviceType, color = MidGrey, fontSize = 13.sp)
+                    }
+                    if (fareEstimate > 0) {
+                        Surface(shape = RoundedCornerShape(20.dp), color = Black) {
+                            Text(
+                                "P$fareEstimate",
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                fontWeight = FontWeight.Bold,
+                                color = White,
+                                fontSize = 14.sp
                             )
-                        )
-                        .padding(16.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier.size(48.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.PersonPin, null, tint = Color.White, modifier = Modifier.size(28.dp))
-                        }
-                        Spacer(Modifier.width(12.dp))
-                        Column {
-                            Text("New Ride Request!", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
-                            Text(serviceType, color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
-                        }
-                        Spacer(Modifier.weight(1f))
-                        if (fareEstimate > 0) {
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = Color.White.copy(alpha = 0.2f)
-                            ) {
-                                Text(
-                                    "P$fareEstimate",
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp
-                                )
-                            }
                         }
                     }
                 }
-
-                // Details
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                HorizontalDivider(color = LightGrey)
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (pickup != null) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0xFF10B981).copy(alpha = 0.15f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.TripOrigin, null, tint = Color(0xFF10B981), modifier = Modifier.size(16.dp))
-                            }
+                            Box(modifier = Modifier.size(10.dp).background(Black, CircleShape))
                             Spacer(Modifier.width(10.dp))
                             Column {
-                                Text("Pickup", fontSize = 11.sp, color = Color.Gray)
-                                Text("${pickup.optDouble("lat", 0.0).let { String.format("%.4f", it) }}, ${pickup.optDouble("lng", 0.0).let { String.format("%.4f", it) }}", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                Text("PICKUP", fontSize = 10.sp, color = MidGrey, letterSpacing = 0.8.sp)
+                                Text(pickupAddress, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Black)
                             }
                         }
                     }
                     if (destination != null) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0xFFEF4444).copy(alpha = 0.15f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.LocationOn, null, tint = Color(0xFFEF4444), modifier = Modifier.size(16.dp))
-                            }
+                            Icon(Icons.Default.LocationOn, null, tint = Black, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(10.dp))
                             Column {
-                                Text("Destination", fontSize = 11.sp, color = Color.Gray)
-                                Text("${destination.optDouble("lat", 0.0).let { String.format("%.4f", it) }}, ${destination.optDouble("lng", 0.0).let { String.format("%.4f", it) }}", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                Text("DROP-OFF", fontSize = 10.sp, color = MidGrey, letterSpacing = 0.8.sp)
+                                Text(destinationAddress, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Black)
                             }
                         }
                     }
 
-                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.15f))
+                    HorizontalDivider(color = LightGrey)
 
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Button(
@@ -811,10 +953,9 @@ fun TaxiDriverActions(
                             },
                             modifier = Modifier.weight(1f).height(52.dp),
                             shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                            colors = ButtonDefaults.buttonColors(containerColor = Black, contentColor = White),
+                            elevation = null
                         ) {
-                            Icon(Icons.Default.Check, null, modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.width(6.dp))
                             Text("Accept", fontWeight = FontWeight.Bold)
                         }
 
@@ -829,10 +970,10 @@ fun TaxiDriverActions(
                                 onRemoveHail(passengerId)
                             },
                             modifier = Modifier.weight(1f).height(52.dp),
-                            shape = RoundedCornerShape(14.dp)
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(1.dp, Black),
+                            colors = ButtonDefaults.outlinedButtonColors(containerColor = White, contentColor = Black)
                         ) {
-                            Icon(Icons.Default.Close, null, modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.width(6.dp))
                             Text("Decline")
                         }
                     }
@@ -842,20 +983,22 @@ fun TaxiDriverActions(
     } else if (activeTaxiTripId != null) {
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+            colors = CardDefaults.cardColors(containerColor = White),
+            border = BorderStroke(1.dp, LightGrey),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.LocalTaxi, null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(22.dp))
-                    }
+                        modifier = Modifier
+                            .width(4.dp)
+                            .height(40.dp)
+                            .background(AccentGreen, RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                    )
                     Spacer(Modifier.width(12.dp))
                     Column {
-                        Text("Trip in Progress", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("Meter is running", fontSize = 12.sp, color = Color.Gray)
+                        Text("Trip in Progress", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Black)
+                        Text("Meter running", fontSize = 12.sp, color = MidGrey)
                     }
                 }
 
@@ -865,7 +1008,8 @@ fun TaxiDriverActions(
                     label = { Text("Passengers") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    singleLine = true
+                    singleLine = true,
+                    colors = driverFieldColors()
                 )
                 OutlinedTextField(
                     value = revenue.toString(),
@@ -873,7 +1017,8 @@ fun TaxiDriverActions(
                     label = { Text("Fare (Pula)") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    singleLine = true
+                    singleLine = true,
+                    colors = driverFieldColors()
                 )
                 Button(
                     onClick = {
@@ -888,11 +1033,10 @@ fun TaxiDriverActions(
                         activeTaxiTripId = null
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
-                    shape = RoundedCornerShape(14.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed, contentColor = White),
+                    shape = RoundedCornerShape(14.dp),
+                    elevation = null
                 ) {
-                    Icon(Icons.Default.Stop, null, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(6.dp))
                     Text("Complete Trip", fontWeight = FontWeight.Bold)
                 }
             }
@@ -900,10 +1044,10 @@ fun TaxiDriverActions(
     } else {
         Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.LocalTaxi, null, tint = Color.Gray.copy(alpha = 0.5f), modifier = Modifier.size(48.dp))
+                Icon(Icons.Default.LocalTaxi, null, tint = MidGrey, modifier = Modifier.size(48.dp))
                 Spacer(Modifier.height(8.dp))
-                Text("Waiting for ride requests...", color = Color.Gray, fontSize = 14.sp)
-                Text("Keep your app open", color = Color.Gray.copy(alpha = 0.5f), fontSize = 12.sp)
+                Text("Waiting for ride requests...", color = Black, fontSize = 14.sp)
+                Text("Keep your app open", color = MidGrey, fontSize = 12.sp)
             }
         }
     }
@@ -914,21 +1058,114 @@ fun SpacingAdvisory(advisory: JSONObject?) {
     val ahead = advisory?.optString("ahead") ?: "0m"
     val behind = advisory?.optString("behind") ?: "0m"
     val status = advisory?.optString("status") ?: "--"
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = White),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, LightGrey),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text("SPACING ADVISORY", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            Text("SPACING ADVISORY", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MidGrey)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Ahead: $ahead", style = MaterialTheme.typography.bodySmall)
-                Text("Behind: $behind", style = MaterialTheme.typography.bodySmall)
+                Text("Ahead: $ahead", style = MaterialTheme.typography.bodySmall, color = Black, fontWeight = FontWeight.Bold)
+                Text("Behind: $behind", style = MaterialTheme.typography.bodySmall, color = Black, fontWeight = FontWeight.Bold)
             }
-            Text("STATUS: $status", color = Color.Red, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+            val statusColor = if (status.contains("warn", true) || status.contains("behind", true)) AccentRed else AccentGreen
+            Text("STATUS: $status", color = statusColor, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
 
 @Composable
 fun AlertBadge(text: String, containerColor: Color) {
-    Surface(shape = MaterialTheme.shapes.small, color = containerColor) {
-        Text(text, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelMedium)
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = White,
+        border = BorderStroke(1.dp, if (containerColor == MaterialTheme.colorScheme.errorContainer) AccentRed else Black)
+    ) {
+        Text(
+            text,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = if (containerColor == MaterialTheme.colorScheme.errorContainer) AccentRed else Black
+        )
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DriverTopBar(
+    title: String,
+    isOnline: Boolean,
+    onToggleOnline: (Boolean) -> Unit
+) {
+    val pillColor by animateColorAsState(if (isOnline) Black else LightGrey, label = "onlinePill")
+    val textColor by animateColorAsState(if (isOnline) White else Black, label = "onlineText")
+    Surface(
+        color = White,
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(BorderStroke(0.5.dp, LightGrey)),
+        shadowElevation = 0.dp,
+        tonalElevation = 0.dp
+    ) {
+        CenterAlignedTopAppBar(
+            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = White, titleContentColor = Black),
+            navigationIcon = {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 8.dp)) {
+                    Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+                        Text(
+                            "ST",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.8).sp),
+                            color = Black
+                        )
+                    }
+                }
+            },
+            title = {
+                Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = Black)
+            },
+            actions = {
+                Surface(
+                    color = pillColor,
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.clickable { onToggleOnline(!isOnline) }
+                ) {
+                    Text(
+                        if (isOnline) "Online" else "Offline",
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        color = textColor,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                ConnectionBadge(Modifier.padding(end = 16.dp))
+            }
+        )
+    }
+}
+
+@Composable
+private fun driverNavItemColors() = NavigationBarItemDefaults.colors(
+    selectedIconColor = Black,
+    selectedTextColor = Black,
+    unselectedIconColor = MidGrey,
+    unselectedTextColor = MidGrey,
+    indicatorColor = White
+)
+
+@Composable
+private fun driverFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedContainerColor = White,
+    unfocusedContainerColor = White,
+    disabledContainerColor = White,
+    focusedBorderColor = Black,
+    unfocusedBorderColor = LightGrey,
+    focusedTextColor = Black,
+    unfocusedTextColor = Black,
+    focusedLabelColor = Black,
+    unfocusedLabelColor = MidGrey,
+    cursorColor = Black,
+    focusedLeadingIconColor = Black,
+    unfocusedLeadingIconColor = Black
+)
