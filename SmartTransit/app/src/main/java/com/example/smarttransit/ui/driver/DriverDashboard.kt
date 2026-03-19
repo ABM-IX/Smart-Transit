@@ -8,21 +8,30 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.smarttransit.model.UserRole
 import com.example.smarttransit.network.SocketHandler
@@ -85,8 +94,8 @@ fun DriverDashboard(initialRole: UserRole) {
                             put("heading", location.bearing.toDouble())
                             put("timestamp", System.currentTimeMillis())
                             put("occupancy", occupancy)
+                            put("serviceType", if (currentRole == UserRole.DRIVER_TAXI) "TAXI" else "COMBI")
                         }
-                        socket.emit("location-update", data)
                         socket.emit("driver-location", data)
                     }
                 }
@@ -121,6 +130,8 @@ fun DriverDashboard(initialRole: UserRole) {
                     put("driverId", driverId)
                     put("routeId", if (routeId.isEmpty()) "default-route" else routeId)
                     put("status", "ONLINE")
+                    put("serviceType", if (currentRole == UserRole.DRIVER_TAXI) "TAXI" else "COMBI")
+                    put("driverType", currentRole.name)
                 })
             } else {
                 socket.emit("driver-offline", JSONObject().apply {
@@ -663,6 +674,28 @@ fun TaxiDriverActions(
     var activeTaxiTripId by remember { mutableStateOf<String?>(null) }
     var passengerCount by remember { mutableIntStateOf(1) }
     var revenue by remember { mutableIntStateOf(0) }
+    var totalEarnings by remember { mutableIntStateOf(0) }
+    var tripsCompleted by remember { mutableIntStateOf(0) }
+
+    // Earnings summary
+    if (tripsCompleted > 0 || activeTaxiTripId != null) {
+        Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Row(modifier = Modifier.padding(14.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("Today's Earnings", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                    Text("P$totalEarnings", fontWeight = FontWeight.Bold, fontSize = 24.sp)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("Trips", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                    Text("$tripsCompleted", fontWeight = FontWeight.Bold, fontSize = 24.sp)
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+    }
 
     if (hails.isNotEmpty()) {
         val latestHail = hails.last()
@@ -672,81 +705,180 @@ fun TaxiDriverActions(
         val fareEstimate = latestHail.optInt("fareEstimate", 0)
         val pickup = latestHail.optJSONObject("pickupLoc")
         val destination = latestHail.optJSONObject("destinationLoc")
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("New Ride Request!", fontWeight = FontWeight.Bold)
-                Text("Passenger ID: ${passengerId.take(10)}...", style = MaterialTheme.typography.bodySmall)
-                Text("Service: $serviceType", style = MaterialTheme.typography.bodySmall)
-                if (fareEstimate > 0) {
-                    Text("Fare: P$fareEstimate", style = MaterialTheme.typography.bodySmall)
-                }
-                if (pickup != null) {
-                    Text("Pickup: ${pickup.optDouble("lat")}, ${pickup.optDouble("lng")}", style = MaterialTheme.typography.bodySmall)
-                }
-                if (destination != null) {
-                    Text("Destination: ${destination.optDouble("lat")}, ${destination.optDouble("lng")}", style = MaterialTheme.typography.bodySmall)
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = { 
-                            val data = JSONObject().apply {
-                                put("passengerId", passengerId)
-                                put("driverId", driverId)
-                                put("routeId", routeId)
-                                if (requestId.isNotEmpty()) put("requestId", requestId)
+
+        Card(
+            shape = RoundedCornerShape(18.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column {
+                // Header
+                Box(
+                    modifier = Modifier.fillMaxWidth()
+                        .background(
+                            Brush.linearGradient(
+                                listOf(Color(0xFFF59E0B), Color(0xFFEF4444))
+                            )
+                        )
+                        .padding(16.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier.size(48.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.PersonPin, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text("New Ride Request!", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
+                            Text(serviceType, color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
+                        }
+                        Spacer(Modifier.weight(1f))
+                        if (fareEstimate > 0) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color.White.copy(alpha = 0.2f)
+                            ) {
+                                Text(
+                                    "P$fareEstimate",
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp
+                                )
                             }
-                            SocketHandler.currentSocket?.emit("accept-hail", data)
-                            val tripId = "trip-${UUID.randomUUID().toString().take(8)}"
-                            activeTaxiTripId = tripId
-                            SocketHandler.currentSocket?.emit("trip-start", JSONObject().apply {
-                                put("tripId", tripId)
-                                put("driverId", driverId)
-                                put("routeId", routeId)
-                                put("type", "TAXI")
-                                put("passengerCount", passengerCount)
-                                put("revenue", if (fareEstimate > 0) fareEstimate else revenue)
-                            })
-                            onRemoveHail(passengerId)
-                        }, 
-                        modifier = Modifier.weight(1f)
-                    ) { Text("Accept") }
-                    
-                    OutlinedButton(
-                        onClick = { 
-                            val data = JSONObject().apply {
-                                put("passengerId", passengerId)
-                                put("driverId", driverId)
-                                put("routeId", routeId)
-                                if (requestId.isNotEmpty()) put("requestId", requestId)
+                        }
+                    }
+                }
+
+                // Details
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (pickup != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0xFF10B981).copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.TripOrigin, null, tint = Color(0xFF10B981), modifier = Modifier.size(16.dp))
                             }
-                            SocketHandler.currentSocket?.emit("reject-hail", data)
-                            onRemoveHail(passengerId)
-                        }, 
-                        modifier = Modifier.weight(1f)
-                    ) { Text("Reject") }
+                            Spacer(Modifier.width(10.dp))
+                            Column {
+                                Text("Pickup", fontSize = 11.sp, color = Color.Gray)
+                                Text("${pickup.optDouble("lat", 0.0).let { String.format("%.4f", it) }}, ${pickup.optDouble("lng", 0.0).let { String.format("%.4f", it) }}", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            }
+                        }
+                    }
+                    if (destination != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0xFFEF4444).copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.LocationOn, null, tint = Color(0xFFEF4444), modifier = Modifier.size(16.dp))
+                            }
+                            Spacer(Modifier.width(10.dp))
+                            Column {
+                                Text("Destination", fontSize = 11.sp, color = Color.Gray)
+                                Text("${destination.optDouble("lat", 0.0).let { String.format("%.4f", it) }}, ${destination.optDouble("lng", 0.0).let { String.format("%.4f", it) }}", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.15f))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Button(
+                            onClick = {
+                                val data = JSONObject().apply {
+                                    put("passengerId", passengerId)
+                                    put("driverId", driverId)
+                                    put("routeId", routeId)
+                                    if (requestId.isNotEmpty()) put("requestId", requestId)
+                                }
+                                SocketHandler.currentSocket?.emit("accept-hail", data)
+                                val tripId = "trip-${UUID.randomUUID().toString().take(8)}"
+                                activeTaxiTripId = tripId
+                                revenue = if (fareEstimate > 0) fareEstimate else 0
+                                SocketHandler.currentSocket?.emit("trip-start", JSONObject().apply {
+                                    put("tripId", tripId)
+                                    put("driverId", driverId)
+                                    put("routeId", routeId)
+                                    put("type", "TAXI")
+                                    put("passengerCount", passengerCount)
+                                    put("revenue", if (fareEstimate > 0) fareEstimate else revenue)
+                                })
+                                onRemoveHail(passengerId)
+                            },
+                            modifier = Modifier.weight(1f).height(52.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                        ) {
+                            Icon(Icons.Default.Check, null, modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Accept", fontWeight = FontWeight.Bold)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                SocketHandler.currentSocket?.emit("reject-hail", JSONObject().apply {
+                                    put("passengerId", passengerId)
+                                    put("driverId", driverId)
+                                    put("routeId", routeId)
+                                    if (requestId.isNotEmpty()) put("requestId", requestId)
+                                })
+                                onRemoveHail(passengerId)
+                            },
+                            modifier = Modifier.weight(1f).height(52.dp),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(Icons.Default.Close, null, modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Decline")
+                        }
+                    }
                 }
             }
         }
     } else if (activeTaxiTripId != null) {
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Taxi Trip Active", fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(8.dp))
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.LocalTaxi, null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(22.dp))
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text("Trip in Progress", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("Meter is running", fontSize = 12.sp, color = Color.Gray)
+                    }
+                }
+
                 OutlinedTextField(
                     value = passengerCount.toString(),
                     onValueChange = { passengerCount = it.toIntOrNull() ?: 1 },
-                    label = { Text("Passenger Count") },
-                    modifier = Modifier.fillMaxWidth()
+                    label = { Text("Passengers") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
                 )
                 OutlinedTextField(
                     value = revenue.toString(),
                     onValueChange = { revenue = it.toIntOrNull() ?: 0 },
-                    label = { Text("Fare (P)") },
-                    modifier = Modifier.fillMaxWidth()
+                    label = { Text("Fare (Pula)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
                 )
                 Button(
                     onClick = {
+                        totalEarnings += revenue
+                        tripsCompleted++
                         onTripMetricsUpdate(passengerCount, revenue)
                         SocketHandler.currentSocket?.emit("trip-end", JSONObject().apply {
                             put("tripId", activeTaxiTripId)
@@ -755,14 +887,24 @@ fun TaxiDriverActions(
                         })
                         activeTaxiTripId = null
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                ) { Text("End Trip") }
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Icon(Icons.Default.Stop, null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Complete Trip", fontWeight = FontWeight.Bold)
+                }
             }
         }
     } else {
-        Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-            Text("Waiting for taxi requests...", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+        Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.LocalTaxi, null, tint = Color.Gray.copy(alpha = 0.5f), modifier = Modifier.size(48.dp))
+                Spacer(Modifier.height(8.dp))
+                Text("Waiting for ride requests...", color = Color.Gray, fontSize = 14.sp)
+                Text("Keep your app open", color = Color.Gray.copy(alpha = 0.5f), fontSize = 12.sp)
+            }
         }
     }
 }

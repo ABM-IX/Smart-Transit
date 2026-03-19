@@ -8,11 +8,15 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -20,10 +24,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.smarttransit.network.SocketHandler
 import com.example.smarttransit.ui.components.ConnectionBadge
@@ -554,49 +563,13 @@ fun BusCombiMapScreen(mode: TransportMode, route: RouteItem, modifier: Modifier)
                 }
             }
             if (showRating && boardedDriverId != null) {
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)), contentAlignment = Alignment.Center) {
-                    Card {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Rate your driver", fontWeight = FontWeight.Bold)
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                (1..5).forEach { score ->
-                                    Button(onClick = {
-                                        SocketHandler.currentSocket?.emit(
-                                            "driver-rating",
-                                            JSONObject().apply { put("driverId", boardedDriverId); put("rating", score) }
-                                        )
-                                        showRating = false
-                                        boardedDriverId = null
-                                    }) { Text(score.toString()) }
-                                }
-                            }
-                            OutlinedTextField(
-                                value = complaintText,
-                                onValueChange = { complaintText = it },
-                                label = { Text("Report misconduct (optional)") },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Button(
-                                onClick = {
-                                    if (complaintText.isNotBlank()) {
-                                        SocketHandler.currentSocket?.emit(
-                                            "driver-complaint",
-                                            JSONObject().apply {
-                                                put("driverId", boardedDriverId)
-                                                put("passengerId", passengerId)
-                                                put("message", complaintText.trim())
-                                            }
-                                        )
-                                        complaintText = ""
-                                    }
-                                    showRating = false
-                                    boardedDriverId = null
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) { Text("Submit Feedback") }
-                        }
-                    }
-                }
+                RatingOverlay(
+                    driverId = boardedDriverId!!,
+                    passengerId = passengerId,
+                    complaintText = complaintText,
+                    onComplaintChange = { complaintText = it },
+                    onDismiss = { showRating = false; boardedDriverId = null }
+                )
             }
             if (!isConnected) {
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)), contentAlignment = Alignment.Center) {
@@ -683,7 +656,7 @@ fun TaxiFlow(onBack: () -> Unit) {
     ) { padding ->
         when (selectedTab) {
             0 -> TaxiMapScreen(Modifier.padding(padding))
-            1 -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { Text("No Trip History Yet") }
+            1 -> TripHistoryScreen(Modifier.padding(padding))
             2 -> ProfileScreen(Modifier.padding(padding))
         }
     }
@@ -859,50 +832,13 @@ fun TaxiMapScreen(modifier: Modifier) {
                 }
             }
             if (showRating && ratingDriverId != null) {
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)), contentAlignment = Alignment.Center) {
-                    Card {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Rate your driver", fontWeight = FontWeight.Bold)
-                            Text("How was your ride?", style = MaterialTheme.typography.bodySmall)
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                (1..5).forEach { score ->
-                                    Button(onClick = {
-                                        SocketHandler.currentSocket?.emit(
-                                            "driver-rating",
-                                            JSONObject().apply { put("driverId", ratingDriverId); put("rating", score) }
-                                        )
-                                        showRating = false
-                                        ratingDriverId = null
-                                    }) { Text(score.toString()) }
-                                }
-                            }
-                            OutlinedTextField(
-                                value = complaintText,
-                                onValueChange = { complaintText = it },
-                                label = { Text("Report misconduct (optional)") },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Button(
-                                onClick = {
-                                    if (complaintText.isNotBlank()) {
-                                        SocketHandler.currentSocket?.emit(
-                                            "driver-complaint",
-                                            JSONObject().apply {
-                                                put("driverId", ratingDriverId)
-                                                put("passengerId", passengerId)
-                                                put("message", complaintText.trim())
-                                            }
-                                        )
-                                        complaintText = ""
-                                    }
-                                    showRating = false
-                                    ratingDriverId = null
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) { Text("Submit Feedback") }
-                        }
-                    }
-                }
+                RatingOverlay(
+                    driverId = ratingDriverId!!,
+                    passengerId = passengerId,
+                    complaintText = complaintText,
+                    onComplaintChange = { complaintText = it },
+                    onDismiss = { showRating = false; ratingDriverId = null }
+                )
             }
             if (driverLocations.isEmpty() && searchTimedOut) {
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
@@ -1178,46 +1114,116 @@ fun TaxiActions(
 
 @Composable
 fun ModeSelectionScreen(modifier: Modifier, onModeSelected: (TransportMode) -> Unit) {
-    Column(modifier = modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("SmartTransit", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-        Text("Your Smart Commute Starts Here", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
-        Spacer(Modifier.height(40.dp))
-        ModeCard("Bus Transport", "Reliable & Scheduled", Icons.Default.DirectionsBus) { onModeSelected(TransportMode.BUS) }
-        Spacer(Modifier.height(16.dp))
-        ModeCard("Combi Transport", "Fast & Flexible", Icons.Default.AirportShuttle) { onModeSelected(TransportMode.COMBI) }
-        Spacer(Modifier.height(16.dp))
-        ModeCard("Taxi Service", "Private & On-Demand", Icons.Default.LocalTaxi) { onModeSelected(TransportMode.TAXI) }
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+
+    Column(
+        modifier = modifier.fillMaxSize().padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(Modifier.weight(0.3f))
+
+        Text(
+            "Where are you\nheading?",
+            fontSize = 28.sp, fontWeight = FontWeight.Bold,
+            lineHeight = 34.sp, textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Choose your transport mode",
+            fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(36.dp))
+
+        AnimatedVisibility(
+            visible = visible,
+            enter = fadeIn(tween(500)) + slideInVertically(initialOffsetY = { it / 3 }, animationSpec = tween(500, easing = EaseOutCubic))
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                PremiumModeCard(
+                    title = "Bus", subtitle = "Intercity · Scheduled",
+                    icon = Icons.Default.DirectionsBus, fare = "P8",
+                    gradientColors = listOf(Color(0xFF8B5CF6), Color(0xFF6D28D9))
+                ) { onModeSelected(TransportMode.BUS) }
+
+                PremiumModeCard(
+                    title = "Combi", subtitle = "Urban · Flexible routes",
+                    icon = Icons.Default.AirportShuttle, fare = "P8",
+                    gradientColors = listOf(Color(0xFF06B6D4), Color(0xFF0891B2))
+                ) { onModeSelected(TransportMode.COMBI) }
+
+                PremiumModeCard(
+                    title = "Taxi", subtitle = "Private · On-demand",
+                    icon = Icons.Default.LocalTaxi, fare = "From P10",
+                    gradientColors = listOf(Color(0xFFF59E0B), Color(0xFFD97706))
+                ) { onModeSelected(TransportMode.TAXI) }
+            }
+        }
+
+        Spacer(Modifier.weight(1f))
     }
 }
 
 @Composable
-fun ModeCard(title: String, desc: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick), elevation = CardDefaults.cardElevation(4.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-        Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, null, modifier = Modifier.size(44.dp), tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.width(20.dp))
-            Column {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(desc, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+private fun PremiumModeCard(
+    title: String, subtitle: String, icon: ImageVector,
+    fare: String, gradientColors: List<Color>, onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp, pressedElevation = 0.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier.padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.size(56.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Brush.linearGradient(gradientColors)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = Color.White, modifier = Modifier.size(30.dp))
             }
-            Spacer(Modifier.weight(1f))
-            Icon(Icons.Default.ChevronRight, null, tint = Color.LightGray)
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(subtitle, fontSize = 13.sp, color = Color.Gray)
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(fare, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = gradientColors[0])
+                Icon(Icons.Default.ChevronRight, null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+            }
         }
     }
 }
 
 @Composable
 fun RouteCard(route: RouteItem, onClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(14.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(40.dp)) {
-                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.LocationOn, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) }
+            Box(
+                modifier = Modifier.size(42.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.LocationOn, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
             }
-            Spacer(Modifier.width(16.dp))
-            Column {
-                Text(route.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
-                Text("To: ${route.end}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(route.name, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text("${route.start} → ${route.end}", fontSize = 12.sp, color = Color.Gray)
             }
+            Icon(Icons.Default.ChevronRight, null, tint = Color.LightGray, modifier = Modifier.size(20.dp))
         }
     }
 }
@@ -1235,25 +1241,219 @@ fun BusCombiActions(m: TransportMode, boarded: Boolean, rid: String, pid: String
                         if (!hailing) put("pickupLoc", JSONObject().apply { put("lat", loc.latitude); put("lng", loc.longitude) })
                     })
                     onH(!hailing)
-                } else {
-                    // loc is null
                 }
             }, 
             modifier = Modifier.fillMaxWidth().height(56.dp), 
-            colors = ButtonDefaults.buttonColors(containerColor = if (hailing) Color.Red else MaterialTheme.colorScheme.primary),
-            shape = MaterialTheme.shapes.large
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (hailing) Color(0xFFEF4444) else MaterialTheme.colorScheme.primary
+            ),
+            shape = RoundedCornerShape(16.dp)
         ) {
-            Text(if (hailing) "Cancel Hail" else "Hail ${m.name}")
+            if (hailing) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(8.dp))
+                Text("Cancel Search")
+            } else {
+                Icon(Icons.Default.WavingHand, null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Hail ${m.name}", fontWeight = FontWeight.SemiBold)
+            }
         }
         Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = onB, modifier = Modifier.fillMaxWidth().height(56.dp), shape = MaterialTheme.shapes.large) {
+        OutlinedButton(
+            onClick = onB,
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Icon(Icons.Default.DirectionsBus, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
             Text("Confirm Boarding")
         }
     } else {
-        Button(onClick = { SocketHandler.currentSocket?.emit("stop-request", JSONObject().apply { put("passengerId", pid); put("routeId", rid) }) }, modifier = Modifier.fillMaxWidth().height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = Color.Red), shape = MaterialTheme.shapes.large) {
-            Text("Request Stop")
+        Button(
+            onClick = { SocketHandler.currentSocket?.emit("stop-request", JSONObject().apply { put("passengerId", pid); put("routeId", rid) }) },
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Icon(Icons.Default.Stop, null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Request Stop", fontWeight = FontWeight.Bold)
         }
-        TextButton(onClick = onB, modifier = Modifier.fillMaxWidth()) { Text("Exit Vehicle", color = Color.Gray) }
+        Spacer(Modifier.height(4.dp))
+        TextButton(onClick = onB, modifier = Modifier.fillMaxWidth()) {
+            Text("Exit Vehicle", color = Color.Gray)
+        }
+    }
+}
+
+// ============= STAR RATING OVERLAY =============
+@Composable
+fun RatingOverlay(
+    driverId: String, passengerId: String,
+    complaintText: String, onComplaintChange: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var selectedRating by remember { mutableIntStateOf(0) }
+    var hoveredRating by remember { mutableIntStateOf(0) }
+
+    Box(
+        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier.padding(32.dp).fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Driver icon
+                Box(
+                    modifier = Modifier.size(64.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Person, null, modifier = Modifier.size(36.dp), tint = MaterialTheme.colorScheme.primary)
+                }
+
+                Text("How was your ride?", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                Text("Driver: $driverId", fontSize = 13.sp, color = Color.Gray)
+
+                // Star Rating
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(vertical = 8.dp)
+                ) {
+                    (1..5).forEach { score ->
+                        val active = score <= (if (hoveredRating > 0) hoveredRating else selectedRating)
+                        IconButton(
+                            onClick = { selectedRating = score },
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                if (active) Icons.Default.Star else Icons.Default.StarOutline,
+                                contentDescription = "$score stars",
+                                tint = if (active) Color(0xFFFBBF24) else Color.Gray,
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
+                    }
+                }
+
+                val label = when (selectedRating) {
+                    1 -> "Poor"; 2 -> "Fair"; 3 -> "Good"; 4 -> "Great"; 5 -> "Excellent!"; else -> ""
+                }
+                if (label.isNotEmpty()) {
+                    Text(label, fontWeight = FontWeight.Medium, color = Color(0xFFFBBF24), fontSize = 14.sp)
+                }
+
+                OutlinedTextField(
+                    value = complaintText,
+                    onValueChange = onComplaintChange,
+                    label = { Text("Feedback (optional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    minLines = 2, maxLines = 3
+                )
+
+                Button(
+                    onClick = {
+                        if (selectedRating > 0) {
+                            SocketHandler.currentSocket?.emit(
+                                "driver-rating",
+                                JSONObject().apply { put("driverId", driverId); put("rating", selectedRating) }
+                            )
+                        }
+                        if (complaintText.isNotBlank()) {
+                            SocketHandler.currentSocket?.emit(
+                                "driver-complaint",
+                                JSONObject().apply {
+                                    put("driverId", driverId)
+                                    put("passengerId", passengerId)
+                                    put("message", complaintText.trim())
+                                }
+                            )
+                            onComplaintChange("")
+                        }
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    enabled = selectedRating > 0
+                ) {
+                    Text("Submit Rating", fontWeight = FontWeight.SemiBold)
+                }
+
+                TextButton(onClick = onDismiss) {
+                    Text("Skip", color = Color.Gray)
+                }
+            }
+        }
+    }
+}
+
+// ============= TRIP HISTORY SCREEN =============
+@Composable
+fun TripHistoryScreen(modifier: Modifier = Modifier) {
+    val mockTrips = remember {
+        listOf(
+            Triple("Bus Rank → Francistown", "Today 14:30", "P8.00"),
+            Triple("BAC → Main Mall", "Today 08:15", "P8.00"),
+            Triple("Taxi to Riverwalk", "Yesterday 18:45", "P15.00"),
+            Triple("UB → Bus Rank", "Yesterday 07:20", "P8.00"),
+            Triple("Taxi to Airport", "Mar 17 06:00", "P45.00")
+        )
+    }
+
+    Column(
+        modifier = modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("Trip History", fontWeight = FontWeight.Bold, fontSize = 22.sp)
+        Text("Your recent rides", fontSize = 13.sp, color = Color.Gray)
+        Spacer(Modifier.height(4.dp))
+
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            items(mockTrips) { (route, time, fare) ->
+                Card(
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier.size(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (route.startsWith("Taxi")) Color(0xFFFEF3C7)
+                                    else MaterialTheme.colorScheme.primaryContainer
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                if (route.startsWith("Taxi")) Icons.Default.LocalTaxi else Icons.Default.DirectionsBus,
+                                null,
+                                tint = if (route.startsWith("Taxi")) Color(0xFFD97706) else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(14.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(route, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                            Text(time, fontSize = 12.sp, color = Color.Gray)
+                        }
+                        Text(fare, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1261,35 +1461,72 @@ fun BusCombiActions(m: TransportMode, boarded: Boolean, rid: String, pid: String
 fun ProfileScreen(modifier: Modifier) {
     var url by remember { mutableStateOf(SocketHandler.getCurrentUrl()) }
     val context = LocalContext.current
-    Column(modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("App Settings", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Text("Configure connection to the Admin Dashboard server.", style = MaterialTheme.typography.bodySmall)
-        
-        OutlinedTextField(
-            value = url, 
-            onValueChange = { url = it }, 
-            label = { Text("Server URL") }, 
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("e.g. http://10.0.2.2:3000") }
-        )
-        
-        Button(
-            onClick = { 
-                SocketHandler.init(context, url.trim())
-                Toast.makeText(context, "Server Settings Updated", Toast.LENGTH_SHORT).show() 
-            }, 
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.medium
-        ) {
-            Text("Save & Reconnect")
+
+    Column(
+        modifier.fillMaxSize().padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Profile header
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.size(60.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(listOf(Color(0xFF3B82F6), Color(0xFF06B6D4)))
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(32.dp))
+            }
+            Spacer(Modifier.width(16.dp))
+            Column {
+                Text("Passenger", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                Text(
+                    if (SocketHandler.isConnected) "● Connected" else "○ Offline",
+                    fontSize = 13.sp,
+                    color = if (SocketHandler.isConnected) Color(0xFF10B981) else Color.Gray
+                )
+            }
         }
-        
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))) {
-            Column(Modifier.padding(16.dp)) {
-                Text("Connection Tips:", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
-                Text("• Emulator: http://10.0.2.2:3000", style = MaterialTheme.typography.bodySmall)
-                Text("• Real Device: Use your PC's IP (e.g. http://192.168.1.5:3000)", style = MaterialTheme.typography.bodySmall)
-                Text("• Localtunnel: https://your-subdomain.loca.lt", style = MaterialTheme.typography.bodySmall)
+
+        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+
+        Text("Server Connection", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+
+        OutlinedTextField(
+            value = url,
+            onValueChange = { url = it },
+            label = { Text("Server URL") },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("e.g. http://10.0.2.2:3000") },
+            shape = RoundedCornerShape(14.dp),
+            singleLine = true
+        )
+
+        Button(
+            onClick = {
+                SocketHandler.init(context, url.trim())
+                Toast.makeText(context, "Reconnecting...", Toast.LENGTH_SHORT).show()
+            },
+            modifier = Modifier.fillMaxWidth().height(50.dp),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Icon(Icons.Default.Refresh, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("Save & Reconnect", fontWeight = FontWeight.SemiBold)
+        }
+
+        Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            )
+        ) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Connection Tips", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text("• Emulator → http://10.0.2.2:3000", fontSize = 12.sp, color = Color.Gray)
+                Text("• Real device → Use PC's IP address", fontSize = 12.sp, color = Color.Gray)
+                Text("• Remote → Use localtunnel URL", fontSize = 12.sp, color = Color.Gray)
             }
         }
     }
