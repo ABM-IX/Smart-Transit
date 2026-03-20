@@ -83,6 +83,7 @@ fun DriverDashboard(initialRole: UserRole) {
     val isConnected = SocketHandler.isConnected
     
     val activeHails = remember { mutableStateMapOf<String, JSONObject>() }
+    val otherDrivers = remember { mutableStateMapOf<String, JSONObject>() }
     
     var spacingAdvisory by remember { mutableStateOf<JSONObject?>(null) }
     var userLocation by remember { mutableStateOf<LatLng?>(null) }
@@ -276,6 +277,16 @@ fun DriverDashboard(initialRole: UserRole) {
                 }
             }
 
+            socket.on("driver-location") { args ->
+                if (args != null && args.isNotEmpty()) {
+                    val data = if (args[0] is String) JSONObject(args[0] as String) else args[0] as? JSONObject
+                    val dId = data?.optString("driverId") ?: ""
+                    if (dId.isNotEmpty() && dId != driverId && data != null) {
+                        otherDrivers[dId] = data
+                    }
+                }
+            }
+
             socket.on("stop-request") { args ->
                 if (args != null && args.isNotEmpty()) {
                     stopRequestCount++
@@ -300,6 +311,7 @@ fun DriverDashboard(initialRole: UserRole) {
             socket.off("hail-cancelled")
             socket.off("passenger-boarded")
             socket.off("passenger-location")
+            socket.off("driver-location")
             socket.off("stop-request")
             socket.off("spacing-advisory")
         }
@@ -380,6 +392,7 @@ fun DriverDashboard(initialRole: UserRole) {
                             onClearHails = { activeHails.clear() },
                             spacingAdvisory = spacingAdvisory,
                             userLocation = userLocation,
+                            drivers = otherDrivers.values.toList(),
                             passengers = passengerLocations.values.toList(),
                             routeId = routeId,
                             occupancy = occupancy,
@@ -626,7 +639,7 @@ fun DriverInterface(
     role: UserRole, sessionStarted: Boolean, onToggleSession: () -> Unit,
     hails: List<JSONObject>, onClearHails: () -> Unit,
     spacingAdvisory: JSONObject?, userLocation: LatLng?,
-    passengers: List<LatLng>, routeId: String,
+    drivers: List<JSONObject>, passengers: List<LatLng>, routeId: String,
     occupancy: String, onUpdateOccupancy: (String) -> Unit,
     stopRequestCount: Int, onClearStopRequests: () -> Unit,
     isConnected: Boolean, driverId: String, onRemoveHail: (String) -> Unit,
@@ -639,7 +652,11 @@ fun DriverInterface(
             }
             val allPoints = passengers + hailPoints
             
-            SmartTransitMap(userLocation = userLocation, passengers = allPoints)
+            SmartTransitMap(
+                userLocation = userLocation,
+                drivers = drivers,
+                passengers = allPoints
+            )
 
             if (role == UserRole.DRIVER_COMBI && spacingAdvisory != null) {
                 val status = spacingAdvisory.optString("status", "--")

@@ -176,7 +176,12 @@ fun BusCombiFlow(mode: TransportMode, onBack: () -> Unit) {
                 selectedRoute = route
             }
         } else {
-            BusCombiMapScreen(mode = mode, route = selectedRoute!!, modifier = Modifier.padding(padding))
+            BusCombiMapScreen(
+                mode = mode,
+                route = selectedRoute!!,
+                modifier = Modifier.padding(padding),
+                onExitToMain = onBack
+            )
         }
     }
 }
@@ -184,12 +189,13 @@ fun BusCombiFlow(mode: TransportMode, onBack: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("MissingPermission")
 @Composable
-fun BusCombiMapScreen(mode: TransportMode, route: RouteItem, modifier: Modifier) {
+fun BusCombiMapScreen(mode: TransportMode, route: RouteItem, modifier: Modifier, onExitToMain: () -> Unit) {
     val passengerId = remember { "p-${UUID.randomUUID().toString().take(8)}" }
     var boarded by remember { mutableStateOf(false) }
     var boardedDriverId by remember { mutableStateOf<String?>(null) }
     var showRating by remember { mutableStateOf(false) }
     var complaintText by remember { mutableStateOf("") }
+    var showThankYou by remember { mutableStateOf(false) }
     val socket = SocketHandler.currentSocket
     var isConnected by remember { mutableStateOf(SocketHandler.isConnected) }
     val driverLocations = remember { mutableStateMapOf<String, JSONObject>() }
@@ -654,9 +660,18 @@ fun BusCombiMapScreen(mode: TransportMode, route: RouteItem, modifier: Modifier)
                     passengerId = passengerId,
                     complaintText = complaintText,
                     onComplaintChange = { complaintText = it },
-                    onSubmit = { showRating = false; boardedDriverId = null },
-                    onDismiss = { showRating = false; boardedDriverId = null }
+                    onSubmit = {
+                        showRating = false
+                        showThankYou = true
+                    },
+                    onDismiss = {
+                        showRating = false
+                        showThankYou = true
+                    }
                 )
+            }
+            if (showThankYou) {
+                ThankYouOverlay()
             }
             if (!isConnected) {
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)), contentAlignment = Alignment.Center) {
@@ -713,6 +728,16 @@ fun BusCombiMapScreen(mode: TransportMode, route: RouteItem, modifier: Modifier)
                     }
                 }
             } catch (_: Exception) { }
+        }
+    }
+
+    LaunchedEffect(showThankYou) {
+        if (showThankYou) {
+            kotlinx.coroutines.delay(1500)
+            showThankYou = false
+            boarded = false
+            boardedDriverId = null
+            onExitToMain()
         }
     }
 }

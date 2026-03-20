@@ -281,6 +281,7 @@ io.on('connection', (socket) => {
         }
         // Unified event name used by the mobile app screens
         io.to(`passengers-${resolvedRouteId}`).emit('driver-location', { ...data, routeId: resolvedRouteId });
+        io.to(`drivers-${resolvedRouteId}`).emit('driver-location', { ...data, routeId: resolvedRouteId });
         io.to('dashboard').emit('fleet-update', { type: 'driver', ...data, routeId: resolvedRouteId });
     });
 
