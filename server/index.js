@@ -73,6 +73,7 @@ const HAIL_MAX_DISTANCE_METERS = 60;
 const HAIL_TTL_MS = 5 * 60 * 1000;
 const BOARDING_DISTANCE_METERS = 20;
 const BOARDING_CONFIRM_WINDOW_MS = 12 * 1000;
+const AUTO_BOARDING_ENABLED = false;
 
 function estimateSpecialFare(pickup, destination) {
   if (!pickup || !destination) return TAXI_SPECIAL_BASE;
@@ -229,10 +230,12 @@ io.on('connection', (socket) => {
         if (!driverId || !coords) return;
         
         const existing = activeDrivers.get(driverId) || {};
-        const routeId = existing.routeId || incomingRouteId;
+        const routeId = (incomingRouteId && incomingRouteId !== "default-route") ? incomingRouteId : existing.routeId;
         if (!routeId) return;
 
-        activeDrivers.set(driverId, { ...existing, driverId, routeId, coords, occupancy, speed, heading, lastUpdate: Date.now(), socketId: socket.id });
+        // If the driver selected a new route after going online, update it here.
+        const resolvedRouteId = (incomingRouteId && incomingRouteId !== "default-route") ? incomingRouteId : routeId;
+        activeDrivers.set(driverId, { ...existing, driverId, routeId: resolvedRouteId, coords, occupancy, speed, heading, lastUpdate: Date.now(), socketId: socket.id });
         
         if (existing.serviceType === 'TAXI') {
             checkTaxiPickup(driverId); // Taxi point-to-point tracking
@@ -247,36 +250,38 @@ io.on('connection', (socket) => {
             }
         } else {
             // Combi/Bus broadcast
-            io.to(`passengers-${routeId}`).emit('vehicle-update', { type: 'driver', ...data });
-            calculateETA(routeId, driverId); // Trigger ETA Engine
-            calculateSpacingAdvisory(routeId); // Dispatch advisory
+            io.to(`passengers-${resolvedRouteId}`).emit('vehicle-update', { type: 'driver', ...data, routeId: resolvedRouteId });
+            calculateETA(resolvedRouteId, driverId); // Trigger ETA Engine
+            calculateSpacingAdvisory(resolvedRouteId); // Dispatch advisory
 
-            // Auto-boarding detection
-            for (const [passengerId, passenger] of activePassengers.entries()) {
-                if (passenger.routeId !== routeId || !passenger.coords) continue;
-                const dist = getDistance(coords, passenger.coords);
-                const key = `${driverId}:${passengerId}`;
-                if (dist <= BOARDING_DISTANCE_METERS) {
-                    const now = Date.now();
-                    const prev = proximityTracker.get(key);
-                    if (prev && (now - prev.lastCloseAt) <= BOARDING_CONFIRM_WINDOW_MS) {
-                        if (!activeBoardings.has(passengerId)) {
-                            activeBoardings.set(passengerId, { driverId, routeId, since: now });
-                            io.to('dashboard').emit('boarding', { passengerId, driverId, routeId, auto: true });
-                            const driver = activeDrivers.get(driverId);
-                            if (driver) io.to(driver.socketId).emit('passenger-boarded', { passengerId, driverId, routeId, auto: true });
-                            const passengerSocket = activePassengers.get(passengerId);
-                            if (passengerSocket) io.to(passengerSocket.socketId).emit('boarding-confirmed', { passengerId, driverId, routeId, auto: true });
+            // Auto-boarding detection (disabled for now)
+            if (AUTO_BOARDING_ENABLED) {
+                for (const [passengerId, passenger] of activePassengers.entries()) {
+                if (passenger.routeId !== resolvedRouteId || !passenger.coords) continue;
+                    const dist = getDistance(coords, passenger.coords);
+                    const key = `${driverId}:${passengerId}`;
+                    if (dist <= BOARDING_DISTANCE_METERS) {
+                        const now = Date.now();
+                        const prev = proximityTracker.get(key);
+                        if (prev && (now - prev.lastCloseAt) <= BOARDING_CONFIRM_WINDOW_MS) {
+                            if (!activeBoardings.has(passengerId)) {
+                                activeBoardings.set(passengerId, { driverId, routeId, since: now });
+                                io.to('dashboard').emit('boarding', { passengerId, driverId, routeId: resolvedRouteId, auto: true });
+                                const driver = activeDrivers.get(driverId);
+                                if (driver) io.to(driver.socketId).emit('passenger-boarded', { passengerId, driverId, routeId: resolvedRouteId, auto: true });
+                                const passengerSocket = activePassengers.get(passengerId);
+                                if (passengerSocket) io.to(passengerSocket.socketId).emit('boarding-confirmed', { passengerId, driverId, routeId: resolvedRouteId, auto: true });
+                            }
+                        } else {
+                            proximityTracker.set(key, { lastCloseAt: now });
                         }
-                    } else {
-                        proximityTracker.set(key, { lastCloseAt: now });
                     }
                 }
             }
         }
         // Unified event name used by the mobile app screens
-        io.to(`passengers-${routeId}`).emit('driver-location', { ...data, routeId });
-        io.to('dashboard').emit('fleet-update', { type: 'driver', ...data, routeId });
+        io.to(`passengers-${resolvedRouteId}`).emit('driver-location', { ...data, routeId: resolvedRouteId });
+        io.to('dashboard').emit('fleet-update', { type: 'driver', ...data, routeId: resolvedRouteId });
     });
 
     socket.on('passenger-location', (data) => {
@@ -291,23 +296,25 @@ io.on('connection', (socket) => {
         io.to(`drivers-${routeId}`).emit('passenger-location', { ...data, routeId });
         io.to('dashboard').emit('fleet-update', { type: 'passenger', ...data, routeId });
 
-        // Auto-boarding detection from passenger side (mirror)
-        for (const [driverId, driver] of activeDrivers.entries()) {
-            if (driver.routeId !== routeId || !driver.coords) continue;
-            const dist = getDistance(driver.coords, coords);
-            const key = `${driverId}:${passengerId}`;
-            if (dist <= BOARDING_DISTANCE_METERS) {
-                const now = Date.now();
-                const prev = proximityTracker.get(key);
-                if (prev && (now - prev.lastCloseAt) <= BOARDING_CONFIRM_WINDOW_MS) {
-                    if (!activeBoardings.has(passengerId)) {
-                        activeBoardings.set(passengerId, { driverId, routeId, since: now });
-                        io.to('dashboard').emit('boarding', { passengerId, driverId, routeId, auto: true });
-                        io.to(driver.socketId).emit('passenger-boarded', { passengerId, driverId, routeId, auto: true });
-                        io.to(socket.id).emit('boarding-confirmed', { passengerId, driverId, routeId, auto: true });
+        // Auto-boarding detection from passenger side (disabled for now)
+        if (AUTO_BOARDING_ENABLED) {
+            for (const [driverId, driver] of activeDrivers.entries()) {
+                if (driver.routeId !== routeId || !driver.coords) continue;
+                const dist = getDistance(driver.coords, coords);
+                const key = `${driverId}:${passengerId}`;
+                if (dist <= BOARDING_DISTANCE_METERS) {
+                    const now = Date.now();
+                    const prev = proximityTracker.get(key);
+                    if (prev && (now - prev.lastCloseAt) <= BOARDING_CONFIRM_WINDOW_MS) {
+                        if (!activeBoardings.has(passengerId)) {
+                            activeBoardings.set(passengerId, { driverId, routeId, since: now });
+                            io.to('dashboard').emit('boarding', { passengerId, driverId, routeId, auto: true });
+                            io.to(driver.socketId).emit('passenger-boarded', { passengerId, driverId, routeId, auto: true });
+                            io.to(socket.id).emit('boarding-confirmed', { passengerId, driverId, routeId, auto: true });
+                        }
+                    } else {
+                        proximityTracker.set(key, { lastCloseAt: now });
                     }
-                } else {
-                    proximityTracker.set(key, { lastCloseAt: now });
                 }
             }
         }
@@ -448,11 +455,6 @@ io.on('connection', (socket) => {
     socket.on('stop-request', (data = {}) => {
         const { passengerId, routeId = "default-route" } = data;
         if (!passengerId || !routeId) return;
-        const boarding = activeBoardings.get(passengerId);
-        if (!boarding || boarding.routeId !== routeId) {
-            socket.emit('stop-request-error', { reason: 'Not onboard' });
-            return;
-        }
         io.to(`drivers-${routeId}`).emit('stop-request', { passengerId, routeId, requestedAt: Date.now() });
         io.to('dashboard').emit('stop-request', { passengerId, routeId, requestedAt: Date.now() });
     });
@@ -663,12 +665,37 @@ function calculateETA(routeId, driverId) {
 
 // Spacing Advisory (Dispatch Engine Addon)
 function calculateSpacingAdvisory(routeId) {
-    const drivers = Array.from(activeDrivers.values()).filter(d => d.routeId === routeId).sort((a,b) => a.coords.lat - b.coords.lat);
+    const drivers = Array.from(activeDrivers.values())
+        .filter(d => d.routeId === routeId && d.coords && d.serviceType !== 'TAXI')
+        .filter(d => !routeId.startsWith('bus-'))
+        .sort((a, b) => a.coords.lat - b.coords.lat);
+
+    if (drivers.length < 2) return;
+
     for (let i = 0; i < drivers.length; i++) {
-        const current = drivers[i], ahead = drivers[i+1];
-        if (ahead && getDistance(current.coords, ahead.coords) < 150) {
-            io.to(current.socketId).emit('spacing-advisory', { status: "SLOW DOWN", ahead: "150m" });
+        const current = drivers[i];
+        const ahead = drivers[i + 1] || null;
+        const behind = drivers[i - 1] || null;
+        const aheadDist = ahead ? getDistance(current.coords, ahead.coords) : null;
+        const behindDist = behind ? getDistance(current.coords, behind.coords) : null;
+
+        let status = "MAINTAIN CURRENT SPEED";
+        // Prototype spacing advisory (buses/combis on same route)
+        // Spec-inspired thresholds:
+        // <200m -> SLOW DOWN
+        // 200-800m -> MAINTAIN CURRENT SPEED (good)
+        // >800m -> SPEED UP
+        if (aheadDist != null) {
+            if (aheadDist < 200) status = "SLOW DOWN";
+            else if (aheadDist > 800) status = "SPEED UP";
+            else status = "MAINTAIN CURRENT SPEED";
         }
+
+        io.to(current.socketId).emit('spacing-advisory', {
+            status,
+            ahead: aheadDist != null ? `${Math.round(aheadDist)}m` : "N/A",
+            behind: behindDist != null ? `${Math.round(behindDist)}m` : "N/A"
+        });
     }
 }
 

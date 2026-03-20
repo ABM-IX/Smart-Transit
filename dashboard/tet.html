@@ -11,22 +11,25 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
     <link
-        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
         rel="stylesheet">
     <style>
         :root {
-            --bg: #f8fafc;
-            --surface: #ffffff;
-            --text-primary: #0f172a;
-            --text-secondary: #64748b;
+            --bg: #0b0f17;
+            --surface: #121827;
+            --surface-2: #0f1422;
+            --surface-3: #1a2236;
+            --text-primary: #f5f7ff;
+            --text-secondary: #c7d2fe;
             --text-muted: #94a3b8;
-            --accent: #2563eb;
-            --accent-soft: rgba(37, 99, 235, 0.05);
+            --accent: #5b8cff;
+            --accent-2: #22d3ee;
+            --accent-soft: rgba(91, 140, 255, 0.14);
             --danger: #ef4444;
-            --success: #10b981;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.06);
+            --success: #22c55e;
+            --shadow-sm: 0 8px 16px rgba(0, 0, 0, 0.25);
+            --shadow-md: 0 16px 30px rgba(0, 0, 0, 0.35);
+            --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.5);
         }
 
         * {
@@ -36,8 +39,10 @@
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg);
+            font-family: 'Space Grotesk', sans-serif;
+            background: radial-gradient(1200px 700px at 80% -10%, rgba(91, 140, 255, 0.18), transparent 60%),
+                radial-gradient(900px 600px at 10% 10%, rgba(34, 211, 238, 0.12), transparent 55%),
+                var(--bg);
             color: var(--text-primary);
             height: 100vh;
             display: flex;
@@ -50,10 +55,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 32px;
-            background: var(--surface);
-            border-bottom: 1px solid #e2e8f0;
+            padding: 14px 32px;
+            background: linear-gradient(90deg, rgba(18, 24, 39, 0.96), rgba(15, 20, 34, 0.92));
+            border-bottom: 1px solid #1f2937;
             z-index: 100;
+            backdrop-filter: blur(10px);
         }
 
         .brand-container {
@@ -66,20 +72,19 @@
             height: 48px;
             width: auto;
             object-fit: contain;
-            /* Applying a subtle drop shadow to make the logo pop against white */
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
+            filter: drop-shadow(0 6px 18px rgba(91, 140, 255, 0.35));
         }
 
         .header-info h1 {
-            font-size: 1.1rem;
-            font-weight: 700;
+            font-size: 1.15rem;
+            font-weight: 800;
             letter-spacing: -0.02em;
         }
 
         .header-info p {
             font-size: 0.75rem;
             color: var(--text-secondary);
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .status-pill {
@@ -87,11 +92,12 @@
             align-items: center;
             gap: 8px;
             padding: 8px 16px;
-            background: var(--bg);
+            background: rgba(18, 24, 39, 0.8);
             border-radius: 100px;
             font-size: 0.75rem;
-            font-weight: 600;
-            border: 1px solid #e2e8f0;
+            font-weight: 700;
+            border: 1px solid #1f2937;
+            box-shadow: var(--shadow-sm);
         }
 
         .dot {
@@ -113,24 +119,28 @@
             flex: 1;
             height: calc(100vh - 73px);
             overflow: hidden;
+            gap: 16px;
+            padding: 16px;
         }
 
         /* Sidebar Design (No Boxes) */
         .sidebar {
-            background: var(--surface);
+            background: linear-gradient(180deg, var(--surface), var(--surface-2));
             padding: 24px;
-            border-right: 1px solid #e2e8f0;
+            border: 1px solid #1f2937;
+            border-radius: 18px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 32px;
+            box-shadow: var(--shadow-lg);
         }
 
         .section-label {
             font-size: 0.7rem;
-            font-weight: 700;
+            font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.12em;
             color: var(--text-muted);
             margin-bottom: 16px;
             display: flex;
@@ -141,18 +151,23 @@
         .metrics-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 24px;
+            gap: 18px;
         }
 
         .metric-item {
             display: flex;
             flex-direction: column;
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: rgba(15, 20, 34, 0.6);
+            border: 1px solid #1f2937;
+            box-shadow: var(--shadow-sm);
         }
 
         .metric-val {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 1.75rem;
-            font-weight: 600;
+            font-size: 1.9rem;
+            font-weight: 700;
             color: var(--text-primary);
         }
 
@@ -171,16 +186,17 @@
 
         .item-row {
             padding: 12px 16px;
-            border-radius: 12px;
+            border-radius: 14px;
             transition: all 0.2s ease;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: transparent;
+            background: rgba(15, 20, 34, 0.6);
+            border: 1px solid #1f2937;
         }
 
         .item-row:hover {
-            background: var(--accent-soft);
+            background: rgba(91, 140, 255, 0.14);
             transform: translateX(4px);
         }
 
@@ -196,21 +212,58 @@
 
         .badge-pill {
             padding: 4px 10px;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 0.65rem;
-            font-weight: 700;
-            background: #f1f5f9;
+            font-weight: 800;
+            background: rgba(91, 140, 255, 0.15);
+            color: var(--text-primary);
+            border: 1px solid rgba(91, 140, 255, 0.4);
         }
 
         /* Map Section */
         .map-container {
             position: relative;
-            background: #e5e7eb;
+            background: var(--surface-2);
+            border: 1px solid #1f2937;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
         }
 
         #map {
             height: 100%;
             width: 100%;
+        }
+
+        .map-filters {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-chip {
+            background: rgba(15, 20, 34, 0.85);
+            border: 1px solid #1f2937;
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .filter-chip select {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-weight: 700;
+            outline: none;
         }
 
         .map-floating-controls {
@@ -219,34 +272,36 @@
             right: 24px;
             z-index: 1000;
             display: flex;
+            flex-direction: column;
             gap: 12px;
         }
 
         .floating-card {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(15, 20, 34, 0.85);
             backdrop-filter: blur(8px);
             padding: 12px 20px;
             border-radius: 16px;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: var(--shadow-md);
+            border: 1px solid #1f2937;
             display: flex;
             align-items: center;
             gap: 12px;
             font-size: 0.85rem;
-            font-weight: 600;
+            font-weight: 700;
+            color: var(--text-primary);
         }
 
         /* Premium Buttons */
         .btn-primary {
-            background: var(--accent);
+            background: linear-gradient(135deg, #3b5bff, #4dd6ff);
             color: white;
             border: none;
             padding: 10px 20px;
             border-radius: 12px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 8px 20px rgba(91, 140, 255, 0.35);
         }
 
         .btn-primary:hover {
@@ -255,8 +310,9 @@
         }
 
         input[type="text"] {
-            border: 1px solid #e2e8f0;
-            background: #f8fafc;
+            border: 1px solid #1f2937;
+            background: rgba(15, 20, 34, 0.8);
+            color: var(--text-primary);
             padding: 12px 16px;
             border-radius: 12px;
             outline: none;
@@ -267,6 +323,11 @@
 
         input[type="text"]:focus {
             border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(91, 140, 255, 0.2);
+        }
+
+        input[type="text"]::placeholder {
+            color: var(--text-muted);
         }
 
         ::-webkit-scrollbar {
@@ -280,12 +341,12 @@
 
         /* Emergency Action */
         .emergency-btn {
-            background: white;
+            background: rgba(239, 68, 68, 0.12);
             color: var(--danger);
             border: 1.5px solid var(--danger);
             padding: 8px 16px;
             border-radius: 100px;
-            font-weight: 700;
+            font-weight: 800;
             font-size: 0.75rem;
             cursor: pointer;
             transition: all 0.2s;
@@ -313,7 +374,7 @@
                 <div class="dot" id="socket-led"></div>
                 <span id="socket-status-text">OFFLINE</span>
             </div>
-            <button class="emergency-btn" onclick="sendEmergencyAlert()">⚠ EMERGENCY ALERT</button>
+            <button class="emergency-btn" onclick="sendEmergencyAlert()">EMERGENCY ALERT</button>
         </div>
     </header>
 
@@ -367,14 +428,33 @@
         </aside>
 
         <main class="map-container">
+            <div class="map-filters">
+                <label class="filter-chip">
+                    <input type="checkbox" id="show-drivers" checked style="width:14px;height:14px;">
+                    Drivers
+                </label>
+                <label class="filter-chip">
+                    <input type="checkbox" id="show-passengers" checked style="width:14px;height:14px;">
+                    Passengers
+                </label>
+                <label class="filter-chip">
+                    Type
+                    <select id="filter-type">
+                        <option value="ALL">All</option>
+                        <option value="BUS">Bus</option>
+                        <option value="COMBI">Combi</option>
+                        <option value="TAXI">Taxi</option>
+                    </select>
+                </label>
+            </div>
             <div class="map-floating-controls">
                 <div class="floating-card">
                     <input type="checkbox" id="heatmap-toggle" onchange="toggleHeatmap()"
                         style="width: 18px; height: 18px;">
-                    <label for="heatmap-toggle">Demand Heatmap</label>
+                    <label for="heatmap-toggle">Demand Overlay</label>
                 </div>
                 <div class="floating-card" style="color: var(--accent);">
-                    🚐 <span id="map-stat-drivers">0 Fleet</span>
+                    <span id="map-stat-drivers">0 Fleet Units</span>
                 </div>
             </div>
             <div id="map"></div>
@@ -394,12 +474,56 @@
             socket: null,
             chartData: Array(15).fill(0),
         };
+        const markers = new Map();
+        const filters = { showDrivers: true, showPassengers: true, type: 'ALL' };
 
         // Initialize Map with Light Style
         const map = L.map('map', { zoomControl: false }).setView([-24.6282, 25.9231], 13);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '©CARTO'
         }).addTo(map);
+
+        function updateMapMarker(item, type) {
+            if (!item || !item.coords) return;
+            const id = (type === 'driver' ? item.driverId : item.passengerId) || 'unknown';
+            const latlng = [item.coords.lat, item.coords.lng];
+            const routeLabel = item.routeId || 'Unassigned';
+            const occupancy = item.occupancy || '?';
+            const title = type === 'driver' ? `Driver ${id}` : `Passenger ${id}`;
+            const popupHtml = type === 'driver'
+                ? `<div style="font-family:'Space Grotesk', sans-serif; color:#0f172a;"><b>${title}</b><br>Route: ${routeLabel}<br>Occupancy: ${occupancy}</div>`
+                : `<div style="font-family:'Space Grotesk', sans-serif; color:#0f172a;"><b>${title}</b><br>Route: ${routeLabel}</div>`;
+            if (markers.has(id)) {
+                markers.get(id).setLatLng(latlng).setPopupContent(popupHtml);
+            } else {
+                const m = L.circleMarker(latlng, {
+                    radius: type === 'driver' ? 7 : 5,
+                    color: type === 'driver' ? '#5B8CFF' : '#22C55E',
+                    weight: 2,
+                    fillColor: type === 'driver' ? '#5B8CFF' : '#22C55E',
+                    fillOpacity: 0.8
+                }).addTo(map);
+                m.bindPopup(popupHtml);
+                markers.set(id, m);
+            }
+        }
+
+        function rebuildMarkers() {
+            markers.forEach(m => map.removeLayer(m));
+            markers.clear();
+            if (filters.showDrivers) {
+                Array.from(state.drivers.values()).forEach(d => {
+                    const isTaxi = d.routeId === 'taxi-service';
+                    const isBus = d.routeId?.startsWith('bus-');
+                    const type = isTaxi ? 'TAXI' : isBus ? 'BUS' : 'COMBI';
+                    if (filters.type !== 'ALL' && filters.type !== type) return;
+                    updateMapMarker(d, 'driver');
+                });
+            }
+            if (filters.showPassengers) {
+                Array.from(state.passengers.values()).forEach(p => updateMapMarker(p, 'passenger'));
+            }
+        }
 
         // Standard Socket Connection Logic (Simplified for brevity)
         window.connectSocket = () => {
@@ -419,18 +543,29 @@
 
             state.socket.on("fleet-update", (data) => {
                 if (data.type === 'driver') state.drivers.set(data.driverId, data);
+                if (data.type === 'passenger') state.passengers.set(data.passengerId, data);
+                rebuildMarkers();
                 updateUI();
+            });
+            state.socket.on("fleet-remove", (data) => {
+                if (data.type === 'driver') {
+                    const id = data.id;
+                    if (markers.has(id)) { map.removeLayer(markers.get(id)); markers.delete(id); }
+                    state.drivers.delete(id);
+                    updateUI();
+                }
             });
         };
 
         function updateUI() {
             document.getElementById('m-vehicles').innerText = state.drivers.size;
+            document.getElementById('m-passengers').innerText = state.passengers.size;
             document.getElementById('map-stat-drivers').innerText = `${state.drivers.size} Fleet Units`;
 
             const list = document.getElementById('fleet-list');
             list.innerHTML = '';
 
-            Array.from(state.drivers.values()).slice(0, 10).forEach(d => {
+            Array.from(state.drivers.values()).slice(0, 8).forEach(d => {
                 const row = document.createElement('div');
                 row.className = 'item-row';
                 row.innerHTML = `
@@ -439,6 +574,18 @@
                         <span>${d.routeId || 'Unassigned'}</span>
                     </div>
                     <span class="badge-pill">${d.occupancy || 0} PAX</span>
+                `;
+                list.appendChild(row);
+            });
+            Array.from(state.passengers.values()).slice(0, 6).forEach(p => {
+                const row = document.createElement('div');
+                row.className = 'item-row';
+                row.innerHTML = `
+                    <div class="item-meta">
+                        <b>Passenger ${p.passengerId}</b>
+                        <span>${p.routeId || 'Unassigned'}</span>
+                    </div>
+                    <span class="badge-pill">WAITING</span>
                 `;
                 list.appendChild(row);
             });
@@ -452,8 +599,8 @@
                 labels: Array(15).fill(''),
                 datasets: [{
                     data: state.chartData,
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.05)',
+                    borderColor: '#5B8CFF',
+                    backgroundColor: 'rgba(91, 140, 255, 0.12)',
                     fill: true,
                     tension: 0.4,
                     pointRadius: 0

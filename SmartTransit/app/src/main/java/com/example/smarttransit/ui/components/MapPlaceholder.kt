@@ -136,13 +136,21 @@ fun SmartTransitMap(
                             append("Driver")
                             json?.optString("driverId")?.takeIf { it.isNotBlank() }?.let { append(" ").append(it) }
                         }
-                        val snippet = json?.optString("routeId").orEmpty()
+                        val routeId = json?.optString("routeId").orEmpty()
+                        val occupancy = json?.optString("occupancy").orEmpty()
+                        val snippet = buildString {
+                            if (routeId.isNotBlank()) append("Route: ").append(routeId)
+                            if (occupancy.isNotBlank()) {
+                                if (isNotEmpty()) append(" - ")
+                                append("Occ: ").append(occupancy)
+                            }
+                        }
                         mapView.overlays.add(
                             Marker(mapView).apply {
                                 position = GeoPoint(loc.latitude, loc.longitude)
                                 icon = driverMarker
                                 if (title.isNotBlank()) setTitle(title)
-                                if (snippet.isNotBlank()) setSnippet("Route: $snippet")
+                                if (snippet.isNotBlank()) setSnippet(snippet)
                                 setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                             }
                         )

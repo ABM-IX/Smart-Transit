@@ -14,6 +14,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,6 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import com.example.smarttransit.network.SocketHandler
 import com.example.smarttransit.ui.components.ConnectionBadge
@@ -57,6 +61,12 @@ import org.json.JSONObject
 import com.google.android.gms.maps.model.LatLng
 import java.net.URL
 import java.util.UUID
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.roundToInt
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 enum class TransportMode { BUS, COMBI, TAXI }
 
@@ -80,6 +90,42 @@ private fun parseJson(arg: Any?): JSONObject? = when (arg) {
     is JSONObject -> arg
     is String -> runCatching { JSONObject(arg) }.getOrNull()
     else -> (toJson(arg) as? JSONObject)
+}
+
+private fun occupancyLabel(raw: String): String {
+    val clean = raw.trim().lowercase()
+    return when {
+        clean.isBlank() -> "Unknown"
+        clean.contains("empty") -> "Empty"
+        clean.contains("almost") -> "Almost Full"
+        clean.contains("half") -> "Half Full"
+        clean.contains("full") -> "Full"
+        else -> raw
+    }
+}
+
+private fun movementLabel(speedMs: Double): String {
+    if (speedMs.isNaN() || speedMs < 0.5) return "Stopped"
+    if (speedMs < 3.0) return "Slow"
+    return "Moving"
+}
+
+private fun distanceMeters(a: LatLng, b: LatLng): Int {
+    val r = 6371000.0
+    val dLat = Math.toRadians(b.latitude - a.latitude)
+    val dLon = Math.toRadians(b.longitude - a.longitude)
+    val lat1 = Math.toRadians(a.latitude)
+    val lat2 = Math.toRadians(b.latitude)
+    val h = sin(dLat / 2) * sin(dLat / 2) +
+        cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2)
+    val c = 2 * atan2(sqrt(h), sqrt(1 - h))
+    return (r * c).roundToInt()
+}
+
+private fun etaMinutes(distanceMeters: Int, speedMs: Double): Int {
+    val safeSpeed = if (speedMs.isNaN() || speedMs <= 0.5) 4.0 else speedMs
+    val minutes = distanceMeters / safeSpeed / 60.0
+    return max(1, minutes.roundToInt())
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -152,6 +198,7 @@ fun BusCombiMapScreen(mode: TransportMode, route: RouteItem, modifier: Modifier)
     var hailAcceptedDriverId by remember { mutableStateOf<String?>(null) }
     var etaSeconds by remember { mutableIntStateOf(0) }
     var etaDistanceMeters by remember { mutableIntStateOf(0) }
+    val etaByDriver = remember { mutableStateMapOf<String, Pair<Int, Int>>() }
     var lastPassengerPingAt by remember { mutableLongStateOf(0L) }
     var searchTimedOut by remember { mutableStateOf(false) }
     var lastDriverSeenAt by remember { mutableLongStateOf(0L) }
@@ -304,7 +351,9 @@ fun BusCombiMapScreen(mode: TransportMode, route: RouteItem, modifier: Modifier)
         socket.on("driver-location") { args ->
             val data = parseJson(args.firstOrNull())
             val dId = data?.optString("driverId") ?: ""
+            val routeId = data?.optString("routeId") ?: ""
             if (dId.isNotEmpty() && data != null) {
+                if (routeId.isBlank() || routeId != route.routeId) return@on
                 activity?.runOnUiThread {
                     driverLocations[dId] = data
                     lastDriverSeenAt = System.currentTimeMillis()
@@ -315,7 +364,9 @@ fun BusCombiMapScreen(mode: TransportMode, route: RouteItem, modifier: Modifier)
         socket.on("vehicle-update") { args ->
             val data = parseJson(args.firstOrNull())
             val dId = data?.optString("driverId") ?: ""
+            val routeId = data?.optString("routeId") ?: ""
             if (dId.isNotEmpty() && data != null) {
+                if (routeId.isBlank() || routeId != route.routeId) return@on
                 activity?.runOnUiThread {
                     driverLocations[dId] = data
                     lastDriverSeenAt = System.currentTimeMillis()
@@ -327,7 +378,11 @@ fun BusCombiMapScreen(mode: TransportMode, route: RouteItem, modifier: Modifier)
             val data = parseJson(args.firstOrNull())
             activity?.runOnUiThread { 
                 etaSeconds = data?.optInt("etaSeconds") ?: 0
-                etaDistanceMeters = data?.optInt("distanceMeters") ?: 0 
+                etaDistanceMeters = data?.optInt("distanceMeters") ?: 0
+                val dId = data?.optString("driverId") ?: ""
+                if (dId.isNotBlank()) {
+                    etaByDriver[dId] = Pair(etaSeconds, etaDistanceMeters)
+                }
             }
         }
         socket.on("boarding-confirmed") {
@@ -407,7 +462,7 @@ fun BusCombiMapScreen(mode: TransportMode, route: RouteItem, modifier: Modifier)
                     }
                     Spacer(Modifier.height(8.dp))
                 } else if (driverLocations.isEmpty() && isHailing) {
-                    Text("Hail sent. Waiting for a driver...", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    Text("Hail sent. Onboard...", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 } else if (driverLocations.isEmpty() && hailAcceptedDriverId != null) {
                     Text("Driver ${hailAcceptedDriverId} accepted. On the way...", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 } else if (driverLocations.isEmpty() && !searchTimedOut) {
@@ -424,25 +479,54 @@ fun BusCombiMapScreen(mode: TransportMode, route: RouteItem, modifier: Modifier)
                 }
 
                 val currentUserLocation = userLocation
-                if (driverLocations.isNotEmpty() && currentUserLocation != null) {
-                    val closest = driverLocations.values
-                        .mapNotNull { d ->
-                            val coords = d.optJSONObject("coords")
-                            if (coords != null) {
-                                val dx = coords.optDouble("lat") - currentUserLocation.latitude
-                                val dy = coords.optDouble("lng") - currentUserLocation.longitude
-                                val dist = kotlin.math.sqrt((dx * dx) + (dy * dy))
-                                d to dist
-                            } else null
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Approaching Vehicles", fontWeight = FontWeight.Bold)
+                    if (driverLocations.isEmpty()) {
+                        Text("No active vehicles yet", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    } else {
+                        val closest = if (currentUserLocation != null) {
+                            driverLocations.values
+                                .mapNotNull { d ->
+                                    val coords = d.optJSONObject("coords")
+                                    if (coords != null) {
+                                        val dist = distanceMeters(
+                                            LatLng(coords.optDouble("lat"), coords.optDouble("lng")),
+                                            currentUserLocation
+                                        )
+                                        d to dist
+                                    } else null
+                                }
+                                .sortedBy { it.second }
+                                .take(3)
+                        } else {
+                            driverLocations.values.take(3).map { it to -1 }
                         }
-                        .sortedBy { it.second }
-                        .take(3)
 
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Nearby Vehicles", fontWeight = FontWeight.Bold)
-                        closest.forEach { (d, _) ->
-                            val occupancy = d.optString("occupancy", "Unknown")
-                            Text("• ${d.optString("driverId")} — $occupancy", style = MaterialTheme.typography.bodySmall)
+                        closest.forEach { (d, distMeters) ->
+                            val occupancy = occupancyLabel(d.optString("occupancy", "Unknown"))
+                            val routeLabel = d.optString("routeId", route.name)
+                            val speedMs = d.optDouble("speed", 0.0)
+                            val movement = movementLabel(speedMs)
+                            val eta = etaByDriver[d.optString("driverId")]?.first
+                            val etaText = if (eta != null && eta > 0) {
+                                "${eta / 60} min"
+                            } else if (distMeters >= 0) {
+                                "${etaMinutes(distMeters, speedMs)} min"
+                            } else {
+                                "--"
+                            }
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Column {
+                                    Text("Vehicle ${d.optString("driverId")}", fontWeight = FontWeight.SemiBold)
+                                    Text("Route: $routeLabel", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                                    Text("Movement: $movement - ${Math.round(speedMs * 3.6)} km/h", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                                }
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(if (distMeters >= 0) "$distMeters m" else "Distance --", style = MaterialTheme.typography.bodySmall)
+                                    Text("ETA $etaText", style = MaterialTheme.typography.bodySmall)
+                                    Text(occupancy, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
                         }
                     }
                 }
@@ -456,9 +540,10 @@ fun BusCombiMapScreen(mode: TransportMode, route: RouteItem, modifier: Modifier)
                                 .mapNotNull { d ->
                                     val coords = d.optJSONObject("coords")
                                     if (coords != null) {
-                                        val dx = coords.optDouble("lat") - currentUserLocation.latitude
-                                        val dy = coords.optDouble("lng") - currentUserLocation.longitude
-                                        val dist = kotlin.math.sqrt((dx * dx) + (dy * dy))
+                                        val dist = distanceMeters(
+                                            LatLng(coords.optDouble("lat"), coords.optDouble("lng")),
+                                            currentUserLocation
+                                        )
                                         d to dist
                                     } else null
                                 }
@@ -470,7 +555,7 @@ fun BusCombiMapScreen(mode: TransportMode, route: RouteItem, modifier: Modifier)
                     if (driverForDetails != null) {
                         val driverId = driverForDetails.optString("driverId", "Unknown")
                         val vehicleId = driverForDetails.optString("vehicleId", "Unknown")
-                        val occupancy = driverForDetails.optString("occupancy", "Unknown")
+                        val occupancy = occupancyLabel(driverForDetails.optString("occupancy", "Unknown"))
                         val speedMps = driverForDetails.optDouble("speed", Double.NaN)
                         val heading = driverForDetails.optDouble("heading", Double.NaN)
                         val serviceType = driverForDetails.optString("serviceType", driverForDetails.optString("driverType", "Unknown"))
@@ -534,6 +619,7 @@ fun BusCombiMapScreen(mode: TransportMode, route: RouteItem, modifier: Modifier)
                     }
                 }, {
                     if (!boarded) {
+                        boarded = true
                         socket?.emit("boarding", JSONObject().apply { put("passengerId", passengerId); put("routeId", route.routeId) })
                     } else {
                         boarded = false
@@ -568,6 +654,7 @@ fun BusCombiMapScreen(mode: TransportMode, route: RouteItem, modifier: Modifier)
                     passengerId = passengerId,
                     complaintText = complaintText,
                     onComplaintChange = { complaintText = it },
+                    onSubmit = { showRating = false; boardedDriverId = null },
                     onDismiss = { showRating = false; boardedDriverId = null }
                 )
             }
@@ -695,7 +782,7 @@ fun TaxiFlow(onBack: () -> Unit) {
         }
     ) { padding ->
         when (selectedTab) {
-            0 -> TaxiMapScreen(Modifier.padding(padding))
+            0 -> TaxiMapScreen(Modifier.padding(padding)) { onBack() }
             1 -> TripHistoryScreen(Modifier.padding(padding))
             2 -> ProfileScreen(Modifier.padding(padding))
         }
@@ -705,7 +792,7 @@ fun TaxiFlow(onBack: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("MissingPermission")
 @Composable
-fun TaxiMapScreen(modifier: Modifier) {
+fun TaxiMapScreen(modifier: Modifier, onExitToMain: () -> Unit) {
     val passengerId = remember { "p-${UUID.randomUUID().toString().take(8)}" }
     val socket = SocketHandler.currentSocket
     val isConnected = SocketHandler.isConnected
@@ -718,6 +805,7 @@ fun TaxiMapScreen(modifier: Modifier) {
     var routePoints by remember { mutableStateOf<List<LatLng>>(emptyList()) }
     var tripEtaSeconds by remember { mutableIntStateOf(0) }
     var tripDistanceMeters by remember { mutableIntStateOf(0) }
+    var tripEnded by remember { mutableStateOf(false) }
     val driverLocations = remember { mutableStateMapOf<String, JSONObject>() }
     var lastPassengerPingAt by remember { mutableLongStateOf(0L) }
     var searchTimedOut by remember { mutableStateOf(false) }
@@ -725,6 +813,7 @@ fun TaxiMapScreen(modifier: Modifier) {
     var showRating by remember { mutableStateOf(false) }
     var ratingDriverId by remember { mutableStateOf<String?>(null) }
     var complaintText by remember { mutableStateOf("") }
+    var showThankYou by remember { mutableStateOf(false) }
     val retrySearch = {
         searchTimedOut = false
         lastDriverSeenAt = 0L
@@ -802,6 +891,9 @@ fun TaxiMapScreen(modifier: Modifier) {
                 val data = parseJson(args.firstOrNull())
                 activity?.runOnUiThread {
                     ratingDriverId = data?.optString("driverId")
+                    tripEnded = true
+                    acceptedDriver = null
+                    isHailing = false
                     showRating = true
                 }
             }
@@ -818,9 +910,15 @@ fun TaxiMapScreen(modifier: Modifier) {
     BottomSheetScaffold(
         modifier = modifier,
         scaffoldState = scaffoldState,
-        sheetPeekHeight = 350.dp,
+        sheetPeekHeight = 480.dp,
         sheetContent = {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 72.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 ConnectionBadge()
                 TaxiActions(
                     userLocation = userLocation,
@@ -832,7 +930,14 @@ fun TaxiMapScreen(modifier: Modifier) {
                         tripEtaSeconds = eta
                     },
                     isHailing = isHailing,
-                    onHailingSet = { isHailing = it },
+                    onHailingSet = { next ->
+                        isHailing = next
+                        if (next) {
+                            tripEnded = false
+                            showRating = false
+                            ratingDriverId = null
+                        }
+                    },
                     acceptedDriver = acceptedDriver,
                     acceptedFare = acceptedFare,
                     passengerId = passengerId,
@@ -845,7 +950,7 @@ fun TaxiMapScreen(modifier: Modifier) {
                         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.secondary)
                             Spacer(Modifier.width(12.dp))
-                            Text("Trip Summary: ${tripDistanceMeters / 1000.0} km • ~ ${tripEtaSeconds / 60} mins", fontWeight = FontWeight.Bold)
+                            Text("Trip Summary: ${tripDistanceMeters / 1000.0} km - ~ ${tripEtaSeconds / 60} mins", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -871,14 +976,24 @@ fun TaxiMapScreen(modifier: Modifier) {
                     )
                 }
             }
-            if (showRating && ratingDriverId != null) {
+            if (showRating && tripEnded && ratingDriverId != null) {
                 RatingOverlay(
                     driverId = ratingDriverId!!,
                     passengerId = passengerId,
                     complaintText = complaintText,
                     onComplaintChange = { complaintText = it },
-                    onDismiss = { showRating = false; ratingDriverId = null }
+                    onSubmit = {
+                        showRating = false
+                        showThankYou = true
+                    },
+                    onDismiss = {
+                        showRating = false
+                        showThankYou = true
+                    }
                 )
+            }
+            if (showThankYou) {
+                ThankYouOverlay()
             }
             if (driverLocations.isEmpty() && searchTimedOut) {
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
@@ -907,6 +1022,16 @@ fun TaxiMapScreen(modifier: Modifier) {
         kotlinx.coroutines.delay(5000)
         if (driverLocations.isEmpty() && (System.currentTimeMillis() - lastDriverSeenAt) >= 5000) {
             searchTimedOut = true
+        }
+    }
+
+    LaunchedEffect(showThankYou) {
+        if (showThankYou) {
+            kotlinx.coroutines.delay(1500)
+            showThankYou = false
+            ratingDriverId = null
+            tripEnded = false
+            onExitToMain()
         }
     }
 }
@@ -1070,11 +1195,11 @@ fun TaxiActions(
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             CircularProgressIndicator(color = Black, strokeWidth = 2.dp)
             Spacer(Modifier.height(8.dp))
-            Text("Finding your ride…", style = MaterialTheme.typography.titleMedium, color = Black)
+            Text("Finding your ride...", style = MaterialTheme.typography.titleMedium, color = Black)
             TextButton(onClick = { 
                 SocketHandler.currentSocket?.emit("cancel-hail", JSONObject().apply { put("passengerId", passengerId); put("routeId", "taxi-service") })
                 onHailingSet(false) 
-            }) { Text("Cancel", color = AccentRed) }
+            }) { Text("Cancel Hail", color = AccentRed) }
         }
     } else {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1292,7 +1417,7 @@ fun BusCombiActions(m: TransportMode, boarded: Boolean, rid: String, pid: String
             if (hailing) {
                 CircularProgressIndicator(color = White, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 Spacer(Modifier.width(8.dp))
-                Text("Cancel Search", style = MaterialTheme.typography.titleMedium, color = White)
+                Text("Cancel Hail", style = MaterialTheme.typography.titleMedium, color = White)
             } else {
                 Icon(Icons.Default.WavingHand, null, modifier = Modifier.size(20.dp), tint = White)
                 Spacer(Modifier.width(8.dp))
@@ -1302,18 +1427,18 @@ fun BusCombiActions(m: TransportMode, boarded: Boolean, rid: String, pid: String
         Spacer(Modifier.height(8.dp))
         OutlinedButton(
             onClick = onB,
-            enabled = hailAccepted,
+            enabled = hailing || hailAccepted,
             modifier = Modifier.fillMaxWidth().height(54.dp),
             shape = RoundedCornerShape(14.dp),
-            border = BorderStroke(1.dp, if (hailAccepted) Black else LightGrey),
+            border = BorderStroke(1.dp, if (hailing || hailAccepted) Black else LightGrey),
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = White,
-                contentColor = if (hailAccepted) Black else Disabled,
+                contentColor = if (hailing || hailAccepted) Black else Disabled,
                 disabledContainerColor = White,
                 disabledContentColor = Disabled
             )
         ) {
-            Text(if (hailAccepted) "Confirm Boarding" else "Waiting for driver…", style = MaterialTheme.typography.titleMedium)
+            Text("Onboard", style = MaterialTheme.typography.titleMedium)
         }
     } else {
         Button(
@@ -1339,106 +1464,139 @@ fun BusCombiActions(m: TransportMode, boarded: Boolean, rid: String, pid: String
 fun RatingOverlay(
     driverId: String, passengerId: String,
     complaintText: String, onComplaintChange: (String) -> Unit,
+    onSubmit: () -> Unit,
     onDismiss: () -> Unit
 ) {
     var selectedRating by remember { mutableIntStateOf(0) }
     var hoveredRating by remember { mutableIntStateOf(0) }
 
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth()
+                    .heightIn(max = 520.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(24.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.size(64.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Person, null, modifier = Modifier.size(36.dp), tint = MaterialTheme.colorScheme.primary)
+                    }
+
+                    Text("How was your ride?", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Text("Driver: $driverId", fontSize = 13.sp, color = Color.Gray)
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    ) {
+                        (1..5).forEach { score ->
+                            val active = score <= (if (hoveredRating > 0) hoveredRating else selectedRating)
+                            IconButton(
+                                onClick = { selectedRating = score },
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                Icon(
+                                    if (active) Icons.Default.Star else Icons.Default.StarOutline,
+                                    contentDescription = "$score stars",
+                                    tint = if (active) Color(0xFFFBBF24) else Color.Gray,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    val label = when (selectedRating) {
+                        1 -> "Poor"; 2 -> "Fair"; 3 -> "Good"; 4 -> "Great"; 5 -> "Excellent!"; else -> ""
+                    }
+                    if (label.isNotEmpty()) {
+                        Text(label, fontWeight = FontWeight.Medium, color = Color(0xFFFBBF24), fontSize = 14.sp)
+                    }
+
+                    OutlinedTextField(
+                        value = complaintText,
+                        onValueChange = onComplaintChange,
+                        label = { Text("Feedback (optional)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        minLines = 2, maxLines = 3
+                    )
+
+                    Button(
+                        onClick = {
+                            if (selectedRating > 0) {
+                                SocketHandler.currentSocket?.emit(
+                                    "driver-rating",
+                                    JSONObject().apply { put("driverId", driverId); put("rating", selectedRating) }
+                                )
+                            }
+                            if (complaintText.isNotBlank()) {
+                                SocketHandler.currentSocket?.emit(
+                                    "driver-complaint",
+                                    JSONObject().apply {
+                                        put("driverId", driverId)
+                                        put("passengerId", passengerId)
+                                        put("message", complaintText.trim())
+                                    }
+                                )
+                                onComplaintChange("")
+                            }
+                            onSubmit()
+                        },
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        enabled = selectedRating > 0
+                    ) {
+                        Text("Submit Rating", fontWeight = FontWeight.SemiBold)
+                    }
+
+                    TextButton(onClick = onDismiss) {
+                        Text("Skip", color = Color.Gray)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ThankYouOverlay() {
     Box(
-        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
+        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f)),
         contentAlignment = Alignment.Center
     ) {
         Card(
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(22.dp),
             modifier = Modifier.padding(32.dp).fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Driver icon
-                Box(
-                    modifier = Modifier.size(64.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Person, null, modifier = Modifier.size(36.dp), tint = MaterialTheme.colorScheme.primary)
-                }
-
-                Text("How was your ride?", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                Text("Driver: $driverId", fontSize = 13.sp, color = Color.Gray)
-
-                // Star Rating
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(vertical = 8.dp)
-                ) {
-                    (1..5).forEach { score ->
-                        val active = score <= (if (hoveredRating > 0) hoveredRating else selectedRating)
-                        IconButton(
-                            onClick = { selectedRating = score },
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Icon(
-                                if (active) Icons.Default.Star else Icons.Default.StarOutline,
-                                contentDescription = "$score stars",
-                                tint = if (active) Color(0xFFFBBF24) else Color.Gray,
-                                modifier = Modifier.size(40.dp)
-                            )
-                        }
-                    }
-                }
-
-                val label = when (selectedRating) {
-                    1 -> "Poor"; 2 -> "Fair"; 3 -> "Good"; 4 -> "Great"; 5 -> "Excellent!"; else -> ""
-                }
-                if (label.isNotEmpty()) {
-                    Text(label, fontWeight = FontWeight.Medium, color = Color(0xFFFBBF24), fontSize = 14.sp)
-                }
-
-                OutlinedTextField(
-                    value = complaintText,
-                    onValueChange = onComplaintChange,
-                    label = { Text("Feedback (optional)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    minLines = 2, maxLines = 3
-                )
-
-                Button(
-                    onClick = {
-                        if (selectedRating > 0) {
-                            SocketHandler.currentSocket?.emit(
-                                "driver-rating",
-                                JSONObject().apply { put("driverId", driverId); put("rating", selectedRating) }
-                            )
-                        }
-                        if (complaintText.isNotBlank()) {
-                            SocketHandler.currentSocket?.emit(
-                                "driver-complaint",
-                                JSONObject().apply {
-                                    put("driverId", driverId)
-                                    put("passengerId", passengerId)
-                                    put("message", complaintText.trim())
-                                }
-                            )
-                            onComplaintChange("")
-                        }
-                        onDismiss()
-                    },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    enabled = selectedRating > 0
-                ) {
-                    Text("Submit Rating", fontWeight = FontWeight.SemiBold)
-                }
-
-                TextButton(onClick = onDismiss) {
-                    Text("Skip", color = Color.Gray)
-                }
+                Icon(Icons.Default.CheckCircle, null, tint = AccentGreen, modifier = Modifier.size(48.dp))
+                Text("Thank you!", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                Text("We appreciate your feedback.", fontSize = 13.sp, color = Color.Gray)
             }
         }
     }

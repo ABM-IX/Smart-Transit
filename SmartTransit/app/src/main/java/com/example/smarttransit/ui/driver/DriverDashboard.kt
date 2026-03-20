@@ -2,8 +2,14 @@ package com.example.smarttransit.ui.driver
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.pm.PackageManager
+import android.media.RingtoneManager
+import android.os.Build
 import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -15,7 +21,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -55,6 +64,10 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.net.URL
 import java.util.UUID
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,6 +96,31 @@ fun DriverDashboard(initialRole: UserRole) {
 
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+
+    fun playStopAlert() {
+        try {
+            val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val ringtone = RingtoneManager.getRingtone(context, uri)
+            ringtone?.play()
+        } catch (_: Exception) { }
+        try {
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val manager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                manager?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            }
+            if (vibrator != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(400, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(400)
+                }
+            }
+        } catch (_: Exception) { }
+    }
     
     val startLocationUpdates = {
         val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000).build()
@@ -147,6 +185,18 @@ fun DriverDashboard(initialRole: UserRole) {
                     put("driverId", driverId)
                 })
             }
+        }
+    }
+
+    LaunchedEffect(routeId) {
+        if (isOnline && routeId.isNotEmpty() && socket?.connected() == true) {
+            socket.emit("driver-online", JSONObject().apply {
+                put("driverId", driverId)
+                put("routeId", routeId)
+                put("status", "ONLINE")
+                put("serviceType", if (currentRole == UserRole.DRIVER_TAXI) "TAXI" else "COMBI")
+                put("driverType", currentRole.name)
+            })
         }
     }
 
@@ -219,24 +269,20 @@ fun DriverDashboard(initialRole: UserRole) {
                 if (args != null && args.isNotEmpty()) {
                     val data = if (args[0] is String) JSONObject(args[0] as String) else args[0] as? JSONObject
                     val pId = data?.optString("passengerId") ?: ""
-                    val coords = data?.optJSONObject("coords")
-                    if (pId.isNotEmpty() && coords != null) {
-                        passengerLocations[pId] = LatLng(coords.optDouble("lat"), coords.optDouble("lng"))
+                    val loc = data?.optJSONObject("coords")
+                    if (pId.isNotEmpty() && loc != null) {
+                        passengerLocations[pId] = LatLng(loc.optDouble("lat"), loc.optDouble("lng"))
                     }
                 }
             }
 
-            socket.on("stop-request") { 
-                stopRequestCount++ 
-                (context as? android.app.Activity)?.runOnUiThread {
-                    Toast.makeText(context, "Stop request received", Toast.LENGTH_LONG).show()
-                }
-            }
-
-            socket.on("new-stop-request") {
-                stopRequestCount++
-                (context as? android.app.Activity)?.runOnUiThread {
-                    Toast.makeText(context, "New Stop Request!", Toast.LENGTH_LONG).show()
+            socket.on("stop-request") { args ->
+                if (args != null && args.isNotEmpty()) {
+                    stopRequestCount++
+                    (context as? android.app.Activity)?.runOnUiThread {
+                        playStopAlert()
+                        Toast.makeText(context, "🛑 STOP REQUEST RECEIVED!", Toast.LENGTH_LONG).show()
+                    }
                 }
             }
 
@@ -247,7 +293,7 @@ fun DriverDashboard(initialRole: UserRole) {
                 }
             }
         }
-        
+
         onDispose {
             socket.off("new-hail")
             socket.off("hail")
@@ -255,75 +301,55 @@ fun DriverDashboard(initialRole: UserRole) {
             socket.off("passenger-boarded")
             socket.off("passenger-location")
             socket.off("stop-request")
-            socket.off("new-stop-request")
             socket.off("spacing-advisory")
         }
     }
 
     Scaffold(
-        containerColor = White,
         topBar = {
             DriverTopBar(
-                title = currentRole.name.replace("_", " "),
+                title = when(currentRole) {
+                    UserRole.DRIVER_BUS -> "Bus Driver"
+                    UserRole.DRIVER_COMBI -> "Combi Driver"
+                    UserRole.DRIVER_TAXI -> "Taxi Driver"
+                    else -> "Driver"
+                },
                 isOnline = isOnline,
+                gpsOk = userLocation != null,
                 onToggleOnline = { isOnline = it }
             )
         },
         bottomBar = {
-            Surface(
-                color = White,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(BorderStroke(0.5.dp, LightGrey)),
-                shadowElevation = 0.dp,
-                tonalElevation = 0.dp
+            NavigationBar(
+                containerColor = White,
+                modifier = Modifier.border(BorderStroke(0.5.dp, LightGrey))
             ) {
-                NavigationBar(containerColor = White, tonalElevation = 0.dp) {
-                    NavigationBarItem(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
-                        icon = { Icon(Icons.Default.Map, "") },
-                        label = { Text("Map") },
-                        colors = driverNavItemColors()
-                    )
-                    NavigationBarItem(
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        icon = { Icon(Icons.Default.Route, "") },
-                        label = { Text("Route") },
-                        colors = driverNavItemColors()
-                    )
-                    NavigationBarItem(
-                        selected = selectedTab == 2,
-                        onClick = { selectedTab = 2 },
-                        icon = { Icon(Icons.Default.Notifications, "") },
-                        label = { Text("Alerts") },
-                        colors = driverNavItemColors()
-                    )
-                    NavigationBarItem(
-                        selected = selectedTab == 3,
-                        onClick = { selectedTab = 3 },
-                        icon = { Icon(Icons.Default.Person, "") },
-                        label = { Text("Profile") },
-                        colors = driverNavItemColors()
-                    )
-                }
+                NavigationBarItem(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    icon = { Icon(Icons.Default.Dashboard, null) },
+                    label = { Text("Service") },
+                    colors = driverNavItemColors()
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    icon = { Icon(Icons.Default.Person, null) },
+                    label = { Text("Profile") },
+                    colors = driverNavItemColors()
+                )
             }
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .background(White)
-        ) {
-            when (selectedTab) {
-                3 -> DriverProfileScreen()
-                else -> {
+        Box(modifier = Modifier.padding(padding)) {
+            if (selectedTab == 1) {
+                DriverProfileScreen()
+            } else {
+                if (routeId.isEmpty() && currentRole != UserRole.DRIVER_TAXI) {
+                    RouteSetupScreen(currentRole) { routeId = it }
+                } else {
                     if (!isOnline) {
                         OfflineScreen()
-                    } else if (routeId.isEmpty()) {
-                        RouteSetupScreen(currentRole) { routeId = it }
                     } else {
                         DriverInterface(
                             currentRole, sessionStarted,
@@ -614,6 +640,83 @@ fun DriverInterface(
             val allPoints = passengers + hailPoints
             
             SmartTransitMap(userLocation = userLocation, passengers = allPoints)
+
+            if (role == UserRole.DRIVER_COMBI && spacingAdvisory != null) {
+                val status = spacingAdvisory.optString("status", "--")
+                val chipColor = if (status.contains("slow", true) || status.contains("speed", true) || status.contains("warn", true)) AccentRed else AccentGreen
+                Surface(
+                    color = White,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, chipColor),
+                    shadowElevation = 2.dp
+                ) {
+                    Text(
+                        "Spacing: $status",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        color = chipColor,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
+
+            if (stopRequestCount > 0) {
+                Surface(
+                    color = AccentRed,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 4.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Stop, null, tint = White)
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Stop request received ($stopRequestCount)",
+                            color = White,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        TextButton(onClick = onClearStopRequests) {
+                            Text("Acknowledge", color = White)
+                        }
+                    }
+                }
+            }
+
+            val etaText = userLocation?.let { loc ->
+                val nearest = passengers.minByOrNull { p -> distanceMeters(loc, p) }
+                if (nearest != null) {
+                    val dist = distanceMeters(loc, nearest)
+                    val etaMin = if (dist > 0) ((dist / 1000.0) / 18.0 * 60.0).toInt() else 0
+                    "Nearest pax: ${dist}m - ETA ${etaMin}m"
+                } else null
+            }
+            if (etaText != null) {
+                Surface(
+                    color = White,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, Black),
+                    shadowElevation = 2.dp
+                ) {
+                    Text(
+                        etaText,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Black
+                    )
+                }
+            }
             
             if (!isConnected) {
                 Surface(
@@ -644,13 +747,34 @@ fun DriverInterface(
                 .fillMaxWidth()
                 .border(BorderStroke(0.5.dp, LightGrey))
         ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                if (role == UserRole.DRIVER_TAXI) {
-                    TaxiDriverActions(hails, driverId, routeId, onRemoveHail, onTripMetricsUpdate)
-                } else {
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (routeId.isNotBlank()) {
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = OffWhite),
+                            border = BorderStroke(1.dp, LightGrey)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Icon(Icons.Default.Lock, null, tint = Black, modifier = Modifier.size(18.dp))
+                                Column {
+                                    Text("Route Locked", fontWeight = FontWeight.Bold, color = Black, fontSize = 13.sp)
+                                    Text(routeId, color = MidGrey, fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+                    if (role == UserRole.DRIVER_TAXI) {
+                        TaxiDriverActions(hails, driverId, routeId, onRemoveHail, onTripMetricsUpdate)
+                    } else {
                     BusCombiDriverActions(
                         role, sessionStarted, onToggleSession,
                         hails, onClearHails, spacingAdvisory, routeId,
@@ -712,7 +836,6 @@ fun BusCombiDriverActions(
                             .background(AccentRed, RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
                     )
                     Spacer(Modifier.width(12.dp))
-                    Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text("STOP REQUESTS", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall, color = AccentRed)
                         Text("$stopRequestCount", fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.headlineMedium, color = AccentRed)
@@ -752,35 +875,25 @@ fun BusCombiDriverActions(
         
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
         
-        // Passsenger Count Tally Component
-        var passengerCount by remember(occupancy) { mutableIntStateOf(occupancy.toIntOrNull() ?: 0) }
-        
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text("PASSENGER TALLY", style = MaterialTheme.typography.labelSmall, color = MidGrey)
-                Text("$passengerCount", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = Black)
-            }
-            Row {
-                FilledIconButton(
-                    onClick = { if (passengerCount > 0) { passengerCount--; onUpdateOccupancy(passengerCount.toString()) } },
-                    modifier = Modifier.size(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = Black, contentColor = White)
-                ) {
-                    Icon(Icons.Default.Remove, "Remove Passenger", modifier = Modifier.size(24.dp))
-                }
-                Spacer(Modifier.width(16.dp))
-                FilledIconButton(
-                    onClick = { passengerCount++; onUpdateOccupancy(passengerCount.toString()) },
-                    modifier = Modifier.size(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = Black, contentColor = White)
-                ) {
-                    Icon(Icons.Default.Add, "Add Passenger", modifier = Modifier.size(24.dp))
+        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+            Text("OCCUPANCY STATUS", style = MaterialTheme.typography.labelSmall, color = MidGrey)
+            Text(occupancy, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, color = Black)
+            Spacer(Modifier.height(10.dp))
+            val levels = listOf("Empty", "Half Full", "Almost Full", "Full")
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                items(levels) { level ->
+                    FilterChip(
+                        selected = occupancy.equals(level, ignoreCase = true),
+                        onClick = { onUpdateOccupancy(level) },
+                        label = { Text(level) },
+                        border = BorderStroke(1.dp, if (occupancy.equals(level, ignoreCase = true)) Black else LightGrey),
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = White,
+                            selectedContainerColor = White,
+                            labelColor = MidGrey,
+                            selectedLabelColor = Black
+                        )
+                    )
                 }
             }
         }
@@ -790,7 +903,7 @@ fun BusCombiDriverActions(
 fun reverseGeocode(lat: Double, lng: Double, onResult: (String) -> Unit) {
     kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
         try {
-            val url = java.net.URL("https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng&zoom=16&addressdetails=1")
+            val url = java.net.URL("https://nominatim.openstreetmap.org/reverse-format=json&lat=$lat&lon=$lng&zoom=16&addressdetails=1")
             val conn = url.openConnection() as java.net.HttpURLConnection
             conn.setRequestProperty("User-Agent", "SmartTransit/1.0")
             conn.connectTimeout = 3000
@@ -1055,6 +1168,20 @@ fun TaxiDriverActions(
 
 @Composable
 fun SpacingAdvisory(advisory: JSONObject?) {
+    if (advisory == null) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = White),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, LightGrey),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text("SPACING ADVISORY", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MidGrey)
+                Text("Waiting for spacing data…", style = MaterialTheme.typography.bodySmall, color = MidGrey)
+            }
+        }
+        return
+    }
     val ahead = advisory?.optString("ahead") ?: "0m"
     val behind = advisory?.optString("behind") ?: "0m"
     val status = advisory?.optString("status") ?: "--"
@@ -1070,10 +1197,21 @@ fun SpacingAdvisory(advisory: JSONObject?) {
                 Text("Ahead: $ahead", style = MaterialTheme.typography.bodySmall, color = Black, fontWeight = FontWeight.Bold)
                 Text("Behind: $behind", style = MaterialTheme.typography.bodySmall, color = Black, fontWeight = FontWeight.Bold)
             }
-            val statusColor = if (status.contains("warn", true) || status.contains("behind", true)) AccentRed else AccentGreen
+            val statusColor = if (status.contains("warn", true) || status.contains("behind", true) || status.contains("slow", true) || status.contains("speed", true)) AccentRed else AccentGreen
             Text("STATUS: $status", color = statusColor, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
         }
     }
+}
+
+private fun distanceMeters(a: LatLng, b: LatLng): Int {
+    val r = 6371e3
+    val lat1 = a.latitude * Math.PI / 180
+    val lat2 = b.latitude * Math.PI / 180
+    val dLat = (b.latitude - a.latitude) * Math.PI / 180
+    val dLng = (b.longitude - a.longitude) * Math.PI / 180
+    val calc = sin(dLat / 2) * sin(dLat / 2) +
+        cos(lat1) * cos(lat2) * sin(dLng / 2) * sin(dLng / 2)
+    return (r * 2 * atan2(sqrt(calc), sqrt(1 - calc))).toInt()
 }
 
 @Composable
@@ -1097,6 +1235,7 @@ fun AlertBadge(text: String, containerColor: Color) {
 private fun DriverTopBar(
     title: String,
     isOnline: Boolean,
+    gpsOk: Boolean,
     onToggleOnline: (Boolean) -> Unit
 ) {
     val pillColor by animateColorAsState(if (isOnline) Black else LightGrey, label = "onlinePill")
@@ -1126,6 +1265,18 @@ private fun DriverTopBar(
                 Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = Black)
             },
             actions = {
+                Surface(
+                    color = if (gpsOk) AccentGreen else LightGrey,
+                    shape = RoundedCornerShape(20.dp)
+                ) {
+                    Text(
+                        if (gpsOk) "GPS: OK" else "GPS: Waiting",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        color = if (gpsOk) White else Black,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
                 Surface(
                     color = pillColor,
                     shape = RoundedCornerShape(20.dp),
