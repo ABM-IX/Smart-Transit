@@ -1,0 +1,35 @@
+# SmartTransit Supabase CLI Configuration
+project_id = "xpphmiajwjkcxtxitcex"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = true
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[realtime]
+enabled = true
+port = 54323
+
+[studio]
+enabled = true
+port = 54324
+
+[functions.transit-api]
+verify_jwt = false
+
+[functions.plan-journey]
+verify_jwt = false

@@ -1,0 +1,19 @@
+# Render.com Cloud Deployment Blueprint for SmartTransit
+services:
+  - type: web
+    name: smarttransit-backend
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    rootDir: backend
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SUPABASE_URL
+        value: https://xpphmiajwjkcxtxitcex.supabase.co
+      - key: SUPABASE_KEY
+        value: sb_publishable_7cqahorS_JAw4601eqpQkA_xPgA3YZL
+      - key: DATABASE_URL
+        value: postgresql+asyncpg://postgres:SmartTransit%4026@db.xpphmiajwjkcxtxitcex.supabase.co:5432/postgres

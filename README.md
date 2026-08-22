@@ -1,57 +1,93 @@
-<div align="center">
-  <img src="icons/rute.svg" width="150" alt="">
+# 🚌 SmartTransit AI Platform 🇧🇼
+### Intelligent Multi-Modal Public Transit & AI Mobility Facilitator for Botswana and Southern Africa
 
-  ## Rute Map
-  
-  🇧🇼  Botswana's Public Transport Reference  🚌 
+SmartTransit is a modern, full-stack transit management, live dispatch, and AI routing platform built for Commuters, Combi & Bus Operators, and Transit Authorities across Botswana (Gaborone, Molepolole, Francistown, Lobatse, Kanye, and Intercity Corridors).
 
-</div>
+---
 
-Rute Map is a tool to search routes and kombi (mini-bus) stops in Botswana. By crowdsourcing information, it aims to collect the location of stops and routes which pass through to chart an easily accessible network of kombi routes. 
+## 🌟 System Architecture
 
-![Screenshot](https://user-images.githubusercontent.com/76803540/125441471-10982ea6-c6de-4a14-a4a3-0334be1e40c3.png)
-
-
-## 🗺️ Reference Features
-- kombi stop markers are precise to the location on the ground. You can toggle to the satellite to make sure
-- drop-down index of route areas
-- click a stop tow see the routes which pass through it
-- display the length of a route by searching the database
-
-## 💁‍♀️ Crowdsourcing Features
-- add a kombi stop by dropping a leaflet marker
-- name a stop, preferably after its immediate surroundings. 
-- add the routes which pass through a stop, or mutiple stops
-
-## 🔨 Contributing
-
-At this stage, the easiest and best way to contribute is to add more routes and stops to the map. Verifing routes and flag mistakes or false information. 
-
-Bug reports and additions or enhancements to the site are very welcome. Please open an issue. 
-
-## 👩‍💻 Installation
-1. Clone the repo
-
-``` 
-https://github.com/gala-m/Rute-Map.git 
+```mermaid
+graph TD
+    Client1[Flutter Mobile App<br/>Passenger & Driver] -->|REST + Supabase SDK| Supabase[(Supabase Cloud<br/>PostgreSQL & Realtime)]
+    Client1 -->|WebSockets Socket.IO| Backend[FastAPI Backend Engine<br/>Live GPS & AI Routing]
+    Dashboard[React Dispatch Dashboard<br/>Live Fleet Map & Metrics] -->|Socket.IO| Backend
+    Backend -->|Async SQLAlchemy / Pooler| Supabase
 ```
 
-2. Download the data tables mentioned below. Set up your own [CartoDB](https://carto.com/login) profile and import these tables to your profile to query the data. 
-To ensure that the sql stored procedures called in the main.js work properly, keep the columns the same. 
+---
 
-3. In main.js, replace 'winni' with your Carto username
+## 📦 Components
 
-``` 
-let url1 = "https://[username].carto.com/api/v2/sql"; 
+1. **`smart_transit_app/` (Flutter Cross-Platform Mobile App)**:
+   - Commuter hailing (Combi, Bus, Special Taxi).
+   - Driver shift management & live GPS broadcasting.
+   - AI Multi-Modal Journey Planner with dynamic transfers and fare calculation.
+   - Built-in Supabase Cloud query fallback: functions everywhere on 4G/5G/Wi-Fi.
+
+2. **`backend/` (FastAPI + Socket.IO Real-Time Engine)**:
+   - Live bidirectional dispatch & fleet clustering.
+   - Intelligent spacing advisory (Headway management to prevent vehicle bunching).
+   - Multi-modal graph-based route & transfer optimizer (Dijkstra algorithm).
+   - Resilient database engine connecting to Supabase Cloud PostgreSQL.
+
+3. **`dashboard/` (React + Vite Real-Time Dispatch Command Center)**:
+   - Live Botswana map tracking all active drivers, combis, and commuter hails.
+   - Fleet capacity metrics and passenger demand charts.
+   - Emergency transit advisory broadcasting.
+
+4. **`supabase/` (Cloud Database, Schemas, Migrations & Edge Functions)**:
+   - Complete PostgreSQL schema (`routes`, `stops`, `trips`, `hails`, `driver_locations`, `users`).
+   - Row Level Security (RLS) policies allowing public read & mobile ride requests.
+   - Deno Edge Functions for serverless routing and journey planning.
+
+---
+
+## 🚀 Quick Start Guide
+
+### 1. Supabase Database Setup
+1. Open your Supabase project: [https://supabase.com/dashboard/project/xpphmiajwjkcxtxitcex](https://supabase.com/dashboard/project/xpphmiajwjkcxtxitcex)
+2. Go to **SQL Editor** -> **New Query**.
+3. Paste the contents of `backend/schema_supabase.sql` and run.
+4. All tables, RLS policies, realtime publications, and Botswana routes/stops will be initialized.
+
+### 2. Running the Backend Server
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate  # Or on Windows: .\.venv\Scripts\activate
+pip install -r requirements.txt
+python main.py
+```
+Backend API will be live at: `http://localhost:8000` (Docs at `http://localhost:8000/docs`).
+
+### 3. Running the Dispatch Dashboard
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+Dashboard will open at: `http://localhost:5173`.
+
+### 4. Running the Flutter Mobile App
+```bash
+cd smart_transit_app
+flutter pub get
+flutter run
 ```
 
+---
 
-## 🗄️ Data
-Some stops were scraped from OSM data. All the data is avaliale in public CartoDB tables. 
-These are [stops](https://winni.carto.com/tables/points/public), [route](https://winni.carto.com/tables/route/public), [names](https://winni.carto.com/tables/names/public). 
+## 🌐 Cloud Hosting & Global Access
 
-You can query the tables for other use. 
+The backend is cloud-ready and can be deployed anywhere with 1 click:
+- **Render.com**: Connect this repository; Render uses the included `render.yaml`.
+- **Railway.app**: Connect this repository; Railway uses the included `railway.json`.
+- **Docker**: Build and run with `docker build -t smarttransit-backend backend/` and `docker run -p 8000:8000 smarttransit-backend`.
 
+For complete deployment details, see [`backend/deploy_guide.md`](file:///c:/Users/araba/Desktop/SmartTransit/backend/deploy_guide.md).
 
-## 🎤 Feeback & Questions
-For questions and feedback you can use the discussions forum.
+---
+
+## 📄 License
+MIT License. Developed for Botswana's public transportation network.
