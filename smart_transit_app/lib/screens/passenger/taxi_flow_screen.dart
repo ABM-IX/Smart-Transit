@@ -193,8 +193,10 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                       ),
                       Text(
                         isWithinProximity
-                            ? 'Cab arrived at pickup point (within 25m)!'
-                            : 'Estimated Fare: P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}',
+                            ? 'Cab arrived at pickup point!'
+                            : (distMeters != null
+                                ? 'Cab is en route (${distMeters < 1000 ? distMeters.toStringAsFixed(0) + "m" : (distMeters / 1000).toStringAsFixed(1) + "km"} away) • P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}'
+                                : 'Driver is en route to pickup point • P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}'),
                         style: const TextStyle(color: AppTheme.midGrey, fontSize: 13),
                       ),
                     ],
@@ -202,8 +204,8 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            if (isWithinProximity)
+            if (isWithinProximity) ...[
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => transit.confirmBoarding(auth.userId),
                 style: ElevatedButton.styleFrom(
@@ -212,30 +214,8 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 child: const Text('Confirm Boarding (In the Cab)', style: TextStyle(fontWeight: FontWeight.bold)),
-              )
-            else
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-                decoration: BoxDecoration(
-                  color: AppTheme.offWhite,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.lightGrey),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.sensors, color: AppTheme.midGrey, size: 18),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        distMeters != null
-                            ? 'Cab is ${distMeters.toStringAsFixed(0)}m away. Boarding button unlocks within 25m.'
-                            : 'Cab en route. Boarding button unlocks within 25m.',
-                        style: const TextStyle(fontSize: 12, color: AppTheme.midGrey, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
               ),
+            ],
           ],
         ),
       );
