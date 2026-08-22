@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
@@ -150,6 +151,19 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
     }
 
     if (transit.passengerStatus == PassengerTripStatus.driverAccepted) {
+      final taxiDrivers = transit.activeDrivers.where((d) => d.serviceType == 'TAXI').toList();
+      double? distMeters = transit.etaDistanceMeters;
+      if (distMeters == null && taxiDrivers.isNotEmpty) {
+        const double p = 0.017453292519943295;
+        final lat1 = transit.currentLocation.latitude;
+        final lon1 = transit.currentLocation.longitude;
+        final lat2 = taxiDrivers.first.latitude;
+        final lon2 = taxiDrivers.first.longitude;
+        final a = 0.5 - math.cos((lat2 - lat1) * p) / 2 + math.cos(lat1 * p) * math.cos(lat2 * p) * (1 - math.cos((lon2 - lon1) * p)) / 2;
+        distMeters = 12742 * math.asin(math.sqrt(a)) * 1000.0;
+      }
+      final isWithinProximity = distMeters != null && distMeters <= 25.0;
+
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: const BoxDecoration(
@@ -178,7 +192,9 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.black),
                       ),
                       Text(
-                        'Estimated Fare: P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}',
+                        isWithinProximity
+                            ? 'Cab arrived at pickup point (within 25m)!'
+                            : 'Estimated Fare: P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}',
                         style: const TextStyle(color: AppTheme.midGrey, fontSize: 13),
                       ),
                     ],
@@ -187,15 +203,39 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => transit.confirmBoarding(auth.userId),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.black,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            if (isWithinProximity)
+              ElevatedButton(
+                onPressed: () => transit.confirmBoarding(auth.userId),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentGreen,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: const Text('Confirm Boarding (In the Cab)', style: TextStyle(fontWeight: FontWeight.bold)),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+                decoration: BoxDecoration(
+                  color: AppTheme.offWhite,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.lightGrey),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.sensors, color: AppTheme.midGrey, size: 18),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        distMeters != null
+                            ? 'Cab is ${distMeters.toStringAsFixed(0)}m away. Boarding button unlocks within 25m.'
+                            : 'Cab en route. Boarding button unlocks within 25m.',
+                        style: const TextStyle(fontSize: 12, color: AppTheme.midGrey, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: const Text('Confirm Boarding (In the Cab)', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
           ],
         ),
       );

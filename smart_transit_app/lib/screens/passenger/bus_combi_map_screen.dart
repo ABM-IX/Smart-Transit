@@ -304,7 +304,7 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
         routeDrivers.first.longitude,
       );
     }
-    final isWithinProximity = (distMeters != null && distMeters <= 35.0) || (routeDrivers.isNotEmpty && distMeters != null && distMeters <= 40.0);
+    final isWithinProximity = distMeters != null && distMeters <= 25.0;
     final activeDriverCount = routeDrivers.length;
 
     return Container(
@@ -439,7 +439,7 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Proximity-Gated Boarding Button: Prominent when within 25m
+          // Proximity-Gated Boarding Button: ONLY visible when strictly within 25m
           if (isWithinProximity)
             ElevatedButton.icon(
               onPressed: () => transit.confirmBoarding(auth.userId),
@@ -450,25 +450,33 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-            ),
-
-          if (isWithinProximity) const SizedBox(height: 8),
-
-          // If not in 25m zone yet but vehicle active, provide convenient manual board shortcut
-          if (!isWithinProximity && activeDriverCount > 0)
-            OutlinedButton.icon(
-              onPressed: () => transit.confirmBoarding(auth.userId),
-              icon: const Icon(Icons.check_circle_outline, size: 16),
-              label: const Text('Already on board? Tap to confirm', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.black,
-                side: const BorderSide(color: AppTheme.lightGrey),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.offWhite,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.lightGrey),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.sensors, color: AppTheme.midGrey, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      distMeters != null
+                          ? 'Vehicle is ${distMeters.toStringAsFixed(0)}m away. Boarding button unlocks within 25m.'
+                          : 'Approaching vehicle… Boarding button unlocks within 25m.',
+                      style: const TextStyle(fontSize: 12, color: AppTheme.midGrey, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
               ),
             ),
 
-          if (!isWithinProximity && activeDriverCount > 0) const SizedBox(height: 8),
+          const SizedBox(height: 8),
 
           TextButton(
             onPressed: () => transit.cancelHail(auth.userId),
@@ -485,7 +493,15 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
     AuthProvider auth,
     List<LiveDriver> routeDrivers,
   ) {
-    final distMeters = transit.etaDistanceMeters;
+    double? distMeters = transit.etaDistanceMeters;
+    if (distMeters == null && routeDrivers.isNotEmpty) {
+      distMeters = _calculateDistanceMeters(
+        transit.currentLocation.latitude,
+        transit.currentLocation.longitude,
+        routeDrivers.first.latitude,
+        routeDrivers.first.longitude,
+      );
+    }
     final isWithinProximity = distMeters != null && distMeters <= 25.0;
 
     return Container(
@@ -520,7 +536,7 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                     ),
                     Text(
                       isWithinProximity
-                          ? 'Vehicle at pickup point (within 20m)!'
+                          ? 'Vehicle at pickup point (within 25m)!'
                           : 'Driver is en route to your stop.',
                       style: const TextStyle(color: AppTheme.midGrey, fontSize: 13),
                     ),
@@ -530,15 +546,39 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => transit.confirmBoarding(auth.userId),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isWithinProximity ? AppTheme.accentGreen : AppTheme.black,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          if (isWithinProximity)
+            ElevatedButton(
+              onPressed: () => transit.confirmBoarding(auth.userId),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accentGreen,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: const Text('Confirm Boarding (I am on board)', style: TextStyle(fontWeight: FontWeight.bold)),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+              decoration: BoxDecoration(
+                color: AppTheme.offWhite,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.lightGrey),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.sensors, color: AppTheme.midGrey, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      distMeters != null
+                          ? 'Vehicle is ${distMeters.toStringAsFixed(0)}m away. Boarding button unlocks within 25m.'
+                          : 'Driver en route. Boarding button unlocks within 25m.',
+                      style: const TextStyle(fontSize: 12, color: AppTheme.midGrey, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: const Text('Confirm Boarding (I am on board)', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
         ],
       ),
     );
