@@ -17,3 +17,16 @@ services:
         value: sb_publishable_7cqahorS_JAw4601eqpQkA_xPgA3YZL
       - key: DATABASE_URL
         value: postgresql+asyncpg://postgres:SmartTransit%4026@db.xpphmiajwjkcxtxitcex.supabase.co:5432/postgres
+
+  - type: web
+    name: smarttransit-dashboard
+    runtime: static
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    rootDir: dashboard
+    envVars:
+      - key: VITE_BACKEND_URL
+        value: https://smart-transit-uhyf.onrender.com
+

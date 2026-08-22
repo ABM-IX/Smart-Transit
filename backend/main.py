@@ -43,6 +43,15 @@ fastapi_app.include_router(transit_router)
 fastapi_app.include_router(ai_router)
 fastapi_app.include_router(trips_router)
 
+# Mount static Admin Dispatch Dashboard assets
+import os
+from fastapi.staticfiles import StaticFiles
+assets_dir = os.path.join(os.path.dirname(__file__), "static", "assets")
+if os.path.exists(assets_dir):
+    fastapi_app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+
+
 # Mount Socket.IO with FastAPI to create a unified ASGI application
 app = socketio.ASGIApp(
     socketio_server=sio,

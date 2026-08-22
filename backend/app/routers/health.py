@@ -1,4 +1,6 @@
+import os
 from fastapi import APIRouter
+from fastapi.responses import FileResponse, Response
 from app.sockets.gateway import (
     active_drivers, active_passengers, active_trips,
     taxi_assignments, active_hails, system_active
@@ -6,10 +8,14 @@ from app.sockets.gateway import (
 
 router = APIRouter(tags=["System & Telemetry"])
 
+STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static")
+STATIC_INDEX = os.path.join(STATIC_DIR, "index.html")
+
 @router.get("/")
-@router.head("/")
 async def root_status():
-    """Root entry point confirming live cloud operational status."""
+    """Serves the Admin Dispatch Dashboard UI if available, or system info."""
+    if os.path.exists(STATIC_INDEX):
+        return FileResponse(STATIC_INDEX, media_type="text/html")
     return {
         "status": "online",
         "project": "SmartTransit AI Platform",
@@ -22,6 +28,12 @@ async def root_status():
             "docs": "/docs"
         }
     }
+
+@router.head("/")
+async def root_head():
+    """Health check for cloud load balancers / Render pinger."""
+    return Response(status_code=200)
+
 
 @router.get("/health")
 @router.head("/health")
