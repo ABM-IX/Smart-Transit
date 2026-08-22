@@ -164,6 +164,7 @@ async def driver_location(sid, data):
                 p_lat = float(p_coords.get("lat") or p_coords.get("latitude") or 0.0)
                 p_lng = float(p_coords.get("lng") or p_coords.get("longitude") or 0.0)
                 if p_lat != 0.0 and p_lng != 0.0:
+                    dist_km = haversine_distance(lat, lng, p_lat, p_lng)
                     dist_meters = round(dist_km * 1000, 1)
                     curr_speed = float(data.get("speed") or 0.0)
                     eff_speed = curr_speed if curr_speed > 10.0 else 35.0

@@ -397,6 +397,48 @@ async def trip_end(sid, data):
 sio.on('trip-end', trip_end)
 
 @sio.event
+async def passenger_end_trip(sid, data):
+    passenger_id = data.get("passengerId") or data.get("passenger_id")
+    driver_id = data.get("driverId") or data.get("driver_id")
+    route_id = data.get("routeId", "taxi-service")
+    fare = float(data.get("fare") or data.get("fareEstimate") or 8.0)
+
+    if not passenger_id:
+        return
+
+    active_passengers.pop(passenger_id, None)
+    active_hails.pop(passenger_id, None)
+    active_boardings.pop(passenger_id, None)
+    taxi_assignments.pop(passenger_id, None)
+
+    end_payload = {
+        "passengerId": passenger_id,
+        "driverId": driver_id,
+        "routeId": route_id,
+        "fare": fare,
+        "status": "COMPLETED",
+        "timestamp": time.time()
+    }
+
+    # Emit to passenger socket
+    await sio.emit('trip-completed', end_payload, to=sid)
+    await sio.emit('taxi-trip-ended', end_payload, to=sid)
+
+    # Notify driver socket if driver ID is online
+    if driver_id and driver_id in active_drivers:
+        driver = active_drivers[driver_id]
+        if driver.get("socket_id"):
+            await sio.emit('passenger-alighted', end_payload, to=driver["socket_id"])
+            await sio.emit('passenger-trip-ended', end_payload, to=driver["socket_id"])
+
+    # Broadcast to dashboard
+    await sio.emit('passenger-alighted', end_payload, room='dashboard')
+    await sio.emit('trip-completed', end_payload, room='dashboard')
+
+sio.on('passenger-end-trip', passenger_end_trip)
+sio.on('passenger_end_trip', passenger_end_trip)
+
+@sio.event
 async def driver_rating(sid, data):
     driver_id = data.get("driverId") or data.get("driver_id")
     passenger_id = data.get("passengerId") or data.get("passenger_id")

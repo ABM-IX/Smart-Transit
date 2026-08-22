@@ -661,49 +661,23 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
             ),
           ),
 
-          // "I've Arrived" only visible after stop requested + vehicle stationary
-          if (showArriveButton) ...[
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              onPressed: () {
-                setState(() => _stopRequested = false);
-                transit.markPassengerCompleted();
-              },
-              icon: const Icon(Icons.pin_drop, size: 18),
-              label: const Text(
-                'I Have Arrived • End Trip',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.black,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
+          const SizedBox(height: 10),
+          ElevatedButton.icon(
+            onPressed: () {
+              setState(() => _stopRequested = false);
+              transit.passengerEndTrip(passengerId: auth.userId, finalFare: widget.route.baseFare);
+            },
+            icon: const Icon(Icons.pin_drop, size: 18),
+            label: const Text(
+              'I Have Arrived • End My Trip',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
-          ] else if (_stopRequested) ...[
-            // Hint: waiting for vehicle to stop
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orange.shade200),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline, size: 16, color: Colors.orange),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Waiting for the vehicle to stop… "I Have Arrived" will appear when stationary.',
-                      style: TextStyle(fontSize: 12, color: Colors.orange),
-                    ),
-                  ),
-                ],
-              ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.black,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
-          ],
+          ),
         ],
       ),
     );

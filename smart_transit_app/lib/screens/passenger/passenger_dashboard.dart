@@ -7,6 +7,8 @@ import 'destinations_browser_screen.dart';
 import 'bus_combi_map_screen.dart';
 import 'taxi_flow_screen.dart';
 import 'ai_planner_screen.dart';
+import 'passenger_history_screen.dart';
+import 'passenger_profile_screen.dart';
 
 enum TransportMode { bus, combi, taxi }
 
@@ -18,11 +20,52 @@ class PassengerDashboard extends StatefulWidget {
 }
 
 class _PassengerDashboardState extends State<PassengerDashboard> {
+  int _currentTabIndex = 0;
   TransportMode? _selectedMode;
   TransitRoute? _selectedRoute;
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.white,
+      body: IndexedStack(
+        index: _currentTabIndex,
+        children: [
+          _buildRideFlowTab(),
+          PassengerHistoryScreen(
+            onBack: () => setState(() => _currentTabIndex = 0),
+          ),
+          PassengerProfileScreen(
+            onBack: () => setState(() => _currentTabIndex = 0),
+          ),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentTabIndex,
+        onDestinationSelected: (idx) => setState(() => _currentTabIndex = idx),
+        backgroundColor: AppTheme.white,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.directions_transit_outlined),
+            selectedIcon: Icon(Icons.directions_transit),
+            label: 'Ride',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history),
+            label: 'Trip History',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRideFlowTab() {
     if (_selectedMode == null) {
       return Scaffold(
         backgroundColor: AppTheme.white,
@@ -47,6 +90,16 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
                   MaterialPageRoute(builder: (_) => const AiPlannerScreen()),
                 );
               },
+            ),
+            IconButton(
+              icon: const Icon(Icons.history_outlined, color: AppTheme.black),
+              tooltip: 'Trip History',
+              onPressed: () => setState(() => _currentTabIndex = 1),
+            ),
+            IconButton(
+              icon: const Icon(Icons.person_outline, color: AppTheme.black),
+              tooltip: 'Passenger Profile',
+              onPressed: () => setState(() => _currentTabIndex = 2),
             ),
           ],
         ),
@@ -73,6 +126,18 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
             icon: const Icon(Icons.arrow_back, color: AppTheme.black),
             onPressed: () => setState(() => _selectedMode = null),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.history_outlined, color: AppTheme.black),
+              tooltip: 'Trip History',
+              onPressed: () => setState(() => _currentTabIndex = 1),
+            ),
+            IconButton(
+              icon: const Icon(Icons.person_outline, color: AppTheme.black),
+              tooltip: 'Passenger Profile',
+              onPressed: () => setState(() => _currentTabIndex = 2),
+            ),
+          ],
         ),
         body: DestinationsBrowserScreen(
           mode: _selectedMode!,
@@ -90,6 +155,18 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
           icon: const Icon(Icons.arrow_back, color: AppTheme.black),
           onPressed: () => setState(() => _selectedRoute = null),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history_outlined, color: AppTheme.black),
+            tooltip: 'Trip History',
+            onPressed: () => setState(() => _currentTabIndex = 1),
+          ),
+          IconButton(
+            icon: const Icon(Icons.person_outline, color: AppTheme.black),
+            tooltip: 'Passenger Profile',
+            onPressed: () => setState(() => _currentTabIndex = 2),
+          ),
+        ],
       ),
       body: BusCombiMapScreen(
         mode: _selectedMode!,

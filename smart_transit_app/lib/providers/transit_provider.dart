@@ -381,7 +381,27 @@ class TransitProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void markPassengerCompleted() {
+  void markPassengerCompleted({String? passengerId, double? finalFare}) {
+    if (passengerId != null) {
+      passengerEndTrip(passengerId: passengerId, finalFare: finalFare);
+    } else {
+      _passengerStatus = PassengerTripStatus.completed;
+      notifyListeners();
+    }
+  }
+
+  void passengerEndTrip({required String passengerId, String? driverId, double? finalFare}) {
+    final dId = driverId ?? _assignedDriverId;
+    final fare = finalFare ?? _estimatedFare ?? 8.0;
+
+    _socket.emit('passenger-end-trip', {
+      'passengerId': passengerId,
+      'driverId': dId,
+      'routeId': _selectedRoute?.id ?? 'taxi-service',
+      'fare': fare,
+    });
+
+    _estimatedFare = fare;
     _passengerStatus = PassengerTripStatus.completed;
     notifyListeners();
   }

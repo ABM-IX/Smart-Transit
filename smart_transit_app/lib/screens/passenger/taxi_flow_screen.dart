@@ -8,6 +8,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/transit_provider.dart';
 import '../../widgets/custom_map_view.dart';
 import '../../widgets/status_pill.dart';
+import 'passenger_history_screen.dart';
+import 'passenger_profile_screen.dart';
 
 class TaxiFlowScreen extends StatefulWidget {
   final VoidCallback onBack;
@@ -59,40 +61,13 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
     return Scaffold(
       backgroundColor: AppTheme.white,
       appBar: AppBar(
-        title: Text(
-          _selectedTab == 0 ? 'Get Taxi' : (_selectedTab == 1 ? 'Trip History' : 'Profile'),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Taxi Service', style: TextStyle(fontWeight: FontWeight.w900)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppTheme.black),
           onPressed: widget.onBack,
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedTab,
-        onDestinationSelected: (i) => setState(() => _selectedTab = i),
-        backgroundColor: AppTheme.white,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.local_taxi_outlined),
-            selectedIcon: Icon(Icons.local_taxi),
-            label: 'Get Taxi',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
-            label: 'History',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
-      body: _selectedTab == 0
-          ? _buildTaxiMapTab()
-          : (_selectedTab == 1 ? _buildHistoryTab() : _buildProfileTab()),
+      body: _buildTaxiMapTab(),
     );
   }
 
@@ -315,43 +290,24 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 ],
               ),
             ),
-            if (vehicleStationary) ...[
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: () => transit.markPassengerCompleted(),
-                icon: const Icon(Icons.pin_drop, size: 18),
-                label: const Text(
-                  'I Have Arrived • End Trip',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.black,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: () => transit.passengerEndTrip(
+                passengerId: auth.userId,
+                driverId: transit.assignedDriverId,
+                finalFare: transit.estimatedFare ?? 25.0,
               ),
-            ] else ...[
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                decoration: BoxDecoration(
-                  color: AppTheme.offWhite,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.info_outline, size: 14, color: AppTheme.midGrey),
-                    SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        '"End Trip" appears once the taxi stops at your destination.',
-                        style: TextStyle(fontSize: 11, color: AppTheme.midGrey),
-                      ),
-                    ),
-                  ],
-                ),
+              icon: const Icon(Icons.pin_drop, size: 18),
+              label: const Text(
+                'I Have Arrived • End My Trip',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
-            ],
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
           ],
         ),
       );
