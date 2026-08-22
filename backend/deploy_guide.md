@@ -32,7 +32,7 @@ This guide explains how to host the SmartTransit Backend & Database so that the 
    - `SUPABASE_KEY`: `sb_publishable_7cqahorS_JAw4601eqpQkA_xPgA3YZL`
    - `DATABASE_URL`: `postgresql+asyncpg://postgres:SmartTransit%4026@db.xpphmiajwjkcxtxitcex.supabase.co:5432/postgres`
 6. Click **Create Web Service**.
-7. Once deployed, Render provides a public HTTPS URL (e.g. `https://smarttransit-backend.onrender.com`).
+7. Once deployed, Render provides a public HTTPS URL: **`https://smart-transit-uhyf.onrender.com`**.
 
 ---
 
@@ -55,7 +55,10 @@ This gives you a public HTTPS URL (e.g. `https://smarttransit.trycloudflare.com`
 ## 4. Connecting the Flutter Mobile App & Dashboard
 
 1. **Flutter Mobile App**:
-   - The app has built-in **Direct Supabase Cloud Fallback**: Even if the custom backend server is sleeping, routes and stops load directly from Supabase Cloud!
-   - You can also tap the **Server Config** button on the Welcome screen to enter any cloud server URL.
+   - The app is pre-configured to connect directly to **`https://smart-transit-uhyf.onrender.com`**!
+   - Built-in **Direct Supabase Cloud Fallback**: Even if the custom backend server is sleeping, routes and stops load directly from Supabase Cloud!
+   - You can also tap the **Server Config** button on the Welcome screen to enter any custom server URL.
 2. **Dispatch Dashboard**:
-   - Enter your public backend URL in the sidebar input (e.g. `https://smarttransit-backend.onrender.com`). The dashboard will save your server URL and connect instantly.
+   - Pre-configured to **`https://smart-transit-uhyf.onrender.com`**.
+   - You can also enter a custom URL in the sidebar input and click **Link**.
+

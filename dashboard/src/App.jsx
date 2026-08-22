@@ -8,7 +8,7 @@ export default function App() {
   const [serverUrl, setServerUrl] = useState(() => {
     return localStorage.getItem('smarttransit_backend_url') ||
       import.meta.env.VITE_BACKEND_URL ||
-      'https://smarttransit-backend.onrender.com';
+      'https://smart-transit-uhyf.onrender.com';
   });
   const [isConnected, setIsConnected] = useState(false);
   const [drivers, setDrivers] = useState(new Map());

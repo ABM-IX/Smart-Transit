@@ -6,7 +6,25 @@ from app.sockets.gateway import (
 
 router = APIRouter(tags=["System & Telemetry"])
 
+@router.get("/")
+@router.head("/")
+async def root_status():
+    """Root entry point confirming live cloud operational status."""
+    return {
+        "status": "online",
+        "project": "SmartTransit AI Platform",
+        "version": "2.0.0",
+        "endpoints": {
+            "health": "/health",
+            "routes": "/api/transit/routes",
+            "stops": "/api/transit/stops",
+            "ai_planner": "/api/ai/plan-journey",
+            "docs": "/docs"
+        }
+    }
+
 @router.get("/health")
+@router.head("/health")
 async def health_check():
     """Returns the operational health of the SmartTransit engine."""
     return {
@@ -18,6 +36,7 @@ async def health_check():
         "active_trips_count": len(active_trips),
         "taxi_assignments_count": len(taxi_assignments)
     }
+
 
 @router.get("/api/analytics")
 async def get_analytics():

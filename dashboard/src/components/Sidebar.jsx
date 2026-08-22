@@ -44,7 +44,7 @@ export default function Sidebar({
             type="text"
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
-            placeholder="https://smarttransit-backend.onrender.com"
+            placeholder="https://smart-transit-uhyf.onrender.com"
           />
           <button type="submit" className="btn-primary" title="Connect WebSocket Server">
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -59,13 +59,13 @@ export default function Sidebar({
             className="btn-secondary"
             style={{ fontSize: '11px', padding: '3px 8px' }}
             onClick={() => {
-              const u = 'https://smarttransit-backend.onrender.com';
+              const u = 'https://smart-transit-uhyf.onrender.com';
               setUrlInput(u);
               onServerUrlChange(u);
               onConnect(u);
             }}
           >
-            Cloud
+            Cloud (Render)
           </button>
           <button
             type="button"
