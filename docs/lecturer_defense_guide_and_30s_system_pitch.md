@@ -107,6 +107,20 @@ Use this table to prove that the separation of concerns was a deliberate softwar
   > 5. *RPT-05: Driver Performance & Rating Audit Report (safety ratings & cancellation latencies)*
   > *These reports export directly into CSV/JSON for transport planning in Excel, R, or Python."*
 
+#### Q5: "How is SmartTransit different from the Vaya app (or what is your niche at the Orange Digital Center)?"
+- **Your Answer:**  
+  > *"Vaya is a **passive observation tool**—it puts combi pins on a passenger map. If three combis bunch together, Vaya merely displays the cluster while downstream commuters wait 45 minutes.*  
+  > *SmartTransit has four fundamental differentiators that set it completely apart:*  
+  > 1. ***Active Headway Regulation:*** *We implement Newell/Daganzo pacing algorithms that stream in-cab speed advisories (`SLOW DOWN`/`SPEED UP`) to drivers to actively prevent bunching.*  
+  > 2. ***Tri-Modal Integration:*** *Vaya is combi-only. SmartTransit links doorstep special cabs ($k$-NN dispatch) + arterial combis + intercity coaches in a unified directed graph.*  
+  > 3. ***Hands-Free Geofencing:*** *Vaya relies on manual seat counting, which informal drivers will never tap while driving. We use co-movement geofencing to detect boarding automatically.*  
+  > 4. ***Regulatory Web Command Center:*** *We provide DRTS with a desktop dashboard for corridor bunching oversight and CSV audit exports.*  
+  > *(Full analysis in [`docs/botswana_competitor_analysis_and_differentiation_matrix.md`](file:///c:/Users/araba/Desktop/SmartTransit/docs/botswana_competitor_analysis_and_differentiation_matrix.md))."*
+
+#### Q6: "Why include cab hailing when inDrive and Yango already operate in Gaborone?"
+- **Your Answer:**  
+  > *"inDrive and Yango are private car-hire platforms charging P40 to P120 per trip, completely excluding the 85% mass-transit population who rely on P8.00 combis. SmartTransit integrates local blue-plate cabs as **affordable first-mile feeders** to the combi network, allowing suburban commuters to book a complete journey from their doorstep to an arterial combi rank with transparent metered rates."*
+
 ---
 
 ## 📋 Part 3: Architecture-at-a-Glance Diagram

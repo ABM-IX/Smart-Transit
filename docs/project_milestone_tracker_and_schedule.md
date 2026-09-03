@@ -80,9 +80,11 @@ Phase 1        Phase 2        Phase 3                Phase 4                Phas
   - *Evidence Artifact:* [`docs/technical_methodology_and_literature_review_guide.md`](file:///c:/Users/araba/Desktop/SmartTransit/docs/technical_methodology_and_literature_review_guide.md)
 - [x] **M3.6: Lecturer Defense Playbook & 30s Pitch:** Formulated 30-second elevator pitches for any audience, web page justification, and lecturer Q&A defense scripts.
   - *Evidence Artifact:* [`docs/lecturer_defense_guide_and_30s_system_pitch.md`](file:///c:/Users/araba/Desktop/SmartTransit/docs/lecturer_defense_guide_and_30s_system_pitch.md)
-- [ ] **M3.7: Team Literature Allocation:** Assign specific academic papers (Table 2 of the guide) to each team member for in-depth journal review.
-- [ ] **M3.8: Tutorial Review 1 Slides Preparation:** Synthesize problem definition, literature review matrix, and methodology into PowerPoint presentation for the 7–11 September tutorial review.
-- [ ] **M3.9: Review 1 Tutorial Defense:** Present proposed system methodology and theoretical foundation before course supervisors.
+- [x] **M3.7: Botswana Competitor Intelligence & Differentiation Matrix:** Researched domestic platforms (Vaya by Kamo Baipoledi, inDrive, Yango, Tee Pee Transport) and articulated SmartTransit's competitive moat.
+  - *Evidence Artifact:* [`docs/botswana_competitor_analysis_and_differentiation_matrix.md`](file:///c:/Users/araba/Desktop/SmartTransit/docs/botswana_competitor_analysis_and_differentiation_matrix.md)
+- [ ] **M3.8: Team Literature Allocation:** Assign specific academic papers (Table 2 of the guide) to each team member for in-depth journal review.
+- [ ] **M3.9: Tutorial Review 1 Slides Preparation:** Synthesize problem definition, literature review matrix, and methodology into PowerPoint presentation for the 7–11 September tutorial review.
+- [ ] **M3.10: Review 1 Tutorial Defense:** Present proposed system methodology and theoretical foundation before course supervisors.
 
 ---
 
