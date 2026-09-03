@@ -89,5 +89,15 @@ For complete deployment details, see [`backend/deploy_guide.md`](file:///c:/User
 
 ---
 
+## 📚 Academic Research & Project Documentation
+
+Comprehensive academic technical documentation prepared for the University Assessment Schedule is cataloged in the [`docs/`](file:///c:/Users/araba/Desktop/SmartTransit/docs) directory:
+- **[Project Milestone Tracker & Assessment Schedule](file:///c:/Users/araba/Desktop/SmartTransit/docs/project_milestone_tracker_and_schedule.md)**: Master schedule and living progress tracker aligned with university deliverable deadlines (Phase 1 through Phase 7, 14 Aug to 17 Nov 2026), role distribution, and weekly milestone sign-offs.
+- **[Technical Methodology, System Algorithms & Literature Review Guide](file:///c:/Users/araba/Desktop/SmartTransit/docs/technical_methodology_and_literature_review_guide.md)**: Master reference document for **Project Review 1 (Deadline: 7 September 2026)**. Contains mathematical formulations, code mappings, justification, and seminal academic citations (Haversine, $k$-NN dispatch, Daganzo/Newell headway regularization, Lin et al. ETA speed flooring, NetworkX multi-modal backward scheduling, Cervero paratransit tariffs), along with WBS and requirement catalogue.
+- **[Research Questionnaires & UAT Instruments](file:///c:/Users/araba/Desktop/SmartTransit/docs/research_questionnaires_and_uat_instruments.md)**: Academic ethics clearance forms, commuter/driver baseline surveys, and field User Acceptance Testing instruments.
+
+
+---
+
 ## 📄 License
 MIT License. Developed for Botswana's public transportation network.
