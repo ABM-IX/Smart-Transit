@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../models/route_model.dart';
 import '../../models/user_role.dart';
-import 'driver_route_select_screen.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/transit_provider.dart';
+import '../../services/api_service.dart';
 import 'driver_home_screen.dart';
 import 'taxi_driver_screen.dart';
 import 'driver_history_screen.dart';
@@ -19,16 +22,77 @@ class DriverDashboard extends StatefulWidget {
 
 class _DriverDashboardState extends State<DriverDashboard> {
   int _currentTabIndex = 0;
-  TransitRoute? _selectedRoute;
+  TransitRoute? _customRoute;
+  String? _lastLoadedRouteId;
+
+  void _fetchAssignedRoute(String routeId) async {
+    if (_lastLoadedRouteId == routeId) return;
+    _lastLoadedRouteId = routeId;
+    final r = await ApiService().fetchRouteById(routeId);
+    if (r != null && mounted) {
+      setState(() {
+        _customRoute = r;
+      });
+    }
+  }
+
+  TransitRoute _resolveDriverRoute(AuthProvider auth, TransitProvider transit) {
+    if (auth.assignedRouteId.isNotEmpty) {
+      final match = transit.routes.where((r) => r.id == auth.assignedRouteId).toList();
+      if (match.isNotEmpty) return match.first;
+      if (_customRoute != null && _customRoute!.id == auth.assignedRouteId) {
+        return _customRoute!;
+      }
+      _fetchAssignedRoute(auth.assignedRouteId);
+
+      // Clean friendly title from assignedRouteId (e.g. "tlokweng-route-6" -> "Tlokweng Route 6")
+      final friendlyName = auth.assignedRouteId
+          .replaceAll('-', ' ')
+          .replaceAll('_', ' ')
+          .split(' ')
+          .where((w) => w.isNotEmpty)
+          .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
+          .join(' ');
+
+      return TransitRoute(
+        id: auth.assignedRouteId,
+        name: friendlyName.isNotEmpty ? friendlyName : 'Assigned Route',
+        originName: 'Terminal A',
+        destinationName: 'Terminal B',
+        routeType: widget.initialRole == UserRole.driverBus ? 'BUS' : 'COMBI',
+        baseFare: widget.initialRole == UserRole.driverBus ? 35.0 : 8.0,
+      );
+    }
+
+    if (transit.routes.isNotEmpty) {
+      final typeMatch = transit.routes.where(
+        (r) => r.routeType.toUpperCase() == (widget.initialRole == UserRole.driverBus ? 'BUS' : 'COMBI'),
+      ).toList();
+      if (typeMatch.isNotEmpty) return typeMatch.first;
+      return transit.routes.first;
+    }
+
+    return TransitRoute(
+      id: 'active-corridor',
+      name: 'Assigned Corridor',
+      originName: 'Terminal A',
+      destinationName: 'Terminal B',
+      routeType: widget.initialRole == UserRole.driverBus ? 'BUS' : 'COMBI',
+      baseFare: 8.0,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    final transit = Provider.of<TransitProvider>(context);
+
     return Scaffold(
       backgroundColor: AppTheme.white,
       body: IndexedStack(
         index: _currentTabIndex,
         children: [
-          _buildShiftDriveTab(),
+          _buildShiftDriveTab(auth, transit),
           DriverHistoryScreen(
             onBack: () => setState(() => _currentTabIndex = 0),
           ),
@@ -62,24 +126,19 @@ class _DriverDashboardState extends State<DriverDashboard> {
     );
   }
 
-  Widget _buildShiftDriveTab() {
+  Widget _buildShiftDriveTab(AuthProvider auth, TransitProvider transit) {
     // Taxi drivers operate on-demand dispatch
     if (widget.initialRole == UserRole.driverTaxi) {
       return const TaxiDriverScreen();
     }
 
-    // Bus and Combi drivers select route before starting shift
-    if (_selectedRoute == null) {
-      return DriverRouteSelectScreen(
-        driverRole: widget.initialRole,
-        onRouteConfirmed: (route) => setState(() => _selectedRoute = route),
-      );
-    }
+    // Bus and Combi drivers go directly into their pre-assigned corridor shift
+    final route = _resolveDriverRoute(auth, transit);
 
     return DriverHomeScreen(
       driverRole: widget.initialRole,
-      routeName: _selectedRoute!.name,
-      routeId: _selectedRoute!.id,
+      routeName: route.name,
+      routeId: route.id,
     );
   }
 }

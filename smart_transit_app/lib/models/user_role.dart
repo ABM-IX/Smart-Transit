@@ -29,4 +29,15 @@ enum UserRole {
         return 'PASSENGER';
     }
   }
+
+  static UserRole fromDatabase(String? role, String? serviceType) {
+    final r = role?.toUpperCase();
+    final st = serviceType?.toUpperCase();
+    if (r == 'DRIVER') {
+      if (st == 'BUS') return UserRole.driverBus;
+      if (st == 'TAXI') return UserRole.driverTaxi;
+      return UserRole.driverCombi;
+    }
+    return UserRole.passenger;
+  }
 }

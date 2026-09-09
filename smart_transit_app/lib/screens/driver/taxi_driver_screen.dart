@@ -167,7 +167,9 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
               top: false,
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.55,
+                  maxHeight: MediaQuery.of(context).orientation == Orientation.landscape
+                      ? MediaQuery.of(context).size.height * 0.45
+                      : MediaQuery.of(context).size.height * 0.55,
                 ),
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -284,9 +286,9 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                         ),
                         const Row(
                           children: [
-                            Icon(Icons.star, size: 14, color: Colors.amber),
+                            Icon(Icons.verified, size: 14, color: AppTheme.accentGreen),
                             SizedBox(width: 4),
-                            Text('4.9 Rating', style: TextStyle(fontSize: 12, color: AppTheme.midGrey)),
+                            Text('Verified Commuter', style: TextStyle(fontSize: 12, color: AppTheme.midGrey)),
                           ],
                         ),
                       ],

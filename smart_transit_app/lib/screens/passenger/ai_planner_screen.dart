@@ -42,6 +42,15 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
       _itinerary = result;
       _isLoading = false;
     });
+
+    if (result == null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No active multi-modal itinerary found for these endpoints yet.'),
+          backgroundColor: AppTheme.black,
+        ),
+      );
+    }
   }
 
   @override

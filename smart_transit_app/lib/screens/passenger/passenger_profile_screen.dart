@@ -1,13 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../auth/welcome_screen.dart';
 
-class PassengerProfileScreen extends StatelessWidget {
+class PassengerProfileScreen extends StatefulWidget {
   final VoidCallback? onBack;
 
   const PassengerProfileScreen({super.key, this.onBack});
+
+  @override
+  State<PassengerProfileScreen> createState() => _PassengerProfileScreenState();
+}
+
+class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
+  int _totalTrips = 0;
+  double _totalSpent = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPassengerStats();
+  }
+
+  Future<void> _loadPassengerStats() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    try {
+      final client = Supabase.instance.client;
+      final response = await client
+          .from('trips')
+          .select('fare')
+          .eq('passenger_id', auth.userId)
+          .timeout(const Duration(seconds: 4));
+
+      if (response.isNotEmpty) {
+        int count = 0;
+        double spent = 0;
+        for (final row in response) {
+          count++;
+          spent += (row['fare'] as num?)?.toDouble() ?? 8.0;
+        }
+        if (mounted) {
+          setState(() {
+            _totalTrips = count;
+            _totalSpent = spent;
+          });
+        }
+      }
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,10 +59,10 @@ class PassengerProfileScreen extends StatelessWidget {
       backgroundColor: AppTheme.white,
       appBar: AppBar(
         title: const Text('Passenger Profile', style: TextStyle(fontWeight: FontWeight.w900)),
-        leading: onBack != null
+        leading: widget.onBack != null
             ? IconButton(
                 icon: const Icon(Icons.arrow_back, color: AppTheme.black),
-                onPressed: onBack,
+                onPressed: widget.onBack,
               )
             : null,
       ),
@@ -94,15 +136,15 @@ class PassengerProfileScreen extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: _buildStatTile('12', 'Total Trips', Icons.directions_bus),
+                  child: _buildStatTile('$_totalTrips', 'Total Trips', Icons.directions_bus),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _buildStatTile('P145.00', 'Total Spent', Icons.payments),
+                  child: _buildStatTile('P${_totalSpent.toStringAsFixed(2)}', 'Total Spent', Icons.payments),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _buildStatTile('4.9 ★', 'Rider Rating', Icons.star),
+                  child: _buildStatTile(_totalTrips > 0 ? '5.0 ★' : 'New ★', 'Rider Status', Icons.star),
                 ),
               ],
             ),
@@ -121,15 +163,15 @@ class PassengerProfileScreen extends StatelessWidget {
                   ListTile(
                     leading: const Icon(Icons.phone_android, color: AppTheme.black),
                     title: const Text('Phone Number', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: const Text('+267 71 234 567'),
-                    trailing: const Icon(Icons.edit, size: 18, color: AppTheme.midGrey),
+                    subtitle: Text(auth.phoneNumber),
+                    trailing: const Icon(Icons.verified, size: 18, color: AppTheme.accentGreen),
                   ),
                   const Divider(height: 1, color: AppTheme.lightGrey),
                   ListTile(
                     leading: const Icon(Icons.email_outlined, color: AppTheme.black),
                     title: const Text('Email Address', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: const Text('passenger@smarttransit.bw'),
-                    trailing: const Icon(Icons.edit, size: 18, color: AppTheme.midGrey),
+                    subtitle: Text(auth.userEmail),
+                    trailing: const Icon(Icons.verified, size: 18, color: AppTheme.accentGreen),
                   ),
                 ],
               ),
@@ -172,14 +214,18 @@ class PassengerProfileScreen extends StatelessWidget {
 
             // Switch Role / Logout
             ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-                );
+              onPressed: () async {
+                await auth.signOut();
+                if (context.mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+                    (route) => false,
+                  );
+                }
               },
               icon: const Icon(Icons.logout, size: 18),
-              label: const Text('Switch Role / Logout'),
+              label: const Text('Sign Out'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.accentRed,
                 padding: const EdgeInsets.symmetric(vertical: 14),

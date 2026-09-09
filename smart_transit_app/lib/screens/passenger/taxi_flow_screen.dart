@@ -9,8 +9,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/transit_provider.dart';
 import '../../widgets/custom_map_view.dart';
 import '../../widgets/status_pill.dart';
-import 'passenger_history_screen.dart';
-import 'passenger_profile_screen.dart';
 
 class TaxiFlowScreen extends StatefulWidget {
   final VoidCallback onBack;
@@ -22,7 +20,6 @@ class TaxiFlowScreen extends StatefulWidget {
 }
 
 class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
-  int _selectedTab = 0;
   String _serviceType = 'STANDARD';
   final TextEditingController _destController = TextEditingController();
   List<Map<String, dynamic>> _suggestions = [];
@@ -107,7 +104,9 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             top: false,
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.65,
+                maxHeight: MediaQuery.of(context).orientation == Orientation.landscape
+                    ? MediaQuery.of(context).size.height * 0.55
+                    : MediaQuery.of(context).size.height * 0.65,
               ),
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -519,67 +518,6 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               );
             },
             child: Text('Request $_serviceType Cab Now'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHistoryTab() {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                const Icon(Icons.local_taxi, color: AppTheme.black),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Trip to Main Mall CBD', style: TextStyle(fontWeight: FontWeight.bold)),
-                      Text('Completed • Standard Taxi', style: TextStyle(fontSize: 12, color: AppTheme.midGrey)),
-                    ],
-                  ),
-                ),
-                Text('P8.00', style: const TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProfileTab() {
-    final auth = Provider.of<AuthProvider>(context);
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          CircleAvatar(
-            radius: 36,
-            backgroundColor: AppTheme.offWhite,
-            child: const Icon(Icons.person, size: 40, color: AppTheme.black),
-          ),
-          const SizedBox(height: 16),
-          Text(auth.userName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
-          Text(auth.userId, style: const TextStyle(color: AppTheme.midGrey, fontSize: 13)),
-          const SizedBox(height: 24),
-          const Divider(color: AppTheme.lightGrey),
-          ListTile(
-            leading: const Icon(Icons.phone),
-            title: const Text('Phone Number'),
-            subtitle: const Text('+267 71 234 567'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.payment),
-            title: const Text('Default Payment'),
-            subtitle: const Text('Cash / Mobile Money'),
           ),
         ],
       ),

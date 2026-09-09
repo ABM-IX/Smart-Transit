@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/constants.dart';
 import '../models/route_model.dart';
 import '../models/driver_model.dart';
@@ -127,13 +128,13 @@ class TransitProvider extends ChangeNotifier {
           'id': userId,
           'driverId': userId,
           'passengerId': userId,
-          'routeId': routeId ?? _selectedRoute?.id ?? 'route-u01',
+          'routeId': routeId ?? _selectedRoute?.id ?? '',
           'coords': {'lat': _currentLocation.latitude, 'lng': _currentLocation.longitude}
         });
         if (role == 'passengers') {
           _socket.emit('passenger-location', {
             'passengerId': userId,
-            'routeId': routeId ?? _selectedRoute?.id ?? 'route-u01',
+            'routeId': routeId ?? _selectedRoute?.id ?? '',
             'coords': {'lat': _currentLocation.latitude, 'lng': _currentLocation.longitude}
           });
         }
@@ -322,7 +323,7 @@ class TransitProvider extends ChangeNotifier {
   void confirmBoarding(String passengerId) {
     final driverId = _assignedDriverId ??
         (_activeDrivers.isNotEmpty ? _activeDrivers.keys.first : 'driver-1');
-    final routeId = _selectedRoute?.id ?? 'route-u01';
+    final routeId = _selectedRoute?.id ?? (_routes.isNotEmpty ? _routes.first.id : 'transit-line');
 
     _socket.emit('boarding', {
       'driverId': driverId,
@@ -401,6 +402,21 @@ class TransitProvider extends ChangeNotifier {
       'fare': fare,
     });
 
+    // Directly persist to Supabase trips table for immediate user history
+    try {
+      Supabase.instance.client.from('trips').insert({
+        'passenger_id': passengerId,
+        'driver_id': dId,
+        'route_id': _selectedRoute?.id,
+        'service_type': _selectedRoute?.routeType ?? 'COMBI',
+        'status': 'COMPLETED',
+        'fare': fare,
+        'completed_at': DateTime.now().toUtc().toIso8601String(),
+        'pickup_name': _selectedRoute?.originName ?? 'Pickup Stop',
+        'dropoff_name': _selectedRoute?.destinationName ?? 'Destination Stop',
+      });
+    } catch (_) {}
+
     _estimatedFare = fare;
     _passengerStatus = PassengerTripStatus.completed;
     notifyListeners();
@@ -454,6 +470,20 @@ class TransitProvider extends ChangeNotifier {
         'vehicleId': vehicleId,
       });
 
+      // Update Supabase driver_locations
+      try {
+        Supabase.instance.client.from('driver_locations').upsert({
+          'driver_id': driverId,
+          'service_type': serviceType,
+          'route_id': routeId,
+          'vehicle_id': vehicleId,
+          'latitude': _currentLocation.latitude,
+          'longitude': _currentLocation.longitude,
+          'is_online': true,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        });
+      } catch (_) {}
+
       _location.startLocationTracking((pos, speed, heading) {
         _currentLocation = pos;
         _socket.emit('driver-location', {
@@ -465,11 +495,43 @@ class TransitProvider extends ChangeNotifier {
           'heading': heading,
           'occupancy': 5,
         });
+
+        // Broadcast to Supabase driver_locations
+        try {
+          Supabase.instance.client.from('driver_locations').upsert({
+            'driver_id': driverId,
+            'service_type': serviceType,
+            'route_id': routeId,
+            'vehicle_id': vehicleId,
+            'latitude': pos.latitude,
+            'longitude': pos.longitude,
+            'speed': speed,
+            'heading': heading,
+            'occupancy': 5,
+            'is_online': true,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          });
+        } catch (_) {}
+
         notifyListeners();
       });
     } else {
       _location.stopLocationTracking();
       _socket.emit('driver-offline', {'driverId': driverId});
+
+      try {
+        Supabase.instance.client.from('driver_locations').upsert({
+          'driver_id': driverId,
+          'service_type': serviceType,
+          'route_id': routeId,
+          'vehicle_id': vehicleId,
+          'latitude': _currentLocation.latitude,
+          'longitude': _currentLocation.longitude,
+          'is_online': false,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        });
+      } catch (_) {}
+
       _incomingHails.clear();
       _spacingAdvisory = null;
       // Reset shift counters when going offline
@@ -516,6 +578,32 @@ class TransitProvider extends ChangeNotifier {
       'type': hail.serviceType,
       'revenue': hail.fareEstimate,
     });
+  }
+
+  void completeTrip(HailRequest hail, String driverId) {
+    _passengersCarried++;
+    _socket.emit('trip-complete', {
+      'passengerId': hail.passengerId,
+      'driverId': driverId,
+      'requestId': hail.requestId,
+      'fare': hail.fareEstimate,
+    });
+
+    try {
+      Supabase.instance.client.from('trips').insert({
+        'passenger_id': hail.passengerId,
+        'driver_id': driverId,
+        'route_id': hail.routeId,
+        'service_type': hail.serviceType,
+        'status': 'COMPLETED',
+        'fare': hail.fareEstimate,
+        'completed_at': DateTime.now().toUtc().toIso8601String(),
+        'pickup_name': 'Pickup Point',
+        'dropoff_name': 'Destination',
+      });
+    } catch (_) {}
+
+    notifyListeners();
   }
 
   void endTrip(HailRequest hail, String driverId, double fare) {

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
-import '../../widgets/status_pill.dart';
 
 class PassengerHistoryScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -15,70 +16,72 @@ class PassengerHistoryScreen extends StatefulWidget {
 
 class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
   String _selectedFilter = 'ALL';
+  List<Map<String, dynamic>> _trips = [];
+  bool _isLoading = true;
 
-  final List<Map<String, dynamic>> _mockHistory = [
-    {
-      'id': 'trip-101',
-      'mode': 'COMBI',
-      'routeName': 'Route U1 – BAC to Bus Rank',
-      'origin': 'BAC Stop',
-      'destination': 'Gaborone Bus Rank',
-      'fare': 8.0,
-      'date': 'Today, 14:15',
-      'driver': 'Kabo M. (B-BW 492)',
-      'status': 'Completed'
-    },
-    {
-      'id': 'trip-102',
-      'mode': 'TAXI',
-      'routeName': 'Special Direct Cab',
-      'origin': 'Main Mall CBD',
-      'destination': 'Game City Mall',
-      'fare': 25.0,
-      'date': 'Yesterday, 18:30',
-      'driver': 'Tuelo K. (B 123 ABC)',
-      'status': 'Completed'
-    },
-    {
-      'id': 'trip-103',
-      'mode': 'BUS',
-      'routeName': 'Gaborone → Molepolole Coach',
-      'origin': 'Gaborone Bus Rank',
-      'destination': 'Molepolole Rank',
-      'fare': 35.0,
-      'date': '20 Aug 2026, 09:00',
-      'driver': 'Intercity Express #4',
-      'status': 'Completed'
-    },
-    {
-      'id': 'trip-104',
-      'mode': 'COMBI',
-      'routeName': 'Route M1 – Molepolole Central to Mafitlhakgosi',
-      'origin': 'Molepolole Rank',
-      'destination': 'Mafitlhakgosi',
-      'fare': 8.0,
-      'date': '19 Aug 2026, 16:45',
-      'driver': 'Oteng P. (B-BW 881)',
-      'status': 'Completed'
-    },
-    {
-      'id': 'trip-105',
-      'mode': 'TAXI',
-      'routeName': 'Standard Shared Taxi',
-      'origin': 'UB Main Gate',
-      'destination': 'Tlokweng Border Road',
-      'fare': 8.0,
-      'date': '18 Aug 2026, 12:10',
-      'driver': 'Thabo S. (B 774 AXZ)',
-      'status': 'Completed'
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadUserTrips();
+  }
+
+  Future<void> _loadUserTrips() async {
+    setState(() => _isLoading = true);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    try {
+      final client = Supabase.instance.client;
+      final response = await client
+          .from('trips')
+          .select()
+          .eq('passenger_id', auth.userId)
+          .order('created_at', ascending: false)
+          .timeout(const Duration(seconds: 4));
+
+      final List<Map<String, dynamic>> loaded = [];
+      for (final row in response) {
+        DateTime? createdAt;
+        if (row['created_at'] != null) {
+          createdAt = DateTime.tryParse(row['created_at'].toString());
+        }
+        final dateStr = createdAt != null
+            ? DateFormat('dd MMM yyyy, HH:mm').format(createdAt.toLocal())
+            : 'Recent Trip';
+
+        loaded.add({
+          'id': row['id']?.toString() ?? '',
+          'mode': (row['service_type'] as String? ?? 'COMBI').toUpperCase(),
+          'routeName': row['route_id'] ?? '${row['pickup_name'] ?? 'Origin'} → ${row['dropoff_name'] ?? 'Destination'}',
+          'origin': row['pickup_name'] ?? 'Pickup Point',
+          'destination': row['dropoff_name'] ?? 'Destination',
+          'fare': (row['fare'] as num?)?.toDouble() ?? 8.0,
+          'date': dateStr,
+          'driver': row['driver_id'] != null ? 'Driver: ${row['driver_id']}' : 'SmartTransit Operator',
+          'status': row['status'] ?? 'Completed',
+        });
+      }
+
+      if (mounted) {
+        setState(() {
+          _trips = loaded;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _trips = [];
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final filteredTrips = _selectedFilter == 'ALL'
-        ? _mockHistory
-        : _mockHistory.where((t) => t['mode'] == _selectedFilter).toList();
+        ? _trips
+        : _trips.where((t) => t['mode'] == _selectedFilter).toList();
 
     return Scaffold(
       backgroundColor: AppTheme.white,
@@ -90,6 +93,13 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
                 onPressed: widget.onBack,
               )
             : null,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppTheme.black),
+            onPressed: _loadUserTrips,
+            tooltip: 'Refresh Trips',
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -115,109 +125,139 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
 
           // History List
           Expanded(
-            child: filteredTrips.isEmpty
+            child: _isLoading
                 ? const Center(
-                    child: Text('No trip history found.', style: TextStyle(color: AppTheme.midGrey)),
+                    child: CircularProgressIndicator(color: AppTheme.black),
                   )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filteredTrips.length,
-                    separatorBuilder: (ctx, idx) => const SizedBox(height: 12),
-                    itemBuilder: (context, idx) {
-                      final item = filteredTrips[idx];
-                      final mode = item['mode'] as String;
-
-                      IconData iconData = Icons.airport_shuttle;
-                      Color modeColor = AppTheme.accentBlue;
-                      if (mode == 'BUS') {
-                        iconData = Icons.directions_bus;
-                        modeColor = Colors.purple;
-                      } else if (mode == 'TAXI') {
-                        iconData = Icons.local_taxi;
-                        modeColor = AppTheme.accentGreen;
-                      }
-
-                      return Card(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: const BorderSide(color: AppTheme.lightGrey),
-                        ),
-                        color: AppTheme.white,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                : RefreshIndicator(
+                    onRefresh: _loadUserTrips,
+                    color: AppTheme.black,
+                    child: filteredTrips.isEmpty
+                        ? Center(
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 20.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Row(
+                                  const Icon(Icons.directions_transit_outlined, size: 56, color: AppTheme.lightGrey),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'No Trip History Yet',
+                                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppTheme.black),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Your completed combi rides, bus trips, and taxi bookings will appear here automatically.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontSize: 13, color: AppTheme.midGrey, height: 1.4),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: filteredTrips.length,
+                            separatorBuilder: (ctx, idx) => const SizedBox(height: 12),
+                            itemBuilder: (context, idx) {
+                              final item = filteredTrips[idx];
+                              final mode = item['mode'] as String;
+
+                              IconData iconData = Icons.airport_shuttle;
+                              Color modeColor = AppTheme.accentBlue;
+                              if (mode == 'BUS') {
+                                iconData = Icons.directions_bus;
+                                modeColor = Colors.purple;
+                              } else if (mode == 'TAXI') {
+                                iconData = Icons.local_taxi;
+                                modeColor = AppTheme.accentGreen;
+                              }
+
+                              return Card(
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: const BorderSide(color: AppTheme.lightGrey),
+                                ),
+                                color: AppTheme.white,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: modeColor.withOpacity(0.12),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(iconData, color: modeColor, size: 20),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(8),
+                                                decoration: BoxDecoration(
+                                                  color: modeColor.withOpacity(0.12),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Icon(iconData, color: modeColor, size: 20),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Text(
+                                                mode,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 13,
+                                                  color: modeColor,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Text(
+                                            'P${(item['fare'] as double).toStringAsFixed(2)}',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 17,
+                                              color: AppTheme.black,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(width: 10),
+                                      const SizedBox(height: 10),
                                       Text(
-                                        mode,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 13,
-                                          color: modeColor,
-                                        ),
+                                        item['routeName'] as String,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.my_location, size: 14, color: AppTheme.midGrey),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              '${item['origin']} → ${item['destination']}',
+                                              style: const TextStyle(fontSize: 12, color: AppTheme.midGrey),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const Divider(height: 20, color: AppTheme.lightGrey),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            item['driver'] as String,
+                                            style: const TextStyle(fontSize: 11, color: AppTheme.midGrey),
+                                          ),
+                                          Text(
+                                            item['date'] as String,
+                                            style: const TextStyle(fontSize: 11, color: AppTheme.midGrey),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
-                                  Text(
-                                    'P${(item['fare'] as double).toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 17,
-                                      color: AppTheme.black,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                item['routeName'] as String,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  const Icon(Icons.my_location, size: 14, color: AppTheme.midGrey),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${item['origin']} → ${item['destination']}',
-                                    style: const TextStyle(fontSize: 12, color: AppTheme.midGrey),
-                                  ),
-                                ],
-                              ),
-                              const Divider(height: 20, color: AppTheme.lightGrey),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Driver: ${item['driver']}',
-                                    style: const TextStyle(fontSize: 11, color: AppTheme.midGrey),
-                                  ),
-                                  Text(
-                                    item['date'] as String,
-                                    style: const TextStyle(fontSize: 11, color: AppTheme.midGrey),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                ),
+                              );
+                            },
                           ),
-                        ),
-                      );
-                    },
                   ),
           ),
         ],

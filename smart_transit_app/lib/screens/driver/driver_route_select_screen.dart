@@ -39,121 +39,114 @@ class _DriverRouteSelectScreenState extends State<DriverRouteSelectScreen> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
+        child: ListView(
           padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Shift Setup: ${widget.driverRole.displayName}',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppTheme.black),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Choose the route corridor you will operate during this shift.',
-                style: TextStyle(color: AppTheme.midGrey, fontSize: 14),
-              ),
-              const SizedBox(height: 20),
+          children: [
+            Text(
+              'Shift Setup: ${widget.driverRole.displayName}',
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppTheme.black),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Choose the route corridor you will operate during this shift.',
+              style: TextStyle(color: AppTheme.midGrey, fontSize: 14),
+            ),
+            const SizedBox(height: 20),
 
-              // Vehicle Plate Field
-              TextField(
-                controller: _plateController,
-                decoration: InputDecoration(
-                  labelText: 'Vehicle License Plate',
-                  prefixIcon: const Icon(Icons.pin, color: AppTheme.black),
-                  filled: true,
-                  fillColor: AppTheme.offWhite,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppTheme.lightGrey),
-                  ),
+            // Vehicle Plate Field
+            TextField(
+              controller: _plateController,
+              textCapitalization: TextCapitalization.characters,
+              decoration: InputDecoration(
+                labelText: 'Vehicle License Plate',
+                prefixIcon: const Icon(Icons.pin, color: AppTheme.black),
+                filled: true,
+                fillColor: AppTheme.offWhite,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: AppTheme.lightGrey),
                 ),
               ),
-              const SizedBox(height: 20),
+            ),
+            const SizedBox(height: 20),
 
-              const Text(
-                'Select Operating Route',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.black),
-              ),
-              const SizedBox(height: 10),
+            const Text(
+              'Select Operating Route',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.black),
+            ),
+            const SizedBox(height: 10),
 
-              Expanded(
-                child: ListView.separated(
-                  itemCount: availableRoutes.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (context, idx) {
-                    final r = availableRoutes[idx];
-                    final isSelected = _chosenRoute?.id == r.id;
-                    return Card(
-                      color: isSelected ? AppTheme.black : AppTheme.white,
-                      child: InkWell(
-                        onTap: () => setState(() => _chosenRoute = r),
-                        borderRadius: BorderRadius.circular(16),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Row(
-                            children: [
-                              Icon(
-                                widget.driverRole == UserRole.driverBus ? Icons.directions_bus : Icons.airport_shuttle,
-                                color: isSelected ? AppTheme.white : AppTheme.black,
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      r.name,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                        color: isSelected ? AppTheme.white : AppTheme.black,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${r.originName} → ${r.destinationName}',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: isSelected ? AppTheme.lightGrey : AppTheme.midGrey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (isSelected)
-                                const Icon(Icons.check_circle, color: AppTheme.accentGreen),
-                            ],
+            ...availableRoutes.map((r) {
+              final isSelected = _chosenRoute?.id == r.id;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10.0),
+                child: Card(
+                  color: isSelected ? AppTheme.black : AppTheme.white,
+                  child: InkWell(
+                    onTap: () => setState(() => _chosenRoute = r),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            widget.driverRole == UserRole.driverBus ? Icons.directions_bus : Icons.airport_shuttle,
+                            color: isSelected ? AppTheme.white : AppTheme.black,
                           ),
-                        ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  r.name,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: isSelected ? AppTheme.white : AppTheme.black,
+                                  ),
+                                ),
+                                Text(
+                                  '${r.originName} → ${r.destinationName}',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: isSelected ? AppTheme.lightGrey : AppTheme.midGrey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (isSelected)
+                            const Icon(Icons.check_circle, color: AppTheme.accentGreen),
+                        ],
                       ),
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: _chosenRoute == null
-                      ? null
-                      : () {
-                          final auth = Provider.of<AuthProvider>(context, listen: false);
-                          auth.updateDriverConfig(
-                            serviceType: widget.driverRole.serviceType,
-                            routeId: _chosenRoute!.id,
-                            vehiclePlate: _plateController.text,
-                          );
-                          widget.onRouteConfirmed(_chosenRoute!);
-                        },
-                  child: Text(
-                    _chosenRoute == null ? 'Select a Route to Start' : 'Start Shift on ${_chosenRoute!.name}',
+                    ),
                   ),
                 ),
+              );
+            }),
+
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton(
+                onPressed: _chosenRoute == null
+                    ? null
+                    : () {
+                        final auth = Provider.of<AuthProvider>(context, listen: false);
+                        auth.updateDriverConfig(
+                          serviceType: widget.driverRole.serviceType,
+                          routeId: _chosenRoute!.id,
+                          vehiclePlate: _plateController.text.trim().toUpperCase(),
+                        );
+                        widget.onRouteConfirmed(_chosenRoute!);
+                      },
+                child: const Text('Confirm & Start Shift'),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+          ],
         ),
       ),
     );

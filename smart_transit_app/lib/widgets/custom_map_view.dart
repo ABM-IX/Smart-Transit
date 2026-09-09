@@ -4,12 +4,14 @@ import 'package:latlong2/latlong.dart';
 import '../core/constants.dart';
 import '../core/theme.dart';
 import '../models/driver_model.dart';
+import '../models/hail_request_model.dart';
 import '../models/route_model.dart';
 
 class CustomMapView extends StatefulWidget {
   final LatLng userLocation;
   final List<TransitStop> stops;
   final List<LiveDriver> drivers;
+  final List<HailRequest> activeHails;
   final Function(TransitStop)? onStopTapped;
   final Function(LiveDriver)? onDriverTapped;
 
@@ -18,6 +20,7 @@ class CustomMapView extends StatefulWidget {
     required this.userLocation,
     this.stops = const [],
     this.drivers = const [],
+    this.activeHails = const [],
     this.onStopTapped,
     this.onDriverTapped,
   });
@@ -104,6 +107,36 @@ class _CustomMapViewState extends State<CustomMapView> {
                       Icons.directions_bus,
                       color: AppTheme.black,
                       size: 16,
+                    ),
+                  ),
+                ),
+              );
+            }),
+
+            // Active Passenger Hail Markers
+            ...widget.activeHails.map((hail) {
+              return Marker(
+                point: LatLng(hail.pickupLat, hail.pickupLng),
+                width: 44,
+                height: 44,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentGreen,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.black, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.pan_tool_alt,
+                      color: AppTheme.white,
+                      size: 22,
                     ),
                   ),
                 ),

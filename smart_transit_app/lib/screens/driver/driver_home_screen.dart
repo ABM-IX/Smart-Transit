@@ -52,22 +52,26 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
       });
     }
 
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Scaffold(
       backgroundColor: AppTheme.white,
       body: Stack(
         children: [
-          // Live Map
+          // Live Real-Time Map View (Pure GPS tracking without simulated static turn HUD)
           CustomMapView(
             userLocation: transit.currentLocation,
             stops: transit.stops,
-            drivers: transit.activeDrivers,
+            activeHails: relevantHails,
+            drivers: transit.activeDrivers.where((d) => d.driverId != auth.userId).toList(),
           ),
 
-          // Top Header
+          // Top Header & Responsive Notification Stack
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
@@ -148,18 +152,26 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
 
                   // Connection & GPS Badges (Responsive Wrap to prevent any horizontal overflow)
                   Wrap(
                     spacing: 6,
-                    runSpacing: 6,
+                    runSpacing: 4,
                     children: [
                       StatusPill(
                         label: transit.isDriverOnline ? 'ONLINE • GPS Active' : 'OFFLINE',
                         color: transit.isDriverOnline ? AppTheme.accentGreen : AppTheme.midGrey,
                         icon: transit.isDriverOnline ? Icons.sensors : Icons.sensors_off,
                       ),
+                      if (transit.isDriverOnline)
+                        StatusPill(
+                          label: transit.vehicleSpeedKmh > 1.0
+                              ? '${transit.vehicleSpeedKmh.toStringAsFixed(0)} km/h'
+                              : '0 km/h (Stationary)',
+                          color: transit.vehicleSpeedKmh > 1.0 ? AppTheme.accentBlue : AppTheme.darkGrey,
+                          icon: Icons.speed,
+                        ),
                       if (relevantHails.isNotEmpty)
                         StatusPill(
                           label: '${relevantHails.length} Waiting on Route',
@@ -173,119 +185,111 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                       ),
                     ],
                   ),
+
+                  // Spacing Advisory Banner (Flows naturally in column)
+                  if (transit.isDriverOnline && widget.driverRole != UserRole.driverTaxi && transit.spacingAdvisory != null) ...[
+                    const SizedBox(height: 6),
+                    SpacingAdvisoryWidget(advisory: transit.spacingAdvisory),
+                  ],
+
+                  // 🔔 Passenger Stop Requested Banner
+                  if (transit.lastStopRequest != null) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade700,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 3)),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.notifications_active, color: Colors.white, size: 20),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'STOP REQUESTED!',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
+                                ),
+                                Text(
+                                  'Passenger signaling to get off ahead 🛑',
+                                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => transit.dismissStopRequest(),
+                            style: TextButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: const Text('OK', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // ✋ Non-intrusive 5s Auto-Dismissing Hail Banner
+                  if (_showHailAlert && relevantHails.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.black,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 10, offset: const Offset(0, 3)),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.pan_tool_alt, color: AppTheme.accentGreen, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'Passenger Hail on Route!',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12),
+                                ),
+                                Text(
+                                  relevantHails.first.stopName != null
+                                      ? 'Waiting at ${relevantHails.first.stopName} (P${relevantHails.first.fareEstimate.toStringAsFixed(2)})'
+                                      : 'Waiting along corridor (P${relevantHails.first.fareEstimate.toStringAsFixed(2)})',
+                                  style: const TextStyle(color: AppTheme.lightGrey, fontSize: 11),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => setState(() => _showHailAlert = false),
+                            style: TextButton.styleFrom(
+                              backgroundColor: AppTheme.accentGreen,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: const Text('OK', style: TextStyle(color: AppTheme.black, fontWeight: FontWeight.w900, fontSize: 11)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
-
-          // Spacing Advisory Banner
-          if (transit.isDriverOnline && widget.driverRole != UserRole.driverTaxi)
-            Positioned(
-              top: 130,
-              left: 0,
-              right: 0,
-              child: SpacingAdvisoryWidget(advisory: transit.spacingAdvisory),
-            ),
-
-          // 🔔 Passenger Stop Requested Banner
-          if (transit.lastStopRequest != null)
-            Positioned(
-              top: 185,
-              left: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade700,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4)),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.notifications_active, color: Colors.white, size: 24),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            'STOP REQUESTED!',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14),
-                          ),
-                          const Text(
-                            'Passenger signaling to get off ahead 🛑',
-                            style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
-                          ),
-                        ],
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => transit.dismissStopRequest(),
-                      style: TextButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      child: const Text('OK', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-          // ✋ Non-intrusive 5s Auto-Dismissing Hail Banner
-          if (_showHailAlert && relevantHails.isNotEmpty)
-            Positioned(
-              top: 185,
-              left: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppTheme.black,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, 4)),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.pan_tool_alt, color: AppTheme.accentGreen, size: 24),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            'Passenger Hail on Route!',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
-                          ),
-                          Text(
-                            relevantHails.first.stopName != null
-                                ? 'Waiting at ${relevantHails.first.stopName} (P${relevantHails.first.fareEstimate.toStringAsFixed(2)})'
-                                : 'Waiting along corridor (P${relevantHails.first.fareEstimate.toStringAsFixed(2)})',
-                            style: const TextStyle(color: AppTheme.lightGrey, fontSize: 11),
-                          ),
-                        ],
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => setState(() => _showHailAlert = false),
-                      style: TextButton.styleFrom(
-                        backgroundColor: AppTheme.accentGreen,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      child: const Text('OK', style: TextStyle(color: AppTheme.black, fontWeight: FontWeight.w900, fontSize: 12)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
 
           // Bottom Control Panel
           Positioned(
@@ -296,7 +300,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
               top: false,
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.50,
+                  maxHeight: isLandscape
+                      ? MediaQuery.of(context).size.height * 0.42
+                      : MediaQuery.of(context).size.height * 0.50,
                 ),
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),

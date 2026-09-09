@@ -99,7 +99,9 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
             top: false,
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.65,
+                maxHeight: MediaQuery.of(context).orientation == Orientation.landscape
+                    ? MediaQuery.of(context).size.height * 0.55
+                    : MediaQuery.of(context).size.height * 0.65,
               ),
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -543,7 +545,6 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
   Widget _buildOnBoardCard(BuildContext context, TransitProvider transit, AuthProvider auth) {
     // Show "I've Arrived" only after stop is signaled AND vehicle has slowed/stopped
     final vehicleStationary = transit.vehicleSpeedKmh < 5.0;
-    final showArriveButton = _stopRequested && vehicleStationary;
 
     return Container(
       padding: const EdgeInsets.all(22),

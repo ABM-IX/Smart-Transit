@@ -74,9 +74,35 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
           Expanded(
             child: filteredRoutes.isEmpty
                 ? Center(
-                    child: Text(
-                      'No routes found matching "$_searchQuery"',
-                      style: const TextStyle(color: AppTheme.midGrey),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            widget.mode == TransportMode.bus
+                                ? Icons.directions_bus_outlined
+                                : Icons.airport_shuttle_outlined,
+                            size: 48,
+                            color: AppTheme.midGrey,
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            _searchQuery.isNotEmpty
+                                ? 'No corridors matching "$_searchQuery"'
+                                : 'No Active ${widget.mode == TransportMode.bus ? "Bus" : "Combi"} Corridors',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.black),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _searchQuery.isNotEmpty
+                                ? 'Try searching for a different destination or route number.'
+                                : 'Corridors only appear once an operator registers on them. Check back soon or hail a direct cab!',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 13, color: AppTheme.midGrey, height: 1.4),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : ListView.separated(
@@ -84,7 +110,7 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
                     separatorBuilder: (context, idx) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final route = filteredRoutes[index];
-                      return _buildRouteCard(route);
+                      return _buildRouteCard(route, transit);
                     },
                   ),
           ),
@@ -93,7 +119,8 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
     );
   }
 
-  Widget _buildRouteCard(TransitRoute route) {
+  Widget _buildRouteCard(TransitRoute route, TransitProvider transit) {
+    final hasLiveDriver = transit.activeDrivers.any((d) => d.routeId == route.id);
     return Card(
       child: InkWell(
         onTap: () => widget.onRouteSelected(route),
@@ -135,6 +162,36 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
                       style: const TextStyle(fontSize: 13, color: AppTheme.midGrey),
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (hasLiveDriver) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.accentGreen.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.circle, size: 6, color: AppTheme.accentGreen),
+                                SizedBox(width: 4),
+                                Text(
+                                  'ACTIVE VEHICLES ONLINE',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                    color: AppTheme.accentGreen,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
