@@ -35,19 +35,29 @@ async def root_head():
     return Response(status_code=200)
 
 
+from app.database import check_db_health
+
 @router.get("/health")
 @router.head("/health")
 async def health_check():
-    """Returns the operational health of the SmartTransit engine."""
+    """Returns the operational health of the SmartTransit engine and database."""
+    db_health = await check_db_health()
+    is_healthy = system_active and db_health.get("status") == "connected"
     return {
-        "status": "ok",
+        "status": "ok" if is_healthy else "degraded",
         "system_active": system_active,
+        "database": db_health,
         "engine": "FastAPI + Socket.IO + AI Orchestrator",
         "active_drivers_count": len(active_drivers),
         "active_passengers_count": len(active_passengers),
         "active_trips_count": len(active_trips),
         "taxi_assignments_count": len(taxi_assignments)
     }
+
+@router.get("/api/health/db")
+async def db_health_endpoint():
+    """Explicit database health diagnostic endpoint."""
+    return await check_db_health()
 
 
 @router.get("/api/analytics")

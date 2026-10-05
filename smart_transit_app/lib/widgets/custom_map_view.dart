@@ -65,31 +65,38 @@ class _CustomMapViewState extends State<CustomMapView> {
         // Markers Layer
         MarkerLayer(
           markers: [
-            // User Location Marker
+            // User Location Marker (Botswana sky pulse + brand navy core)
             Marker(
               point: widget.userLocation,
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               child: Container(
                 decoration: BoxDecoration(
-                  color: AppTheme.accentBlue.withValues(alpha: 0.2),
+                  color: AppTheme.botswanaSky.withValues(alpha: 0.28),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
                   child: Container(
-                    width: 18,
-                    height: 18,
+                    width: 20,
+                    height: 20,
                     decoration: BoxDecoration(
-                      color: AppTheme.black,
+                      color: AppTheme.brandNavy,
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppTheme.white, width: 3),
+                      border: Border.all(color: AppTheme.cardSurface, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.brandNavy.withValues(alpha: 0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
             ),
 
-            // Stop Markers
+            // Stop Markers (High contrast, distinct shape + icon)
             ...widget.stops.map((stop) {
               return Marker(
                 point: LatLng(stop.latitude, stop.longitude),
@@ -99,13 +106,20 @@ class _CustomMapViewState extends State<CustomMapView> {
                   onTap: () => widget.onStopTapped?.call(stop),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppTheme.white,
+                      color: AppTheme.cardSurface,
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppTheme.black, width: 2),
+                      border: Border.all(color: AppTheme.brandNavy, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.brandNavy.withValues(alpha: 0.15),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: const Icon(
-                      Icons.directions_bus,
-                      color: AppTheme.black,
+                      Icons.place,
+                      color: AppTheme.brandNavy,
                       size: 16,
                     ),
                   ),
@@ -113,7 +127,7 @@ class _CustomMapViewState extends State<CustomMapView> {
               );
             }),
 
-            // Active Passenger Hail Markers
+            // Active Passenger Hail Markers (Urgent red hailColor + hand icon)
             ...widget.activeHails.map((hail) {
               return Marker(
                 point: LatLng(hail.pickupLat, hail.pickupLng),
@@ -121,21 +135,21 @@ class _CustomMapViewState extends State<CustomMapView> {
                 height: 44,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppTheme.accentGreen,
+                    color: AppTheme.hailColor,
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppTheme.black, width: 2),
+                    border: Border.all(color: AppTheme.cardSurface, width: 2.5),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
+                        color: AppTheme.hailColor.withValues(alpha: 0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
                   child: const Center(
                     child: Icon(
                       Icons.pan_tool_alt,
-                      color: AppTheme.white,
+                      color: AppTheme.cardSurface,
                       size: 22,
                     ),
                   ),
@@ -143,26 +157,52 @@ class _CustomMapViewState extends State<CustomMapView> {
               );
             }),
 
-            // Live Driver Markers
+            // Live Driver Markers: Distinct by color + icon + shape
             ...widget.drivers.map((driver) {
               final isTaxi = driver.serviceType == 'TAXI';
-              final color = isTaxi ? AppTheme.accentAmber : AppTheme.accentGreen;
+              final isBus = driver.serviceType == 'BUS' || (driver.routeId?.startsWith('bus-') ?? false);
+              
+              final Color modeColor = isTaxi
+                  ? AppTheme.taxiColor
+                  : isBus
+                      ? AppTheme.busColor
+                      : AppTheme.combiColor;
+
+              final IconData modeIcon = isTaxi
+                  ? Icons.local_taxi
+                  : isBus
+                      ? Icons.directions_bus
+                      : Icons.airport_shuttle;
+
+              final BorderRadius borderRadius = isBus
+                  ? BorderRadius.circular(8) // Squircle for Bus
+                  : isTaxi
+                      ? BorderRadius.circular(100) // Circular for Taxi
+                      : BorderRadius.circular(12); // Rounded rectangle for Combi
+
               return Marker(
                 point: LatLng(driver.latitude, driver.longitude),
-                width: 38,
-                height: 38,
+                width: 40,
+                height: 40,
                 child: GestureDetector(
                   onTap: () => widget.onDriverTapped?.call(driver),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppTheme.white, width: 2),
+                      color: modeColor,
+                      borderRadius: borderRadius,
+                      border: Border.all(color: AppTheme.cardSurface, width: 2.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: modeColor.withValues(alpha: 0.35),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Icon(
-                      isTaxi ? Icons.local_taxi : Icons.airport_shuttle,
-                      color: AppTheme.black,
-                      size: 18,
+                      modeIcon,
+                      color: AppTheme.cardSurface,
+                      size: 20,
                     ),
                   ),
                 ),

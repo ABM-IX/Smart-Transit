@@ -70,14 +70,14 @@ class IncomingHailDialog extends StatelessWidget {
                   ],
                 ),
               ),
-              Text(
-                'P${hail.fareEstimate.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: AppTheme.accentGreen,
+                Text(
+                  'P${hail.fareEstimate.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: AppTheme.primaryTeal,
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 16),

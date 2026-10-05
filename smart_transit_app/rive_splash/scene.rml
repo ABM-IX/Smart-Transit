@@ -1,0 +1,420 @@
+<Rive version="1" kind="fragment">
+    <FontAsset file="SpaceGrotesk.ttf" name="SpaceGrotesk" id="0:100"/>
+    <FontAsset file="Inter.ttf" name="Inter" id="0:101"/>
+
+    <Artboard defaultStateMachineId="0:7" styleId="0:5" width="500" height="600" name="Artboard" id="0:2">
+        <LayoutComponentStyle name="Artboard Style" id="0:5"/>
+        <Fill name="Background">
+            <SolidColor colorValue="FFFFFFFF" name="WhiteBg"/>
+        </Fill>
+
+        <!-- DRAW ORDER IN RIVE: First sibling declared draws ON TOP -->
+
+        <!-- 1. Location Pin (Top Layer) -->
+        <Node x="361.72" y="134.06" name="LocationPin" id="0:250">
+            <!-- White Center Cutout (Draws on TOP of PinBody) -->
+            <Shape x="0" y="-2" name="PinCutout" id="0:252">
+                <Ellipse originX="0.5" originY="0.5" width="10" height="10"/>
+                <Fill name="Fill"><SolidColor colorValue="FFFFFFFF" name="White"/></Fill>
+            </Shape>
+            <!-- Pin Body Shape -->
+            <Shape x="0" y="0" name="PinBody" id="0:251">
+                <PointsPath isClosed="true" name="Path">
+                    <CubicDetachedVertex x="0" y="-14" inRotation="3.14159" inDistance="7.5" outRotation="0" outDistance="7.5"/>
+                    <CubicDetachedVertex x="13.5" y="-2" inRotation="-1.5708" inDistance="6.5" outRotation="1.8" outDistance="6.5"/>
+                    <StraightVertex x="0" y="22" radius="1"/>
+                    <CubicDetachedVertex x="-13.5" y="-2" inRotation="1.34" inDistance="6.5" outRotation="-1.5708" outDistance="6.5"/>
+                </PointsPath>
+                <Fill name="Fill"><SolidColor colorValue="FF0A66C2" name="Cerulean"/></Fill>
+            </Shape>
+        </Node>
+
+        <!-- 2. Network Nodes (Draw on top of Circuit Line) -->
+        <!-- Network Node 1 (Top) -->
+        <Shape x="292.94" y="142.8" name="Node1" id="0:240">
+            <Ellipse originX="0.5" originY="0.5" width="12" height="12"/>
+            <Fill name="Fill"><SolidColor colorValue="FF0A66C2" name="Cerulean"/></Fill>
+        </Shape>
+
+        <!-- Network Node 2 (Middle) -->
+        <Shape x="330.18" y="234.0" name="Node2" id="0:230">
+            <Ellipse originX="0.5" originY="0.5" width="12" height="12"/>
+            <Fill name="Fill"><SolidColor colorValue="FF0A66C2" name="Cerulean"/></Fill>
+        </Shape>
+
+        <!-- Network Node 3 (Bottom) -->
+        <Shape x="319.54" y="292.33" name="Node3" id="0:220">
+            <Ellipse originX="0.5" originY="0.5" width="12" height="12"/>
+            <Fill name="Fill"><SolidColor colorValue="FF0A66C2" name="Cerulean"/></Fill>
+        </Shape>
+
+        <!-- 3. Cerulean S-Circuit Line (Stroke & Trim Animation) -->
+        <Shape x="0" y="0" name="SCircuitTrace" id="0:210">
+            <PointsPath isClosed="false" name="Path">
+                <!-- 1. Start at bottom -->
+                <CubicDetachedVertex x="199.27" y="310.38" outRotation="0.0" outDistance="25" inRotation="3.14" inDistance="0"/>
+                <!-- 2. Through Node 3 -->
+                <CubicDetachedVertex x="319.54" y="292.33" inRotation="3.35" inDistance="28" outRotation="-0.65" outDistance="25"/>
+                <!-- 3. Bottom Right Loop -->
+                <CubicDetachedVertex x="364.19" y="266.3" inRotation="1.57" inDistance="18" outRotation="-1.57" outDistance="18"/>
+                <!-- 4. Through Node 2 -->
+                <CubicDetachedVertex x="330.18" y="234.0" inRotation="-0.5" inDistance="20" outRotation="2.65" outDistance="25"/>
+                <!-- 5. Center Diagonal Spine -->
+                <CubicDetachedVertex x="216.37" y="186.5" inRotation="-0.55" inDistance="25" outRotation="2.6" outDistance="25"/>
+                <!-- 6. Top Left Loop -->
+                <CubicDetachedVertex x="195.47" y="169.4" inRotation="1.57" inDistance="16" outRotation="-0.3" outDistance="22"/>
+                <!-- 7. Through Node 1 -->
+                <CubicDetachedVertex x="292.94" y="142.8" inRotation="3.14" inDistance="20" outRotation="0.0" outDistance="20"/>
+                <!-- 8. Connect to Location Pin -->
+                <CubicDetachedVertex x="358.72" y="146.06" inRotation="3.14" inDistance="12" outRotation="0.0" outDistance="0"/>
+            </PointsPath>
+            <Stroke thickness="8" cap="round" join="round">
+                <SolidColor colorValue="FF0A66C2" name="CeruleanBlue"/>
+                <TrimPath start="0" end="1" name="Trim" id="0:211"/>
+            </Stroke>
+        </Shape>
+
+        <!-- 4. Speed Trail Lines (Mobility) -->
+        <Node name="SpeedTrails" id="0:200">
+            <Shape x="155.95" y="222.03" name="SpeedLine1" id="0:201">
+                <Rectangle originX="0.5" originY="0.5" width="50.9" height="9.1" cornerRadiusTL="4.5" linkCornerRadius="true"/>
+                <Fill name="Fill"><SolidColor colorValue="FF0A66C2" name="Cerulean"/></Fill>
+            </Shape>
+            <Shape x="173.81" y="238.75" name="SpeedLine2" id="0:202">
+                <Rectangle originX="0.5" originY="0.5" width="52.4" height="9.1" cornerRadiusTL="4.5" linkCornerRadius="true"/>
+                <Fill name="Fill"><SolidColor colorValue="FF0A66C2" name="Cerulean"/></Fill>
+            </Shape>
+            <Shape x="198.32" y="255.47" name="SpeedLine3" id="0:203">
+                <Rectangle originX="0.5" originY="0.5" width="65.0" height="9.1" cornerRadiusTL="4.5" linkCornerRadius="true"/>
+                <Fill name="Fill"><SolidColor colorValue="FF0A66C2" name="Cerulean"/></Fill>
+            </Shape>
+        </Node>
+
+        <!-- 5. Solid Navy Body (Connectivity Core, Underneath Stroke) -->
+        <Shape x="0" y="0" name="NavyBody_0" id="0:110">
+            <PointsPath isClosed="true" name="Path">
+                <StraightVertex x="249.05" y="160.28" radius="4"/>
+                <StraightVertex x="281.73" y="160.28" radius="4"/>
+                <StraightVertex x="285.91" y="166.74" radius="4"/>
+                <StraightVertex x="290.85" y="169.02" radius="4"/>
+                <StraightVertex x="296.17" y="168.64" radius="4"/>
+                <StraightVertex x="299.59" y="166.74" radius="4"/>
+                <StraightVertex x="303.77" y="160.28" radius="4"/>
+                <StraightVertex x="356.59" y="160.66" radius="4"/>
+                <StraightVertex x="359.25" y="164.84" radius="4"/>
+                <StraightVertex x="355.45" y="170.16" radius="4"/>
+                <StraightVertex x="346.71" y="177.76" radius="4"/>
+                <StraightVertex x="338.73" y="180.8" radius="4"/>
+                <StraightVertex x="315.93" y="181.94" radius="4"/>
+                <StraightVertex x="244.87" y="181.56" radius="4"/>
+                <StraightVertex x="239.17" y="185.74" radius="4"/>
+                <StraightVertex x="238.79" y="192.2" radius="4"/>
+                <StraightVertex x="242.97" y="196.76" radius="4"/>
+                <StraightVertex x="249.43" y="198.28" radius="4"/>
+                <StraightVertex x="312.89" y="227.54" radius="4"/>
+                <StraightVertex x="249.43" y="212.34" radius="4"/>
+                <StraightVertex x="233.47" y="205.88" radius="4"/>
+                <StraightVertex x="224.35" y="198.28" radius="4"/>
+                <StraightVertex x="219.79" y="187.26" radius="4"/>
+                <StraightVertex x="219.79" y="183.08" radius="4"/>
+                <StraightVertex x="222.83" y="175.1" radius="4"/>
+                <StraightVertex x="233.85" y="164.84" radius="4"/>
+                <StraightVertex x="248.67" y="160.66" radius="4"/>
+            </PointsPath>
+            <Fill name="Fill">
+                <SolidColor colorValue="FF0F1B2E" name="NavyColor"/>
+            </Fill>
+        </Shape>
+        <Shape x="0" y="0" name="NavyBody_1" id="0:111">
+            <PointsPath isClosed="true" name="Path">
+                <StraightVertex x="188.63" y="187.26" radius="4"/>
+                <StraightVertex x="211.81" y="187.64" radius="4"/>
+                <StraightVertex x="213.33" y="195.62" radius="4"/>
+                <StraightVertex x="218.65" y="203.98" radius="4"/>
+                <StraightVertex x="228.15" y="211.58" radius="4"/>
+                <StraightVertex x="239.17" y="216.52" radius="4"/>
+                <StraightVertex x="268.81" y="224.5" radius="4"/>
+                <StraightVertex x="318.21" y="235.14" radius="4"/>
+                <StraightVertex x="320.87" y="240.46" radius="4"/>
+                <StraightVertex x="327.33" y="245.02" radius="4"/>
+                <StraightVertex x="333.03" y="245.02" radius="4"/>
+                <StraightVertex x="338.35" y="241.22" radius="4"/>
+                <StraightVertex x="346.33" y="247.68" radius="4"/>
+                <StraightVertex x="350.89" y="257.56" radius="4"/>
+                <StraightVertex x="350.51" y="265.54" radius="4"/>
+                <StraightVertex x="345.19" y="275.42" radius="4"/>
+                <StraightVertex x="336.83" y="282.26" radius="4"/>
+                <StraightVertex x="329.23" y="285.68" radius="4"/>
+                <StraightVertex x="323.53" y="281.5" radius="4"/>
+                <StraightVertex x="316.31" y="281.12" radius="4"/>
+                <StraightVertex x="309.85" y="286.06" radius="4"/>
+                <StraightVertex x="307.95" y="289.86" radius="4"/>
+                <StraightVertex x="218.65" y="289.48" radius="4"/>
+                <StraightVertex x="212.19" y="290.62" radius="4"/>
+                <StraightVertex x="205.35" y="292.9" radius="4"/>
+                <StraightVertex x="162.79" y="315.32" radius="4"/>
+                <StraightVertex x="187.49" y="279.98" radius="4"/>
+                <StraightVertex x="194.33" y="273.9" radius="4"/>
+                <StraightVertex x="201.55" y="270.1" radius="4"/>
+                <StraightVertex x="214.85" y="267.44" radius="4"/>
+                <StraightVertex x="307.57" y="267.44" radius="4"/>
+                <StraightVertex x="310.61" y="266.3" radius="4"/>
+                <StraightVertex x="314.79" y="260.6" radius="4"/>
+                <StraightVertex x="313.65" y="252.24" radius="4"/>
+                <StraightVertex x="307.19" y="248.06" radius="4"/>
+                <StraightVertex x="280.21" y="248.44" radius="4"/>
+                <StraightVertex x="236.89" y="246.16" radius="4"/>
+                <StraightVertex x="222.45" y="243.12" radius="4"/>
+                <StraightVertex x="207.25" y="236.66" radius="4"/>
+                <StraightVertex x="192.81" y="224.88" radius="4"/>
+                <StraightVertex x="183.69" y="210.44" radius="4"/>
+                <StraightVertex x="180.65" y="200.18" radius="4"/>
+                <StraightVertex x="179.89" y="187.64" radius="4"/>
+                <StraightVertex x="188.25" y="187.64" radius="4"/>
+            </PointsPath>
+            <Fill name="Fill">
+                <SolidColor colorValue="FF0F1B2E" name="NavyColor"/>
+            </Fill>
+        </Shape>
+
+        <!-- 6. Wordmark & Tagline -->
+        <Node x="250" y="380" name="WordmarkGroup" id="0:300">
+            <Text x="0" y="0" originX="0.5" originY="0.5" alignValue="center" name="BrandTitle" id="0:301">
+                <TextStylePaint fontSize="32" fontAssetId="0:100" name="SmartStyle" id="0:302">
+                    <Fill name="Fill"><SolidColor colorValue="FF0F1B2E" name="Navy"/></Fill>
+                </TextStylePaint>
+                <TextStylePaint fontSize="32" fontAssetId="0:100" name="TransitStyle" id="0:303">
+                    <Fill name="Fill"><SolidColor colorValue="FF0A66C2" name="Blue"/></Fill>
+                </TextStylePaint>
+                <TextValueRun styleId="0:302" text="SMART " name="RunSmart"/>
+                <TextValueRun styleId="0:303" text="TRANSIT" name="RunTransit"/>
+            </Text>
+
+            <Text x="0" y="36" originX="0.5" originY="0.5" alignValue="center" name="Tagline" id="0:310">
+                <TextStylePaint fontSize="13.5" fontAssetId="0:101" name="TaglineStyle" id="0:311">
+                    <Fill name="Fill"><SolidColor colorValue="FF0F1B2E" name="NavyText"/></Fill>
+                </TextStylePaint>
+                <TextValueRun styleId="0:311" text="Intelligent Mobility. Connected Botswana." name="RunTagline"/>
+            </Text>
+        </Node>
+
+        <!-- State Machine & Controller Wiring -->
+        <StateMachine name="State Machine 1" id="0:7">
+            <StateMachineBool name="appReady" id="0:10"/>
+            <StateMachineLayer name="Layer 1" id="0:8">
+                <AnyState x="0" y="-150"/>
+                <ExitState x="700" y="0" id="0:19"/>
+                <EntryState>
+                    <StateTransition stateToId="0:11"/>
+                </EntryState>
+                <!-- 1. Static (0ms, native OS launch screen match) -->
+                <AnimationState x="100" y="0" animationId="0:51" id="0:11">
+                    <StateTransition stateToId="0:12" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"/>
+                </AnimationState>
+                <!-- 2. TraceAndConnect (0-700ms, S-outline draw + node pulses) -->
+                <AnimationState x="250" y="0" animationId="0:52" id="0:12">
+                    <StateTransition stateToId="0:13" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"/>
+                </AnimationState>
+                <!-- 3. Arrival (700-900ms, Pin single arrival pulse) -->
+                <AnimationState x="400" y="0" animationId="0:53" id="0:13">
+                    <StateTransition stateToId="0:14" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"/>
+                </AnimationState>
+                <!-- 4. Wordmark (900-1100ms, Wordmark & tagline opacity fade-in) -->
+                <AnimationState x="550" y="0" animationId="0:54" id="0:14">
+                    <StateTransition stateToId="0:15" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"/>
+                </AnimationState>
+                <!-- 5. Idle (1100ms onward, Pin subtle breathing pulse loop, waits for appReady) -->
+                <AnimationState x="700" y="-150" animationId="0:55" id="0:15">
+                    <StateTransition stateToId="0:19">
+                        <TransitionBoolCondition inputId="0:10" opValue="equal"/>
+                    </StateTransition>
+                </AnimationState>
+            </StateMachineLayer>
+        </StateMachine>
+
+        <!-- Timelines -->
+        <!-- 1. Static (t=0ms, matches native launch screen perfectly) -->
+        <LinearAnimation duration="1" name="Static" id="0:51">
+            <KeyedObject objectId="0:211">
+                <KeyedProperty propertyKey="115">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:300">
+                <KeyedProperty propertyKey="18">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- 2. TraceAndConnect (0-700ms, 42 frames @ 60fps) -->
+        <LinearAnimation duration="42" name="TraceAndConnect" id="0:52">
+            <!-- S-Trace outline draws 0% to 100% eased -->
+            <KeyedObject objectId="0:211">
+                <KeyedProperty propertyKey="115">
+                    <KeyFrameDouble value="0" frame="0" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1" frame="42" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <!-- Node 3 pulse as trace reaches it (~frame 10) -->
+            <KeyedObject objectId="0:220">
+                <KeyedProperty propertyKey="16"> <!-- scaleX -->
+                    <KeyFrameDouble value="1.0" frame="0" interpolationType="linear"/>
+                    <KeyFrameDouble value="1.0" frame="8" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.35" frame="12" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.0" frame="17" interpolationType="linear"/>
+                </KeyedProperty>
+                <KeyedProperty propertyKey="17"> <!-- scaleY -->
+                    <KeyFrameDouble value="1.0" frame="0" interpolationType="linear"/>
+                    <KeyFrameDouble value="1.0" frame="8" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.35" frame="12" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.0" frame="17" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <!-- Node 2 pulse as trace reaches it (~frame 23) -->
+            <KeyedObject objectId="0:230">
+                <KeyedProperty propertyKey="16">
+                    <KeyFrameDouble value="1.0" frame="0" interpolationType="linear"/>
+                    <KeyFrameDouble value="1.0" frame="20" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.35" frame="24" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.0" frame="29" interpolationType="linear"/>
+                </KeyedProperty>
+                <KeyedProperty propertyKey="17">
+                    <KeyFrameDouble value="1.0" frame="0" interpolationType="linear"/>
+                    <KeyFrameDouble value="1.0" frame="20" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.35" frame="24" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.0" frame="29" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <!-- Node 1 pulse as trace reaches it (~frame 34) -->
+            <KeyedObject objectId="0:240">
+                <KeyedProperty propertyKey="16">
+                    <KeyFrameDouble value="1.0" frame="0" interpolationType="linear"/>
+                    <KeyFrameDouble value="1.0" frame="31" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.35" frame="35" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.0" frame="40" interpolationType="linear"/>
+                </KeyedProperty>
+                <KeyedProperty propertyKey="17">
+                    <KeyFrameDouble value="1.0" frame="0" interpolationType="linear"/>
+                    <KeyFrameDouble value="1.0" frame="31" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.35" frame="35" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.0" frame="40" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <!-- Wordmark hidden during trace -->
+            <KeyedObject objectId="0:300">
+                <KeyedProperty propertyKey="18">
+                    <KeyFrameDouble value="0" frame="0" interpolationType="linear"/>
+                    <KeyFrameDouble value="0" frame="42" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- 3. Arrival (700-900ms, 12 frames @ 60fps) -->
+        <LinearAnimation duration="12" name="Arrival" id="0:53">
+            <KeyedObject objectId="0:211">
+                <KeyedProperty propertyKey="115">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <!-- Pin single arrival pulse (1.0 -> 1.15 -> 1.0) -->
+            <KeyedObject objectId="0:250">
+                <KeyedProperty propertyKey="16"> <!-- scaleX -->
+                    <KeyFrameDouble value="1.0" frame="0" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.15" frame="6" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.0" frame="12" interpolationType="linear"/>
+                </KeyedProperty>
+                <KeyedProperty propertyKey="17"> <!-- scaleY -->
+                    <KeyFrameDouble value="1.0" frame="0" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.15" frame="6" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.0" frame="12" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <!-- Wordmark remains hidden -->
+            <KeyedObject objectId="0:300">
+                <KeyedProperty propertyKey="18">
+                    <KeyFrameDouble value="0" frame="0" interpolationType="linear"/>
+                    <KeyFrameDouble value="0" frame="12" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- 4. Wordmark (900-1100ms, 12 frames @ 60fps) -->
+        <LinearAnimation duration="12" name="Wordmark" id="0:54">
+            <KeyedObject objectId="0:211">
+                <KeyedProperty propertyKey="115">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <!-- Wordmark fades in from opacity 0 to 1 -->
+            <KeyedObject objectId="0:300">
+                <KeyedProperty propertyKey="18">
+                    <KeyFrameDouble value="0" frame="0" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.2" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1" frame="12" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- 5. Idle (1100ms onward, loopable, 108 frames = 1.8s per cycle) -->
+        <LinearAnimation loopValue="loop" duration="108" name="Idle" id="0:55">
+            <KeyedObject objectId="0:211">
+                <KeyedProperty propertyKey="115">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:300">
+                <KeyedProperty propertyKey="18">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <!-- Pin subtle breathing opacity pulse (1.0 -> 0.65 -> 1.0) -->
+            <KeyedObject objectId="0:250">
+                <KeyedProperty propertyKey="18"> <!-- opacity -->
+                    <KeyFrameDouble value="1.0" frame="0" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.6" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="0.65" frame="54" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.6" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.0" frame="108" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+    </Artboard>
+</Rive>

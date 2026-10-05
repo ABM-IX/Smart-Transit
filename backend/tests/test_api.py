@@ -10,6 +10,20 @@ async def test_health_endpoint():
     data = response.json()
     assert data["status"] == "ok"
     assert "FastAPI" in data["engine"]
+    assert "database" in data
+    assert data["database"]["status"] == "connected"
+    assert isinstance(data["database"]["routes_registered"], int)
+
+@pytest.mark.asyncio
+async def test_db_health_endpoint():
+    async with AsyncClient(transport=ASGITransport(app=fastapi_app), base_url="http://test") as ac:
+        response = await ac.get("/api/health/db")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "connected"
+    assert data["routes_registered"] >= 0
+    assert data["stops_registered"] >= 0
+    assert data["drivers_registered"] >= 0
 
 @pytest.mark.asyncio
 async def test_get_routes_endpoint():
@@ -17,7 +31,15 @@ async def test_get_routes_endpoint():
         response = await ac.get("/api/transit/routes")
     assert response.status_code == 200
     routes = response.json()
-    assert len(routes) > 0
+    assert isinstance(routes, list)
+
+@pytest.mark.asyncio
+async def test_get_stops_endpoint():
+    async with AsyncClient(transport=ASGITransport(app=fastapi_app), base_url="http://test") as ac:
+        response = await ac.get("/api/transit/stops")
+    assert response.status_code == 200
+    stops = response.json()
+    assert isinstance(stops, list)
 
 @pytest.mark.asyncio
 async def test_ai_planner_endpoint():

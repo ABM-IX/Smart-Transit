@@ -5,9 +5,9 @@ class Trip(Base):
     __tablename__ = "trips"
 
     id = Column(String, primary_key=True, index=True)
-    driver_id = Column(String, nullable=False, index=True)
-    route_id = Column(String, nullable=True)
-    vehicle_id = Column(String, nullable=True)
+    driver_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    route_id = Column(String, ForeignKey("routes.id"), nullable=True)
+    vehicle_id = Column(String, ForeignKey("vehicles.id"), nullable=True)
     service_type = Column(String, default="COMBI") # COMBI, TAXI, BUS
     passenger_count = Column(Integer, default=1)
     revenue = Column(Float, default=8.0)
@@ -25,8 +25,8 @@ class TaxiBooking(Base):
     __tablename__ = "taxi_bookings"
 
     id = Column(String, primary_key=True, index=True)
-    passenger_id = Column(String, nullable=False, index=True)
-    driver_id = Column(String, nullable=True, index=True)
+    passenger_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    driver_id = Column(String, ForeignKey("users.id"), nullable=True, index=True)
     pickup_lat = Column(Float, nullable=False)
     pickup_lng = Column(Float, nullable=False)
     dropoff_lat = Column(Float, nullable=True)
@@ -42,9 +42,9 @@ class Review(Base):
     __tablename__ = "reviews"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    trip_id = Column(String, nullable=True)
-    driver_id = Column(String, nullable=False)
-    passenger_id = Column(String, nullable=False)
+    trip_id = Column(String, ForeignKey("trips.id"), nullable=True)
+    driver_id = Column(String, ForeignKey("users.id"), nullable=False)
+    passenger_id = Column(String, ForeignKey("users.id"), nullable=False)
     rating = Column(Integer, nullable=False)
     comment = Column(String, nullable=True)
     created_at = Column(DateTime, default=func.now())

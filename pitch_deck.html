@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartTransit 🇧🇼 — Pitch Deck (Open Source Hackathon 2026)</title>
+  <style>
+    :root {
+      --bg-dark: #070d18;
+      --bg-surface: #0e172a;
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --border-card: rgba(255, 255, 255, 0.08);
+      --bw-blue: #00a3e0;
+      --bw-blue-glow: rgba(0, 163, 224, 0.35);
+      --bw-cyan: #38bdf8;
+      --bw-amber: #f59e0b;
+      --bw-emerald: #10b981;
+      --bw-rose: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+    }
+
+    /* Top App Bar */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: rgba(7, 13, 24, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-card);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 100;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, rgba(0, 163, 224, 0.2), rgba(56, 189, 248, 0.1));
+      border: 1px solid rgba(0, 163, 224, 0.4);
+      color: var(--bw-cyan);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .center-status {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .slide-counter {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-card);
+    }
+
+    .timer-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: monospace;
+      color: var(--bw-cyan);
+      background: rgba(56, 189, 248, 0.1);
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    .controls-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-icon {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-card);
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-icon.active {
+      background: var(--bw-blue);
+      color: #fff;
+      border-color: var(--bw-blue);
+    }
+
+    /* Progress Bar */
+    .progress-track {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.05);
+      z-index: 99;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--bw-blue), var(--bw-cyan));
+      width: 10%;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 10px var(--bw-blue-glow);
+    }
+
+    /* Slide Viewport */
+    .viewport {
+      position: absolute;
+      top: 59px;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 48px;
+      overflow: hidden;
+      transition: right 0.3s ease;
+    }
+
+    .viewport.with-notes {
+      right: 380px;
+    }
+
+    .slide {
+      display: none;
+      width: 100%;
+      max-width: 1280px;
+      height: 100%;
+      max-height: 740px;
+      flex-direction: column;
+      justify-content: space-between;
+      animation: fadeInSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    @keyframes fadeInSlide {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.985);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Slide Header */
+    .slide-header {
+      margin-bottom: 20px;
+    }
+
+    .slide-tag {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--bw-cyan);
+      margin-bottom: 6px;
+      display: inline-block;
+    }
+
+    .slide-title {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      background: linear-gradient(135deg, #ffffff 40%, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .slide-subtitle {
+      font-size: 16px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    /* Slide Body Grid */
+    .slide-content {
+      flex: 1;
+      display: flex;
+      gap: 24px;
+      align-items: stretch;
+      min-height: 0;
+    }
+
+    /* Cards & Containers */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 16px;
+      padding: 24px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+      display: flex;
+      flex-direction: column;
+      transition: all 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(0, 163, 224, 0.3);
+      box-shadow: 0 12px 40px rgba(0, 163, 224, 0.1);
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .card-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* Big Numbers / Stats */
+    .stat-box {
+      background: rgba(14, 23, 42, 0.6);
+      border: 1px solid var(--border-card);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .stat-number {
+      font-size: 44px;
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--bw-cyan), var(--bw-blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+
+    .stat-subtext {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+
+    /* Comparison Table */
+    .table-container {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid var(--border-card);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    th {
+      background: rgba(15, 23, 42, 0.8);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-card);
+    }
+
+    td {
+      padding: 11px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr.highlight-row {
+      background: rgba(0, 163, 224, 0.1);
+    }
+
+    tr.highlight-row td {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .badge-win {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    .badge-fail {
+      background: rgba(244, 63, 94, 0.2);
+      color: #fb7185;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    .badge-warn {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fcd34d;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    /* Slide Footer / Key Takeaway */
+    .slide-footer {
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border-card);
+      padding-top: 12px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .footer-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--bw-cyan);
+      font-weight: 600;
+    }
+
+    /* Speaker Notes Drawer */
+    .notes-drawer {
+      position: fixed;
+      top: 59px;
+      right: -380px;
+      width: 380px;
+      bottom: 0;
+      background: #090e1a;
+      border-left: 1px solid var(--border-card);
+      padding: 24px;
+      overflow-y: auto;
+      transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 95;
+    }
+
+    .notes-drawer.open {
+      right: 0;
+    }
+
+    .notes-header {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--bw-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .script-timing {
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .notes-speech {
+      font-size: 14px;
+      line-height: 1.65;
+      color: #e2e8f0;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border-left: 4px solid var(--bw-blue);
+    }
+
+    .notes-bullet-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .notes-bullets {
+      list-style-type: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .notes-bullets li {
+      position: relative;
+      padding-left: 18px;
+    }
+
+    .notes-bullets li::before {
+      content: "•";
+      color: var(--bw-cyan);
+      position: absolute;
+      left: 4px;
+      font-size: 16px;
+      top: -1px;
+    }
+
+    /* Floating Navigation Controls */
+    .nav-floating {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-card);
+      padding: 6px 14px;
+      border-radius: 999px;
+      z-index: 90;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 16px;
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .nav-dots {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .dot.active {
+      width: 24px;
+      border-radius: 999px;
+      background: var(--bw-cyan);
+      box-shadow: 0 0 8px var(--bw-blue-glow);
+    }
+
+    /* Diagram Helpers */
+    .flow-diagram {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 16px;
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 12px;
+      border: 1px solid var(--border-card);
+    }
+
+    .flow-node {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 12px 16px;
+      text-align: center;
+      flex: 1;
+      max-width: 200px;
+    }
+
+    .flow-node-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .flow-node-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .flow-arrow {
+      color: var(--bw-cyan);
+      font-size: 20px;
+      font-weight: bold;
+      padding: 0 10px;
+    }
+
+    /* Print / PDF Styling */
+    @media print {
+      body {
+        overflow: visible;
+        background: #070d18 !important;
+        color: #fff !important;
+      }
+      .top-bar, .progress-track, .nav-floating, .notes-drawer {
+        display: none !important;
+      }
+      .viewport {
+        position: static !important;
+        padding: 0 !important;
+        right: 0 !important;
+      }
+      .slide {
+        display: flex !important;
+        page-break-after: always;
+        height: 100vh !important;
+        max-height: none !important;
+        padding: 40px !important;
+        box-sizing: border-box;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top App Bar -->
+  <header class="top-bar">
+    <div class="brand-group">
+      <div class="brand-logo">
+        <span>🚌 SmartTransit</span>
+        <span style="font-size: 16px;">🇧🇼</span>
+      </div>
+      <div class="brand-badge">Track 02: Transport & Communication</div>
+    </div>
+
+    <div class="center-status">
+      <div class="slide-counter" id="slideIndicator">Slide 01 / 10</div>
+      <div class="timer-badge" id="timerDisplay" title="Click to Pause / Resume" onclick="toggleTimer()">
+        ⏱️ <span id="timerText">00:00</span>
+      </div>
+    </div>
+
+    <div class="controls-group">
+      <button class="btn-icon" id="btnNotes" onclick="toggleNotes()">
+        📝 <span id="notesBtnLabel">Speaker Notes (N)</span>
+      </button>
+      <button class="btn-icon" onclick="toggleFullScreen()" title="Fullscreen (F)">
+        ⛶ Fullscreen
+      </button>
+      <button class="btn-icon" onclick="window.print()" title="Print / Export PDF (P)">
+        🖨️ PDF
+      </button>
+    </div>
+  </header>
+
+  <!-- Progress Bar -->
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <!-- Main Slide Viewport -->
+  <main class="viewport" id="slideViewport">
+
+    <!-- SLIDE 1: Title & Hero -->
+    <section class="slide active" data-slide="1">
+      <div class="slide-header">
+        <div class="slide-tag">Open Source Hackathon 2026 • UniPod • OSCB • Orange Digital Center</div>
+        <h1 class="slide-title">SmartTransit 🇧🇼</h1>
+        <p class="slide-subtitle">Intelligent Multi-Modal Mobility & Real-Time Paratransit Telematics for Botswana</p>
+      </div>
+      <div class="slide-content" style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px;">
+        <div class="card" style="justify-content: center; background: radial-gradient(circle at top left, rgba(0, 163, 224, 0.15), transparent 70%), var(--bg-card);">
+          <div style="font-size: 28px; font-weight: 800; line-height: 1.3; margin-bottom: 16px; color: #fff;">
+            Transforming African paratransit through <span style="color: var(--bw-cyan);">open data</span> and <span style="color: var(--bw-blue);">active headway telematics</span>.
+          </div>
+          <p class="card-desc" style="font-size: 16px; margin-bottom: 24px;">
+            Connecting 250,000+ daily Gaborone commuters, minibus combis, blue-plate charter cabs, and transit regulators into a unified, intelligent mobility ecosystem.
+          </p>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <span class="badge-win">✅ Fully Working Cross-Platform Mobile App</span>
+            <span class="badge-win">✅ Real-Time Telematics Engine (FastAPI)</span>
+            <span class="badge-win">✅ DRTS Regulatory Desktop Command Center</span>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="stat-box" style="border-left: 4px solid var(--bw-blue);">
+            <div class="stat-label">Presenter & Systems Architect</div>
+            <div style="font-size: 20px; font-weight: 800; color: #fff; margin-top: 4px;">Arabang Benville Mothofela</div>
+            <div class="stat-subtext" style="color: var(--bw-cyan); margin-top: 2px;">Founder & Lead Architect • First Minds</div>
+          </div>
+          <div class="stat-box" style="border-left: 4px solid var(--bw-cyan);">
+            <div class="stat-label">Hackathon Alignment</div>
+            <div style="font-size: 15px; font-weight: 700; color: #fff; margin-top: 4px;">Theme 02: Transport & Communication</div>
+            <div class="stat-subtext" style="margin-top: 4px;">
+              Hosted by <strong>UniPod (University of Botswana)</strong>, <strong>OSCB</strong>, and <strong>Orange Digital Center</strong> • Gaborone, Botswana
+            </div>
+          </div>
+          <div class="stat-box" style="border-left: 4px solid var(--bw-emerald);">
+            <div class="stat-label">Core Open Source Mandate</div>
+            <div style="font-size: 14px; font-weight: 700; color: #fff; margin-top: 2px;">
+              Publishing Botswana's 1st Open GTFS Transit Specification
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <div class="footer-pill">🇧🇼 Built for Gaborone, Mogoditshane, Tlokweng & Intercity Corridors</div>
+        <div>Press [Right Arrow] or [Space] to advance</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: The Core Problem -->
+    <section class="slide" data-slide="2">
+      <div class="slide-header">
+        <div class="slide-tag">The Reality on the Ground</div>
+        <h1 class="slide-title">The Urban Transit Crisis in Gaborone</h1>
+        <p class="slide-subtitle">Millions of productive citizen hours lost every year to an informal information blackout</p>
+      </div>
+      <div class="slide-content" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+        <div class="card" style="border-top: 4px solid var(--bw-rose);">
+          <div class="card-title">
+            <span style="font-size: 24px;">⏳</span> The 45-Min Blackout
+          </div>
+          <p class="card-desc">
+            Commuters wait at BBS Mall, UB, or Station with <strong>zero visibility</strong>. You never know if the next combi is 2 minutes away or 40 minutes away.
+          </p>
+          <div style="margin-top: auto; padding-top: 16px; font-size: 12px; color: var(--bw-rose); font-weight: 700;">
+            Result: Chronic tardiness for work and classes.
+          </div>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--bw-amber);">
+          <div class="card-title">
+            <span style="font-size: 24px;">🚐</span> Combi Bunching
+          </div>
+          <p class="card-desc">
+            Without coordination, 3 combis cluster into a platoon racing for the same passengers. The lead combi fills up, the next two run empty, followed by a 40-minute service void.
+          </p>
+          <div style="margin-top: auto; padding-top: 16px; font-size: 12px; color: var(--bw-amber); font-weight: 700;">
+            Result: Massive fuel waste and driver frustration.
+          </div>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--bw-cyan);">
+          <div class="card-title">
+            <span style="font-size: 24px;">🧩</span> Fragmented Journeys
+          </div>
+          <p class="card-desc">
+            Taking a neighborhood special cab in Block 8 to catch a combi to the Bus Rank for an intercity coach to Francistown requires <strong>3 completely blind negotiations</strong>.
+          </p>
+          <div style="margin-top: auto; padding-top: 16px; font-size: 12px; color: var(--bw-cyan); font-weight: 700;">
+            Result: Opaque taxi fares and missed bus departures.
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <div class="footer-pill">⚠️ Paratransit accounts for over 85% of motorized trips with zero digital scheduling</div>
+        <div>Slide 02 / 10</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: Market Size & Local Context -->
+    <section class="slide" data-slide="3">
+      <div class="slide-header">
+        <div class="slide-tag">Market Scope & Demographics</div>
+        <h1 class="slide-title">The Overlooked 90% Mass Market</h1>
+        <p class="slide-subtitle">While luxury ride-hailing targets the top 10%, SmartTransit powers everyday Botswana</p>
+      </div>
+      <div class="slide-content" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+        <div class="stat-box">
+          <div class="stat-number">85%+</div>
+          <div class="stat-label">Paratransit Reliance</div>
+          <div class="stat-subtext">Over 85% of daily motorized trips in Greater Gaborone use combis & cabs.</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-number">P8.00</div>
+          <div class="stat-label">Statutory Combi Fare</div>
+          <div class="stat-subtext">Affordable mass transit gazetted by DRTS that foreign apps completely ignore.</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-number">3,500+</div>
+          <div class="stat-label">Licensed Vehicles</div>
+          <div class="stat-subtext">Active combis and blue-plate taxis across Gaborone, Mogoditshane, and Tlokweng.</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-number" style="background: linear-gradient(135deg, var(--bw-rose), var(--bw-amber)); -webkit-background-clip: text;">
+            0
+          </div>
+          <div class="stat-label">Open Transit Feeds</div>
+          <div class="stat-subtext">Zero open-source GTFS or public mobility datasets currently exist in Botswana.</div>
+        </div>
+      </div>
+      <div style="margin-top: 16px;" class="card">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <strong style="color: #fff; font-size: 15px;">The Competitive Disconnect:</strong>
+            <span style="color: var(--text-muted); font-size: 14px; margin-left: 8px;">
+              inDrive and Yango charge <strong>BWP 35 to BWP 80+</strong> per trip. Daily wage earners, university students, and informal traders cannot afford private charters. SmartTransit digitizes the <strong>BWP 8.00 mass mobility backbone</strong>.
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <div class="footer-pill">💡 High volume, recurring daily usage, massive socio-economic impact</div>
+        <div>Slide 03 / 10</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: The Solution (Tripartite Ecosystem) -->
+    <section class="slide" data-slide="4">
+      <div class="slide-header">
+        <div class="slide-tag">System Architecture & Product</div>
+        <h1 class="slide-title">SmartTransit: The 3-Tier Intelligent ITS</h1>
+        <p class="slide-subtitle">A coordinated, full-stack paratransit platform connecting all stakeholders</p>
+      </div>
+      <div class="slide-content" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+        <div class="card" style="border-top: 4px solid var(--bw-blue);">
+          <div class="card-title">
+            <span style="font-size: 22px;">📱</span> 1. Commuter Mobile App
+          </div>
+          <p class="card-desc" style="margin-bottom: 12px;">
+            Cross-platform Flutter application for passengers:
+          </p>
+          <ul class="notes-bullets">
+            <li>Live combi map tracking & stable ETA countdowns.</li>
+            <li>Spatial on-demand hailing for special cabs.</li>
+            <li>Multi-modal trip planning (combis + cabs + buses).</li>
+            <li>Automatic boarding via co-movement geofencing.</li>
+          </ul>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--bw-emerald);">
+          <div class="card-title">
+            <span style="font-size: 22px;">🧭</span> 2. Driver In-Cab Telematics
+          </div>
+          <p class="card-desc" style="margin-bottom: 12px;">
+            Zero-distraction HUD tailored for paratransit drivers:
+          </p>
+          <ul class="notes-bullets">
+            <li>1 Hz background GPS coordinate streaming.</li>
+            <li>Dynamic Spacing Advisory (<code style="color: var(--bw-amber)">SLOW DOWN</code> / <code style="color: var(--bw-emerald)">MAINTAIN</code>).</li>
+            <li>Instant nearby passenger hail notifications.</li>
+            <li>Fair metered fare calculation preventing disputes.</li>
+          </ul>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--bw-cyan);">
+          <div class="card-title">
+            <span style="font-size: 22px;">🖥️</span> 3. Regulatory Command Center
+          </div>
+          <p class="card-desc" style="margin-bottom: 12px;">
+            Desktop web console (React + Leaflet) for DRTS:
+          </p>
+          <ul class="notes-bullets">
+            <li>Live bird's-eye view of all vehicles and corridors.</li>
+            <li>Corridor velocity, bunching alerts, & demand heatmaps.</li>
+            <li>One-click statutory DRTS compliance reports (CSV/JSON).</li>
+            <li>Zero-install access for government workstations.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <div class="footer-pill">⚡ Powered by Python FastAPI, WebSockets at 1 Hz, and Supabase PostGIS</div>
+        <div>Slide 04 / 10</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: The Secret Sauce (Headway Anti-Bunching) -->
+    <section class="slide" data-slide="5">
+      <div class="slide-header">
+        <div class="slide-tag">Algorithmic Innovation</div>
+        <h1 class="slide-title">Active Anti-Bunching Headway Control</h1>
+        <p class="slide-subtitle">We don't just passively show where combis are—we actively regulate how they space out</p>
+      </div>
+      <div class="slide-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <div class="card">
+          <div class="card-title" style="color: var(--bw-rose);">❌ Without SmartTransit (Passive Apps like Vaya)</div>
+          <div style="background: rgba(15, 23, 42, 0.8); padding: 16px; border-radius: 10px; margin-bottom: 12px; font-family: monospace; font-size: 12px;">
+            [Combi A] ═ 50m ═ [Combi B] ════════════════════ 12km ════════════════════ [Combi C]
+          </div>
+          <p class="card-desc">
+            Passive tracking apps only display clustered icons on a map. Drivers continue racing each other, burning fuel, and leaving commuters waiting 40 minutes for the next empty combi.
+          </p>
+        </div>
+
+        <div class="card" style="border-color: rgba(16, 185, 129, 0.4);">
+          <div class="card-title" style="color: var(--bw-emerald);">✅ With SmartTransit (Newell-Daganzo Regularization)</div>
+          <div style="background: rgba(15, 23, 42, 0.8); padding: 16px; border-radius: 10px; margin-bottom: 12px; font-family: monospace; font-size: 12px; color: var(--bw-cyan);">
+            [Combi A] ════ 4km ════ [Combi B] ════ 4km ════ [Combi C] ════ 4km ════ [Combi D]
+          </div>
+          <p class="card-desc">
+            Our engine computes real-time inter-vehicle headway \(h_i\) and streams visual/audio badges into the driver's cab: <strong style="color: var(--bw-amber);">"SLOW DOWN / HOLD 60s"</strong> or <strong style="color: var(--bw-emerald);">"MAINTAIN GAP"</strong>.
+          </p>
+          <div style="margin-top: 12px; padding: 10px; background: rgba(0, 163, 224, 0.1); border-radius: 8px; font-size: 12px;">
+            ✨ <strong>Speed-Floored ETA ($v_{\text{floor}} = 18\text{ km/h}$):</strong> ETA countdowns never jump to infinity when combis dwell at traffic lights or roadside stops!
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <div class="footer-pill">🔬 Mathematically grounded in operational paratransit research</div>
+        <div>Slide 05 / 10</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: Multi-Modal Graph Journey Planner -->
+    <section class="slide" data-slide="6">
+      <div class="slide-header">
+        <div class="slide-tag">Multi-Modal Connectivity</div>
+        <h1 class="slide-title">Unified Multi-Modal Journey Planning</h1>
+        <p class="slide-subtitle">Connecting suburban first-mile special cabs to arterial combis and intercity coaches</p>
+      </div>
+      <div class="slide-content" style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="flow-diagram">
+          <div class="flow-node" style="border-color: var(--bw-blue);">
+            <div style="font-size: 20px;">🏡</div>
+            <div class="flow-node-title">First-Mile Feeder</div>
+            <div class="flow-node-sub">Block 8 Doorstep</div>
+            <div style="color: var(--bw-cyan); font-weight: bold; font-size: 11px; margin-top: 4px;">Special Cab (k-NN)</div>
+          </div>
+          <div class="flow-arrow">➔</div>
+          <div class="flow-node" style="border-color: var(--bw-emerald);">
+            <div style="font-size: 20px;">🏬</div>
+            <div class="flow-node-title">Transfer Hub</div>
+            <div class="flow-node-sub">BBS Mall Rank</div>
+            <div style="color: var(--bw-emerald); font-weight: bold; font-size: 11px; margin-top: 4px;">Combi U1 (P8.00)</div>
+          </div>
+          <div class="flow-arrow">➔</div>
+          <div class="flow-node" style="border-color: var(--bw-amber);">
+            <div style="font-size: 20px;">🚌</div>
+            <div class="flow-node-title">Arterial Terminal</div>
+            <div class="flow-node-sub">Gabs Central Station</div>
+            <div style="color: var(--bw-amber); font-weight: bold; font-size: 11px; margin-top: 4px;">Coach Departure</div>
+          </div>
+          <div class="flow-arrow">➔</div>
+          <div class="flow-node" style="border-color: var(--bw-cyan);">
+            <div style="font-size: 20px;">📍</div>
+            <div class="flow-node-title">Destination Hub</div>
+            <div class="flow-node-sub">Francistown / Maun</div>
+            <div style="color: var(--bw-cyan); font-weight: bold; font-size: 11px; margin-top: 4px;">Guaranteed Arrival</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div class="card">
+            <div class="card-title">NetworkX Graph Routing with Backward Scheduling</div>
+            <p class="card-desc">
+              If a traveler must catch a 07:00 AM bus to Francistown, our algorithm works backwards: subtracts 15-min luggage buffer, selects the optimal combi feeder run, and schedules the neighborhood cab pickup at 06:12 AM automatically.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-title">Transparent Aggregated Fares</div>
+            <p class="card-desc">
+              Commuters see the total trip cost upfront: (e.g., P35 Special Cab + P8 Combi + P120 Coach = BWP 163.00), eliminating unfair driver overcharging and roadside price disputes.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <div class="footer-pill">🗺️ The first end-to-end multi-modal routing engine engineered for African paratransit</div>
+        <div>Slide 06 / 10</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: Regulatory Command Center -->
+    <section class="slide" data-slide="7">
+      <div class="slide-header">
+        <div class="slide-tag">Regulatory Technology (RegTech)</div>
+        <h1 class="slide-title">Municipal Command & Regulatory Center</h1>
+        <p class="slide-subtitle">Giving DRTS and taxi associations complete real-time visibility and statutory compliance</p>
+      </div>
+      <div class="slide-content" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px;">
+        <div class="card" style="background: rgba(14, 23, 42, 0.9); justify-content: space-between;">
+          <div>
+            <div class="card-title">Live Dispatch Web Dashboard (React + Leaflet)</div>
+            <p class="card-desc" style="margin-bottom: 16px;">
+              Designed for 24–32" desktop monitors at DRTS operations headquarters and taxi association offices.
+            </p>
+            <div style="background: #060b13; border: 1px solid var(--border-card); border-radius: 10px; padding: 14px; font-family: monospace; font-size: 12px; color: var(--bw-cyan);">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 6px;">
+                <span>CORRIDOR: U1 (UB - BBS MALL)</span>
+                <span style="color: var(--bw-emerald);">STATUS: REGULARIZED</span>
+              </div>
+              <div>ACTIVE COMBIS: 14 &nbsp;|&nbsp; AVG VELOCITY: 28.4 km/h</div>
+              <div>CURRENT HEADWAY GAP: 4.8 min (TARGET: 5.0 min)</div>
+              <div>PENDING PASSENGER HAILS: 6 &nbsp;|&nbsp; BUNCHING INDEX: 0.04</div>
+            </div>
+          </div>
+          <div style="margin-top: 16px; display: flex; gap: 10px;">
+            <span class="badge-win">📊 Live Demand Heatmaps</span>
+            <span class="badge-win">📋 Statutory DRTS Exports (RPT-01 to 05)</span>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="card">
+            <div class="card-title">Why a Desktop Web App?</div>
+            <p class="card-desc">
+              A 6-inch smartphone cannot monitor 50 combis across 4 municipal corridors. Desktop browsers provide multi-variable filtering, dual-monitor map inspection, and instant spreadsheet integration with zero software installation.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-title">Statutory Audit Automation</div>
+            <p class="card-desc">
+              Replaces error-prone manual paper clipboards with one-click official exports for route licensing audits, speeding violations, and corridor capacity planning.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <div class="footer-pill">🏛️ Turning informal paratransit into a structured smart-city asset</div>
+        <div>Slide 07 / 10</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: Open Source Commitment & Orange Alignment -->
+    <section class="slide" data-slide="8">
+      <div class="slide-header">
+        <div class="slide-tag">Open Source & Telecom Inclusion</div>
+        <h1 class="slide-title">Open Source for Botswana's Digital Future</h1>
+        <p class="slide-subtitle">Creating permanent open public goods for UniPod, OSCB, and Orange Digital Center</p>
+      </div>
+      <div class="slide-content" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+        <div class="card" style="border-top: 4px solid var(--bw-blue);">
+          <div class="card-title">
+            <span style="font-size: 22px;">📦</span> 1. Botswana Open GTFS
+          </div>
+          <p class="card-desc">
+            Publishing the nation's first standardized General Transit Feed Specification (GTFS) open dataset for Gaborone corridors on GitHub under an MIT license.
+          </p>
+          <div style="margin-top: auto; padding-top: 12px; font-size: 12px; color: var(--bw-cyan); font-weight: 700;">
+            Community Asset for OSCB
+          </div>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--bw-amber);">
+          <div class="card-title">
+            <span style="font-size: 22px;">📶</span> 2. Orange USSD / SMS Bridge
+          </div>
+          <p class="card-desc">
+            Ensuring digital inclusion: commuters without smartphones or active mobile data bundles can dial an Orange USSD code (*123#) or SMS for real-time combi arrivals.
+          </p>
+          <div style="margin-top: auto; padding-top: 12px; font-size: 12px; color: var(--bw-amber); font-weight: 700;">
+            Digital Inclusion with Orange
+          </div>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--bw-emerald);">
+          <div class="card-title">
+            <span style="font-size: 22px;">🎓</span> 3. UniPod Research Sandbox
+          </div>
+          <p class="card-desc">
+            Opening transit REST & WebSocket APIs for University of Botswana students, researchers, and startups to build urban planning models and smart-city applications.
+          </p>
+          <div style="margin-top: auto; padding-top: 12px; font-size: 12px; color: var(--bw-emerald); font-weight: 700;">
+            Academic Impact at UB
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <div class="footer-pill">🤝 Fully aligned with Open Source Hackathon 2026 principles and community longevity</div>
+        <div>Slide 08 / 10</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: Competitive Moat -->
+    <section class="slide" data-slide="9">
+      <div class="slide-header">
+        <div class="slide-tag">Market Differentiation</div>
+        <h1 class="slide-title">Competitive Differentiation Matrix</h1>
+        <p class="slide-subtitle">Why SmartTransit succeeds where existing apps fall short</p>
+      </div>
+      <div class="slide-content">
+        <div class="table-container card" style="padding: 0;">
+          <table>
+            <thead>
+              <tr>
+                <th>Evaluation Criteria</th>
+                <th>Traditional Transit</th>
+                <th>inDrive / Yango</th>
+                <th>Vaya App</th>
+                <th style="color: var(--bw-cyan);">SmartTransit 🇧🇼</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Target Vehicles</strong></td>
+                <td>Combis & Cabs (Siloed)</td>
+                <td>Private Sedans Only</td>
+                <td>Combis Only</td>
+                <td style="color: #fff; font-weight: bold;">Combi + Cab + Intercity</td>
+              </tr>
+              <tr>
+                <td><strong>Affordability / Tariff</strong></td>
+                <td>P8.00 Cash</td>
+                <td>P35 - P90+ Surge</td>
+                <td>P8.00 Cashless Focus</td>
+                <td style="color: var(--bw-cyan); font-weight: bold;">Gazetted P8 + Metered Cabs</td>
+              </tr>
+              <tr>
+                <td><strong>Anti-Bunching Control</strong></td>
+                <td><span class="badge-fail">❌ None</span></td>
+                <td><span class="badge-fail">❌ None</span></td>
+                <td><span class="badge-fail">❌ None (Passive map)</span></td>
+                <td><span class="badge-win">✅ Newell-Daganzo Spacing</span></td>
+              </tr>
+              <tr>
+                <td><strong>Stable Speed-Floored ETA</strong></td>
+                <td><span class="badge-fail">❌ Guesswork</span></td>
+                <td><span class="badge-warn">⚠️ Traffic stalls</span></td>
+                <td><span class="badge-fail">❌ Diverges when stopped</span></td>
+                <td><span class="badge-win">✅ Speed-Floored (18 km/h)</span></td>
+              </tr>
+              <tr>
+                <td><strong>Multi-Modal Transfers</strong></td>
+                <td><span class="badge-fail">❌ None</span></td>
+                <td><span class="badge-fail">❌ None</span></td>
+                <td><span class="badge-fail">❌ None</span></td>
+                <td><span class="badge-win">✅ Graph Backward Scheduling</span></td>
+              </tr>
+              <tr class="highlight-row">
+                <td><strong>Regulatory Command Center</strong></td>
+                <td><span class="badge-fail">❌ Roadside police</span></td>
+                <td><span class="badge-fail">❌ Closed Silo</span></td>
+                <td><span class="badge-fail">❌ None</span></td>
+                <td><span class="badge-win">✅ React + Leaflet Console</span></td>
+              </tr>
+              <tr>
+                <td><strong>Open GTFS & Public APIs</strong></td>
+                <td><span class="badge-fail">❌ None</span></td>
+                <td><span class="badge-fail">❌ Closed</span></td>
+                <td><span class="badge-fail">❌ Proprietary</span></td>
+                <td><span class="badge-win">✅ 100% Open Source (MIT)</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <div class="footer-pill">🏆 The only end-to-end paratransit ITS in Southern Africa</div>
+        <div>Slide 09 / 10</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 10: Hackathon Milestones & Team -->
+    <section class="slide" data-slide="10">
+      <div class="slide-header">
+        <div class="slide-tag">Execution Roadmap & Vision</div>
+        <h1 class="slide-title">Hackathon Deliverables & Pilot Plan</h1>
+        <p class="slide-subtitle">Ready to build and deploy at the Orange Digital Centre on Friday 18 September 2026</p>
+      </div>
+      <div class="slide-content" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px;">
+        <div class="card" style="border-top: 4px solid var(--bw-emerald);">
+          <div class="card-title">On-Site Hackathon Deliverables (Friday 18 Sep)</div>
+          <ul class="notes-bullets" style="gap: 14px; margin-top: 12px; font-size: 14px;">
+            <li>
+              <strong>1. Open-Source Botswana GTFS Feed:</strong> Package and release standardized GTFS data for Gaborone corridors U1 to U4 on GitHub.
+            </li>
+            <li>
+              <strong>2. Orange USSD/SMS Prototype:</strong> Connect a lightweight arrival query simulator utilizing Orange API formats for non-smartphone users.
+            </li>
+            <li>
+              <strong>3. Live Headway Telematics Demo:</strong> Demonstrate real-time multi-vehicle spacing on the U1 corridor with live in-cab driver advisory signals.
+            </li>
+            <li>
+              <strong>4. Open Developer Documentation:</strong> Publish full OpenAPI specs and documentation for OSCB developers.
+            </li>
+          </ul>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="stat-box" style="border-left: 4px solid var(--bw-blue);">
+            <div class="stat-label">Execution Readiness</div>
+            <div style="font-size: 18px; font-weight: 800; color: #fff; margin-top: 4px;">Codebase Fully Validated</div>
+            <div class="stat-subtext" style="margin-top: 4px;">
+              Not starting from theoretical wireframes. Mobile apps built, backend tested with pytest, schemas deployed on Supabase.
+            </div>
+          </div>
+
+          <div class="card" style="background: radial-gradient(circle at top right, rgba(0, 163, 224, 0.2), transparent 70%), var(--bg-card);">
+            <div class="card-title" style="color: var(--bw-cyan);">The Vision Ahead</div>
+            <p class="card-desc">
+              Partnering with UniPod, DRTS, and local taxi associations to conduct a live 30-day pilot along the <strong>UB ↔ BBS Mall corridor</strong>.
+            </p>
+            <div style="margin-top: 12px; font-weight: 800; color: #fff; font-size: 15px;">
+              "Let's build the open transit infrastructure Botswana deserves."
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <div class="footer-pill">🚀 Arabang Benville Mothofela • First Minds • arabang@firstminds.bw</div>
+        <div>Open Source Hackathon 2026</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Floating Navigation Controls -->
+  <nav class="nav-floating">
+    <button class="nav-btn" onclick="prevSlide()" title="Previous Slide (Left Arrow)">◀</button>
+    <div class="nav-dots" id="navDots">
+      <!-- Generated via JS -->
+    </div>
+    <button class="nav-btn" onclick="nextSlide()" title="Next Slide (Right Arrow / Space)">▶</button>
+  </nav>
+
+  <!-- Speaker Notes Drawer -->
+  <aside class="notes-drawer" id="notesDrawer">
+    <div class="notes-header">
+      <span>Speaker Voiceover</span>
+      <span class="script-timing" id="notesTiming">0:00 - 0:20</span>
+    </div>
+    <div class="notes-speech" id="notesSpeech">
+      Loading speaker script...
+    </div>
+    <div class="notes-bullet-title">Key Talking Points to Emphasize</div>
+    <ul class="notes-bullets" id="notesBullets">
+      <!-- Populated via JS -->
+    </ul>
+  </aside>
+
+  <script>
+    // Speaker Notes Database for All 10 Slides
+    const speakerNotes = [
+      {
+        timing: "0:00 - 0:20 (3-min) | 0:00 - 0:35 (5-min)",
+        speech: "Judges and fellow innovators. Every morning across Greater Gaborone, over a quarter-million Batswana face a stressful lottery: when will their combi arrive, how much will their taxi charge, and will they get to work on time? My name is Arabang Mothofela, and I am proud to present SmartTransit—an intelligent paratransit coordination and open telematics platform engineered specifically for Botswana.",
+        bullets: [
+          "State your name with confidence: Arabang Benville Mothofela.",
+          "Anchor the project in Track 02: Transport & Communication.",
+          "Emphasize that this is an execution-ready system with working mobile apps and telematics backend."
+        ]
+      },
+      {
+        timing: "0:20 - 0:40 (3-min) | 0:35 - 1:05 (5-min)",
+        speech: "Urban transit in Botswana isn't governed by fixed Western timetables; it's informal, dynamic, and suffers from an information blackout. Commuters face 45-minute roadside waits with zero visibility. Drivers burn fuel racing each other for passengers, causing three combis to bunch together followed by a 40-minute void. And if you need to connect a neighborhood cab to an intercity bus, you have to negotiate three fragmented segments completely blind.",
+        bullets: [
+          "Explain the 45-minute blackout at ranks like BBS Mall and UB.",
+          "Introduce 'Combi Bunching' as a technical and financial problem.",
+          "Show that you understand both passenger and driver pain points."
+        ]
+      },
+      {
+        timing: "0:40 - 1:00 (3-min) | 1:05 - 1:35 (5-min)",
+        speech: "Look at the numbers: over 85% of motorized trips in Gaborone depend on P8.00 combis and blue-plate cabs. While apps like inDrive and Yango battle for the wealthy 10% who can afford P50 private rides, the remaining 90% of our people have been completely left behind. Worse still, Botswana currently has zero open-source public transit feeds—no GTFS data that developers or planners can build with.",
+        bullets: [
+          "85%+ paratransit reliance in Greater Gaborone.",
+          "Highlight the BWP 8.00 statutory fare—mass transport, not luxury rides.",
+          "Point out the complete lack of open GTFS data in Botswana (huge OSCB hook)."
+        ]
+      },
+      {
+        timing: "1:00 - 1:25 (3-min) | 1:35 - 2:10 (5-min)",
+        speech: "SmartTransit is a complete, three-tier Intelligent Transportation System. For passengers, a mobile app gives live arrival countdowns and upfront fare hailing. For drivers, a glanceable, zero-distraction HUD guides their spacing. And for regulators like DRTS and taxi associations, a desktop command center provides full-city fleet oversight and automated statutory audit reports on a single screen.",
+        bullets: [
+          "Walk through the 3 tiers: Commuter App, Driver In-Cab HUD, and Web Dashboard.",
+          "Emphasize zero-distraction design for drivers (no typing while driving).",
+          "Highlight desktop web command center as a unique regulatory tool."
+        ]
+      },
+      {
+        timing: "1:25 - 1:50 (3-min) | 2:10 - 2:45 (5-min)",
+        speech: "What makes SmartTransit unique is that we don't just passively show where combis are; we actively regulate how they move. Using the Newell-Daganzo headway algorithm, our backend calculates the gap between consecutive combis and streams in-cab advisories like 'SLOW DOWN' or 'MAINTAIN GAP' directly to the driver's phone. This cuts bunching, saves fuel, and slashes passenger wait times by up to 40%. Plus, our speed-floored ETA regularizer ensures countdowns stay stable even when combis stop to load passengers.",
+        bullets: [
+          "This is your secret sauce: Active Headway Regularization vs. passive map dots.",
+          "Mention Newell-Daganzo algorithmic grounding (proves academic rigor).",
+          "Explain speed-floored ETA (18 km/h) preventing math explosion when v=0."
+        ]
+      },
+      {
+        timing: "1:50 - 2:10 (3-min) | 2:45 - 3:20 (5-min)",
+        speech: "SmartTransit is also the first platform to solve multi-modal paratransit transfers. Using directed graph routing with backward scheduling, a traveler catching a 07:00 AM bus to Francistown doesn't have to guess. Our algorithm calculates bus departure, schedules the combi feeder leg, and dispatches a neighborhood special cab to their doorstep at the exact right minute, showing the combined gazetted fare upfront.",
+        bullets: [
+          "Show how you connect Special Cabs to Combis to Intercity Coaches.",
+          "Explain backward scheduling from the intercity departure time.",
+          "Highlight upfront tariff transparency in BWP."
+        ]
+      },
+      {
+        timing: "2:10 - 2:30 (3-min) | 3:20 - 3:50 (5-min)",
+        speech: "For municipal authorities and taxi associations, we built a desktop command center. A 6-inch phone screen can't oversee 50 combis across 4 corridors. Our React web dashboard allows DRTS officers to monitor fleet velocity, passenger demand heatmaps, and route compliance. With a single click, they can export official statutory transit audit reports, enabling data-backed urban planning.",
+        bullets: [
+          "Defend the Web Dashboard: Regulators need big screens, not phone apps.",
+          "Statutory reports RPT-01 to RPT-05 in one-click CSV/JSON.",
+          "Transforms paratransit from a blind spot into a transparent asset."
+        ]
+      },
+      {
+        timing: "2:30 - 2:50 (3-min) | 3:50 - 4:25 (5-min)",
+        speech: "Because this is an Open Source Hackathon backed by UniPod, OSCB, and Orange, our commitment goes beyond our app. We are open-sourcing Botswana’s first standardized GTFS transit data pipeline and open developer APIs for the community. Furthermore, by integrating with Orange Digital Center APIs, we are building a USSD and SMS fallback bridge so that even citizens with basic feature phones or no mobile data can dial in for instant combi arrivals.",
+        bullets: [
+          "Directly acknowledge UniPod, OSCB, and Orange Digital Center.",
+          "Explain Botswana's 1st Open GTFS dataset on GitHub.",
+          "Orange USSD/SMS fallback (*123#) ensures total digital inclusion."
+        ]
+      },
+      {
+        timing: "2:50 - 3:05 (3-min) | 4:25 - 4:50 (5-min)",
+        speech: "When you compare SmartTransit with inDrive, they ignore mass public transport. When you compare with early apps like Vaya, they are passive spectators with no anti-bunching control and no regulatory web console. SmartTransit is the only platform that delivers active spacing, multi-modal transfers, regulatory oversight, and open-source data standards.",
+        bullets: [
+          "Vaya = passive map only; SmartTransit = active spacing regulation.",
+          "inDrive = luxury sedans only; SmartTransit = P8.00 mass mobility.",
+          "SmartTransit is the only platform offering a regulatory command console."
+        ]
+      },
+      {
+        timing: "3:05 - 3:20 (3-min) | 4:50 - 5:15 (5-min)",
+        speech: "We don't come to this hackathon with empty slides. Our architecture is built and validated. On Friday at the Orange Digital Centre, we will ship the open GTFS feed, connect the Orange USSD arrival simulator, and demonstrate live multi-vehicle headway pacing. We are ready to pilot on the UB to BBS Mall corridor. Let's build the open transit infrastructure Botswana deserves. Thank you!",
+        bullets: [
+          "Clear hackathon deliverables for Friday 18 September 2026.",
+          "Reiterate readiness: code already written and tested.",
+          "End with high energy, authority, and conviction."
+        ]
+      }
+    ];
+
+    // State
+    let currentSlide = 1;
+    const totalSlides = 10;
+    let timerSeconds = 0;
+    let timerInterval = null;
+    let isTimerRunning = false;
+    let isNotesOpen = true;
+
+    // Elements
+    const slides = document.querySelectorAll('.slide');
+    const slideIndicator = document.getElementById('slideIndicator');
+    const progressFill = document.getElementById('progressFill');
+    const navDots = document.getElementById('navDots');
+    const notesDrawer = document.getElementById('notesDrawer');
+    const slideViewport = document.getElementById('slideViewport');
+    const notesSpeech = document.getElementById('notesSpeech');
+    const notesTiming = document.getElementById('notesTiming');
+    const notesBullets = document.getElementById('notesBullets');
+    const timerText = document.getElementById('timerText');
+    const btnNotes = document.getElementById('btnNotes');
+
+    // Init Dots
+    for (let i = 1; i <= totalSlides; i++) {
+      const dot = document.createElement('div');
+      dot.className = `dot ${i === 1 ? 'active' : ''}`;
+      dot.onclick = () => goToSlide(i);
+      dot.title = `Jump to Slide ${i}`;
+      navDots.appendChild(dot);
+    }
+
+    // Go to specific slide
+    function goToSlide(slideNum) {
+      if (slideNum < 1 || slideNum > totalSlides) return;
+      currentSlide = slideNum;
+
+      slides.forEach((s) => s.classList.remove('active'));
+      const activeSlide = document.querySelector(`.slide[data-slide="${slideNum}"]`);
+      if (activeSlide) activeSlide.classList.add('active');
+
+      // Update Dots
+      const dots = navDots.querySelectorAll('.dot');
+      dots.forEach((d, idx) => {
+        d.classList.toggle('active', idx + 1 === currentSlide);
+      });
+
+      // Update indicator & progress
+      slideIndicator.textContent = `Slide ${String(currentSlide).padStart(2, '0')} / ${String(totalSlides).padStart(2, '0')}`;
+      progressFill.style.width = `${(currentSlide / totalSlides) * 100}%`;
+
+      // Update Notes
+      updateNotesContent(currentSlide - 1);
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        goToSlide(currentSlide + 1);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        goToSlide(currentSlide - 1);
+      }
+    }
+
+    // Notes
+    function updateNotesContent(index) {
+      const note = speakerNotes[index];
+      if (!note) return;
+      notesTiming.textContent = note.timing;
+      notesSpeech.textContent = `"${note.speech}"`;
+      notesBullets.innerHTML = note.bullets.map(b => `<li>${b}</li>`).join('');
+    }
+
+    function toggleNotes() {
+      isNotesOpen = !isNotesOpen;
+      notesDrawer.classList.toggle('open', isNotesOpen);
+      slideViewport.classList.toggle('with-notes', isNotesOpen);
+      btnNotes.classList.toggle('active', isNotesOpen);
+    }
+
+    // Timer
+    function startTimer() {
+      if (!isTimerRunning) {
+        isTimerRunning = true;
+        timerInterval = setInterval(() => {
+          timerSeconds++;
+          const mins = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+          const secs = String(timerSeconds % 60).padStart(2, '0');
+          timerText.textContent = `${mins}:${secs}`;
+          // Change color as threshold approaches
+          if (timerSeconds >= 180 && timerSeconds < 300) {
+            timerText.style.color = 'var(--bw-amber)';
+          } else if (timerSeconds >= 300) {
+            timerText.style.color = 'var(--bw-rose)';
+          } else {
+            timerText.style.color = 'var(--bw-cyan)';
+          }
+        }, 1000);
+      }
+    }
+
+    function toggleTimer() {
+      if (isTimerRunning) {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+      } else {
+        startTimer();
+      }
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => alert(err.message));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key.toLowerCase() === 'n') {
+        toggleNotes();
+      } else if (e.key.toLowerCase() === 'f') {
+        toggleFullScreen();
+      } else if (e.key.toLowerCase() === 't') {
+        toggleTimer();
+      } else if (e.key.toLowerCase() === 'p') {
+        window.print();
+      }
+    });
+
+    // Initialize Default State
+    goToSlide(1);
+    startTimer();
+    // Default open speaker notes
+    notesDrawer.classList.add('open');
+    slideViewport.classList.add('with-notes');
+    btnNotes.classList.add('active');
+  </script>
+</body>
+</html>

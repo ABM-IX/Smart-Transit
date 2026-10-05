@@ -10,51 +10,61 @@ class ModeSelectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Choose your mode',
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 26,
               fontWeight: FontWeight.w900,
-              color: AppTheme.black,
+              color: AppTheme.brandNavy,
+              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           const Text(
-            'Clean, direct booking across bus, combi, and taxi.',
-            style: TextStyle(fontSize: 14, color: AppTheme.midGrey),
+            'Select your preferred transit modality in Gaborone & Southern Africa.',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.secondaryText,
+            ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
 
-          // Bus Card
-          _buildModeCard(
-            title: 'Bus',
-            subtitle: 'Scheduled long-distance & regional trips',
-            icon: Icons.directions_bus_outlined,
-            fare: 'From P20',
-            onTap: () => onModeSelected(TransportMode.bus),
-          ),
-          const SizedBox(height: 14),
-
-          // Combi Card
+          // Combi Card (Teal #087E8B)
           _buildModeCard(
             title: 'Combi',
-            subtitle: 'Flexible urban arterial routes',
+            subtitle: 'Flexible urban arterial routes & local network',
+            badgeText: 'URBAN CORRIDOR',
             icon: Icons.airport_shuttle_outlined,
             fare: 'P8.00',
+            modeColor: AppTheme.combiColor,
             onTap: () => onModeSelected(TransportMode.combi),
           ),
           const SizedBox(height: 14),
 
-          // Taxi Card
+          // Bus Card (Indigo #6366F1)
           _buildModeCard(
-            title: 'Taxi',
-            subtitle: 'Private & shared on-demand rides',
+            title: 'Bus / Coach',
+            subtitle: 'Scheduled long-distance & regional intercity routes',
+            badgeText: 'INTERCITY',
+            icon: Icons.directions_bus_outlined,
+            fare: 'From P20',
+            modeColor: AppTheme.busColor,
+            onTap: () => onModeSelected(TransportMode.bus),
+          ),
+          const SizedBox(height: 14),
+
+          // Taxi Card (Coral Orange #FB7345)
+          _buildModeCard(
+            title: 'Taxi / Cab',
+            subtitle: 'Private special or shared on-demand direct hail',
+            badgeText: 'ON-DEMAND',
             icon: Icons.local_taxi_outlined,
             fare: 'From P8.00',
+            modeColor: AppTheme.taxiColor,
             onTap: () => onModeSelected(TransportMode.taxi),
           ),
         ],
@@ -65,65 +75,131 @@ class ModeSelectionScreen extends StatelessWidget {
   Widget _buildModeCard({
     required String title,
     required String subtitle,
+    required String badgeText,
     required IconData icon,
     required String fare,
+    required Color modeColor,
     required VoidCallback onTap,
   }) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.cardSurface,
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(18.0),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: AppTheme.offWhite,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppTheme.black, width: 1.5),
-                ),
-                child: Icon(icon, color: AppTheme.black, size: 22),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.black,
+        border: Border.all(color: AppTheme.borderGrey, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.brandNavy.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Left colored accent indicator stripe
+                  Container(
+                    width: 5,
+                    color: modeColor,
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                      child: Row(
+                        children: [
+                          // Colored Icon container
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: modeColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(icon, color: modeColor, size: 24),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppTheme.brandNavy,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: modeColor.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        badgeText,
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w700,
+                                          color: modeColor,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  subtitle,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.secondaryText,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                fare,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 14,
+                                  color: AppTheme.brandNavy,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                size: 13,
+                                color: modeColor,
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(fontSize: 13, color: AppTheme.midGrey),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    fare,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: AppTheme.black,
-                    ),
                   ),
-                  const SizedBox(height: 4),
-                  const Icon(Icons.arrow_forward_ios, size: 14, color: AppTheme.midGrey),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),

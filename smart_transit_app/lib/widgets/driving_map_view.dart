@@ -226,8 +226,18 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
             // Map Markers Layer
             MarkerLayer(
               markers: [
-                // 1. Other Vehicles / Drivers
+                // 1. Other Vehicles / Drivers (Mode-Specific Semantic Markers)
                 ...widget.otherDrivers.map((d) {
+                  final Color markerColor = d.serviceType.toLowerCase() == 'taxi'
+                      ? AppTheme.taxiColor
+                      : d.serviceType.toLowerCase() == 'bus'
+                          ? AppTheme.busColor
+                          : AppTheme.combiColor;
+                  final IconData markerIcon = d.serviceType.toLowerCase() == 'taxi'
+                      ? Icons.local_taxi
+                      : d.serviceType.toLowerCase() == 'bus'
+                          ? Icons.directions_bus
+                          : Icons.airport_shuttle;
                   return Marker(
                     point: LatLng(d.latitude, d.longitude),
                     width: 44,
@@ -238,7 +248,7 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppTheme.black,
+                            color: AppTheme.brandNavy,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -247,13 +257,13 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Icon(Icons.airport_shuttle, color: AppTheme.accentAmber, size: 24),
+                        Icon(markerIcon, color: markerColor, size: 24),
                       ],
                     ),
                   );
                 }),
 
-                // 2. Active Waiting Hailers / People at Stops with Animation
+                // 2. Active Waiting Hailers / People at Stops with Animation (Urgent Hail Color #EF4444)
                 ...widget.activeHails.map((hail) {
                   return Marker(
                     point: LatLng(hail.pickupLat, hail.pickupLng),
@@ -270,11 +280,11 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.accentGreen,
+                                  color: AppTheme.hailColor,
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppTheme.accentGreen.withValues(alpha: 0.5),
+                                      color: AppTheme.hailColor.withValues(alpha: 0.5),
                                       blurRadius: 8,
                                       spreadRadius: 2,
                                     ),
@@ -303,10 +313,10 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: AppTheme.accentGreen, width: 2.5),
+                                  border: Border.all(color: AppTheme.hailColor, width: 2.5),
                                 ),
                                 child: const Center(
-                                  child: Icon(Icons.person, color: AppTheme.black, size: 16),
+                                  child: Icon(Icons.person, color: AppTheme.brandNavy, size: 16),
                                 ),
                               ),
                             ],
@@ -317,7 +327,7 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                   );
                 }),
 
-                // 3. Driver's Moving Vehicle Marker (3D Google Maps Style Chevron & Forward Beam)
+                // 3. Driver's Moving Vehicle Marker (Brand Navy & Botswana Sky / Primary Teal Beam)
                 Marker(
                   point: widget.userLocation,
                   width: 90,
@@ -338,8 +348,8 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                                 shape: BoxShape.circle,
                                 gradient: RadialGradient(
                                   colors: [
-                                    AppTheme.accentGreen.withValues(alpha: 0.35),
-                                    AppTheme.accentGreen.withValues(alpha: 0.0),
+                                    AppTheme.botswanaSky.withValues(alpha: 0.4),
+                                    AppTheme.botswanaSky.withValues(alpha: 0.0),
                                   ],
                                 ),
                               ),
@@ -355,12 +365,12 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                           width: 46,
                           height: 46,
                           decoration: BoxDecoration(
-                            color: AppTheme.black,
+                            color: AppTheme.brandNavy,
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 3),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.35),
+                                color: AppTheme.brandNavy.withValues(alpha: 0.35),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -369,7 +379,7 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                           child: const Center(
                             child: Icon(
                               Icons.navigation,
-                              color: AppTheme.accentGreen,
+                              color: AppTheme.botswanaSky,
                               size: 26,
                             ),
                           ),
@@ -383,7 +393,7 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
           ],
         ),
 
-        // TOP HUD: Google Maps-Style Advance Turn & Stop Guidance Banner
+        // TOP HUD: Turn & Stop Guidance Banner (Brand Navy with Primary Teal Accent)
         SafeArea(
           child: Padding(
             padding: EdgeInsets.only(
@@ -403,7 +413,7 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                     vertical: isLandscape ? 8 : 12,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1B5E20), // Google Maps Green
+                    color: AppTheme.brandNavy,
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
@@ -418,7 +428,7 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
+                          color: AppTheme.primaryTeal,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -447,7 +457,7 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.25),
+                                    color: Colors.white.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
@@ -467,7 +477,7 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                                color: AppTheme.botswanaSky,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -485,9 +495,9 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: vehicleDistance < 150 ? AppTheme.accentAmber : Colors.white,
+                      color: vehicleDistance < 150 ? AppTheme.statusWarning : Colors.white,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppTheme.lightGrey),
+                      border: Border.all(color: AppTheme.borderGrey),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.1),
@@ -502,7 +512,7 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                         Icon(
                           Icons.directions_car,
                           size: 18,
-                          color: vehicleDistance < 150 ? Colors.black : AppTheme.accentAmber,
+                          color: vehicleDistance < 150 ? Colors.black : AppTheme.statusWarning,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -510,7 +520,7 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: vehicleDistance < 150 ? Colors.black : AppTheme.black,
+                            color: vehicleDistance < 150 ? Colors.black : AppTheme.brandNavy,
                           ),
                         ),
                       ],

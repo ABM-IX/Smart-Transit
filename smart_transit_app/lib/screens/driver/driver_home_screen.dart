@@ -252,7 +252,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.pan_tool_alt, color: AppTheme.accentGreen, size: 20),
+                          const Icon(Icons.pan_tool_alt, color: AppTheme.hailColor, size: 20),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
@@ -267,7 +267,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                                   relevantHails.first.stopName != null
                                       ? 'Waiting at ${relevantHails.first.stopName} (P${relevantHails.first.fareEstimate.toStringAsFixed(2)})'
                                       : 'Waiting along corridor (P${relevantHails.first.fareEstimate.toStringAsFixed(2)})',
-                                  style: const TextStyle(color: AppTheme.lightGrey, fontSize: 11),
+                                  style: const TextStyle(color: AppTheme.borderGrey, fontSize: 11),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ],
@@ -276,11 +276,11 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                           TextButton(
                             onPressed: () => setState(() => _showHailAlert = false),
                             style: TextButton.styleFrom(
-                              backgroundColor: AppTheme.accentGreen,
+                              backgroundColor: AppTheme.primaryTeal,
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            child: const Text('OK', style: TextStyle(color: AppTheme.black, fontWeight: FontWeight.w900, fontSize: 11)),
+                            child: const Text('OK', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
                           ),
                         ],
                       ),
@@ -342,7 +342,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.pan_tool_alt_outlined, size: 16, color: AppTheme.accentGreen),
+                  const Icon(Icons.pan_tool_alt_outlined, size: 16, color: AppTheme.hailColor),
                   const SizedBox(width: 8),
                   Text(
                     '${relevantHails.length} passenger(s) waiting along this route',

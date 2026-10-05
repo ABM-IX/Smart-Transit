@@ -32,11 +32,9 @@ async def get_stops(route_id: Optional[str] = None, db: AsyncSession = Depends(g
         stmt = select(Stop)
         result = await db.execute(stmt)
         stops = result.scalars().all()
-        if stops:
-            return stops
+        return stops if stops else []
     except Exception:
-        pass
-    return FALLBACK_STOPS
+        return []
 
 @router.get("/fleet/active", response_model=List[ActiveDriverOut])
 async def get_active_fleet():

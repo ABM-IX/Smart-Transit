@@ -78,12 +78,12 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
               children: [
                 StatusPill(
                   label: '${routeDrivers.length} Active ${widget.mode == TransportMode.bus ? "Buses" : "Combis"}',
-                  color: AppTheme.black,
+                  color: AppTheme.brandNavy,
                   icon: widget.mode == TransportMode.bus ? Icons.directions_bus : Icons.airport_shuttle,
                 ),
                 StatusPill(
                   label: 'Fare: P${widget.route.baseFare.toStringAsFixed(2)}',
-                  color: AppTheme.accentGreen,
+                  color: AppTheme.primaryTeal,
                 ),
               ],
             ),
@@ -416,8 +416,11 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(color: AppTheme.offWhite, shape: BoxShape.circle),
-                child: const Icon(Icons.pan_tool_alt, color: AppTheme.accentGreen, size: 24),
+                decoration: BoxDecoration(
+                  color: AppTheme.hailColor.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.pan_tool_alt, color: AppTheme.hailColor, size: 24),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -426,13 +429,13 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                   children: [
                     const Text(
                       'Hand Raised on Route!',
-                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppTheme.black),
+                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppTheme.brandNavy),
                     ),
                     Text(
                       isWithinProximity
                           ? 'Vehicle has arrived at your stop (within 25m)!'
                           : 'Approaching vehicles have received your stop alert.',
-                      style: const TextStyle(fontSize: 12, color: AppTheme.midGrey),
+                      style: const TextStyle(fontSize: 12, color: AppTheme.secondaryText),
                     ),
                   ],
                 ),
@@ -448,7 +451,8 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
               icon: const Icon(Icons.directions_walk, size: 20),
               label: const Text('Confirm Boarding (I am on board)', style: TextStyle(fontWeight: FontWeight.w900)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentGreen,
+                backgroundColor: AppTheme.primaryTeal,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
@@ -496,11 +500,11 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(
-                  color: AppTheme.offWhite,
+                decoration: BoxDecoration(
+                  color: AppTheme.statusSuccess.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check, color: AppTheme.accentGreen, size: 24),
+                child: const Icon(Icons.check, color: AppTheme.statusSuccess, size: 24),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -509,7 +513,7 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                   children: [
                     Text(
                       'Vehicle Arriving (${transit.assignedDriverId ?? ""})',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.black),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.brandNavy),
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
@@ -518,7 +522,7 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                           : (distMeters != null
                               ? 'Driver is en route (${distMeters < 1000 ? distMeters.toStringAsFixed(0) + "m" : (distMeters / 1000).toStringAsFixed(1) + "km"} away)'
                               : 'Driver is en route to your stop.'),
-                      style: const TextStyle(color: AppTheme.midGrey, fontSize: 13),
+                      style: const TextStyle(color: AppTheme.secondaryText, fontSize: 13),
                     ),
                   ],
                 ),
@@ -530,7 +534,8 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
             ElevatedButton(
               onPressed: () => transit.confirmBoarding(auth.userId),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentGreen,
+                backgroundColor: AppTheme.primaryTeal,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
@@ -549,9 +554,9 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: const BoxDecoration(
-        color: AppTheme.white,
+        color: AppTheme.cardSurface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(top: BorderSide(color: AppTheme.lightGrey, width: 1)),
+        border: Border(top: BorderSide(color: AppTheme.borderGrey, width: 1)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -561,10 +566,13 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(color: AppTheme.offWhite, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: (widget.mode == TransportMode.bus ? AppTheme.busColor : AppTheme.combiColor).withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
                 child: Icon(
                   widget.mode == TransportMode.bus ? Icons.directions_bus : Icons.airport_shuttle,
-                  color: AppTheme.accentGreen,
+                  color: widget.mode == TransportMode.bus ? AppTheme.busColor : AppTheme.combiColor,
                   size: 24,
                 ),
               ),
@@ -600,7 +608,7 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                     Icon(
                       vehicleStationary ? Icons.pause_circle_outline : Icons.speed,
                       size: 13,
-                      color: vehicleStationary ? Colors.orange.shade700 : AppTheme.accentGreen,
+                      color: vehicleStationary ? AppTheme.statusWarning : AppTheme.statusSuccess,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -610,7 +618,7 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: vehicleStationary ? Colors.orange.shade700 : AppTheme.accentGreen,
+                        color: vehicleStationary ? AppTheme.statusWarning : AppTheme.statusSuccess,
                       ),
                     ),
                   ],
@@ -637,21 +645,21 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
             icon: Icon(
               _stopRequested ? Icons.check_circle : Icons.notifications_active_outlined,
               size: 18,
-              color: _stopRequested ? AppTheme.accentGreen : AppTheme.accentAmber,
+              color: _stopRequested ? AppTheme.statusSuccess : AppTheme.statusWarning,
             ),
             label: Text(
               _stopRequested ? 'Stop Signaled ✅ — Wait for vehicle to stop' : 'Signal Stop / Request Next Stop 🔔',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
-                color: _stopRequested ? AppTheme.accentGreen : AppTheme.black,
+                color: _stopRequested ? AppTheme.statusSuccess : AppTheme.brandNavy,
               ),
               overflow: TextOverflow.ellipsis,
             ),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
               side: BorderSide(
-                color: _stopRequested ? AppTheme.accentGreen : AppTheme.accentAmber,
+                color: _stopRequested ? AppTheme.statusSuccess : AppTheme.statusWarning,
                 width: 1.5,
               ),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -696,26 +704,29 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(color: AppTheme.offWhite, shape: BoxShape.circle),
-            child: const Icon(Icons.check_circle, color: AppTheme.accentGreen, size: 32),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.statusSuccess.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_circle, color: AppTheme.statusSuccess, size: 32),
           ),
           const SizedBox(height: 10),
           const Text(
             'Trip Completed!',
-            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppTheme.black),
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppTheme.brandNavy),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
             'Standard Fare: P${widget.route.baseFare.toStringAsFixed(2)}',
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.midGrey),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.secondaryText),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
           const Text(
             'Rate your Driver & Trip Experience',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.black),
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.brandNavy),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 6),
@@ -728,7 +739,7 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
               return IconButton(
                 icon: Icon(
                   starNum <= _tripRating ? Icons.star : Icons.star_border,
-                  color: Colors.amber,
+                  color: AppTheme.statusWarning,
                   size: 30,
                 ),
                 onPressed: () => setState(() => _tripRating = starNum),
@@ -742,16 +753,16 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
             controller: _commentController,
             decoration: InputDecoration(
               hintText: 'Share feedback (cleanliness, driving, comfort)...',
-              hintStyle: const TextStyle(fontSize: 12, color: AppTheme.midGrey),
+              hintStyle: const TextStyle(fontSize: 12, color: AppTheme.secondaryText),
               filled: true,
-              fillColor: AppTheme.offWhite,
+              fillColor: AppTheme.surfaceGrey,
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+                borderSide: const BorderSide(color: AppTheme.borderGrey),
               ),
             ),
-            style: const TextStyle(fontSize: 13),
+            style: const TextStyle(fontSize: 13, color: AppTheme.brandNavy),
           ),
           const SizedBox(height: 14),
 
@@ -767,7 +778,8 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
               widget.onExitToMain();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.accentGreen,
+              backgroundColor: AppTheme.primaryTeal,
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),

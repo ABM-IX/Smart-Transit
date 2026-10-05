@@ -18,8 +18,8 @@ export default function FleetChart({ dataPoints = [4, 6, 8, 7, 10, 12, 11, 14, 1
     datasets: [
       {
         data: dataPoints,
-        borderColor: '#5B8CFF',
-        backgroundColor: 'rgba(91, 140, 255, 0.14)',
+        borderColor: '#087E8B',
+        backgroundColor: 'rgba(8, 126, 139, 0.16)',
         borderWidth: 2,
         fill: true,
         tension: 0.4,

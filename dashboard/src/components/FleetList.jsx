@@ -12,7 +12,7 @@ export default function FleetList({ drivers = [], passengers = [], hails = [] })
           <button
             onClick={() => setActiveTab('drivers')}
             style={{
-              background: activeTab === 'drivers' ? 'var(--accent)' : 'rgba(15,20,34,0.6)',
+              background: activeTab === 'drivers' ? 'var(--primary-teal)' : 'rgba(15,20,34,0.6)',
               color: 'white',
               border: 'none',
               padding: '2px 8px',
@@ -27,7 +27,7 @@ export default function FleetList({ drivers = [], passengers = [], hails = [] })
           <button
             onClick={() => setActiveTab('passengers')}
             style={{
-              background: activeTab === 'passengers' ? 'var(--success)' : 'rgba(15,20,34,0.6)',
+              background: activeTab === 'passengers' ? 'var(--secondary-text)' : 'rgba(15,20,34,0.6)',
               color: 'white',
               border: 'none',
               padding: '2px 8px',
@@ -42,7 +42,7 @@ export default function FleetList({ drivers = [], passengers = [], hails = [] })
           <button
             onClick={() => setActiveTab('hails')}
             style={{
-              background: activeTab === 'hails' ? '#f59e0b' : 'rgba(15,20,34,0.6)',
+              background: activeTab === 'hails' ? 'var(--mode-hail)' : 'rgba(15,20,34,0.6)',
               color: 'white',
               border: 'none',
               padding: '2px 8px',
@@ -69,6 +69,7 @@ export default function FleetList({ drivers = [], passengers = [], hails = [] })
             const isTaxi = d.serviceType === 'TAXI' || d.routeId === 'taxi-service';
             const isBus = d.serviceType === 'BUS' || (d.routeId && d.routeId.startsWith('bus-'));
             const typeLabel = isTaxi ? 'TAXI' : isBus ? 'BUS' : 'COMBI';
+            const modeColor = isTaxi ? 'var(--mode-taxi)' : isBus ? 'var(--mode-bus)' : 'var(--mode-combi)';
 
             return (
               <div className="item-row" key={d.driverId || index}>
@@ -77,8 +78,8 @@ export default function FleetList({ drivers = [], passengers = [], hails = [] })
                     style={{
                       padding: '6px',
                       borderRadius: '8px',
-                      background: 'rgba(91, 140, 255, 0.15)',
-                      color: 'var(--accent)',
+                      background: `rgba(${isTaxi ? '251,115,69' : isBus ? '99,102,241' : '8,126,139'}, 0.16)`,
+                      color: modeColor,
                     }}
                   >
                     <Car size={16} />
@@ -91,7 +92,7 @@ export default function FleetList({ drivers = [], passengers = [], hails = [] })
                     </span>
                   </div>
                 </div>
-                <span className="badge-pill">
+                <span className="badge-pill" style={{ color: modeColor, borderColor: `rgba(${isTaxi ? '251,115,69' : isBus ? '99,102,241' : '8,126,139'}, 0.4)` }}>
                   {d.occupancy !== undefined ? `${d.occupancy} PAX` : typeLabel}
                 </span>
               </div>
@@ -112,8 +113,8 @@ export default function FleetList({ drivers = [], passengers = [], hails = [] })
                   style={{
                     padding: '6px',
                     borderRadius: '8px',
-                    background: 'rgba(34, 197, 94, 0.15)',
-                    color: 'var(--success)',
+                    background: 'rgba(100, 116, 139, 0.15)',
+                    color: 'var(--secondary-text)',
                   }}
                 >
                   <User size={16} />
@@ -141,8 +142,8 @@ export default function FleetList({ drivers = [], passengers = [], hails = [] })
                   style={{
                     padding: '6px',
                     borderRadius: '8px',
-                    background: 'rgba(245, 158, 11, 0.15)',
-                    color: '#f59e0b',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    color: 'var(--mode-hail)',
                   }}
                 >
                   <Navigation size={16} />
@@ -152,7 +153,7 @@ export default function FleetList({ drivers = [], passengers = [], hails = [] })
                   <span>{h.routeId || 'On-Demand'} • Rider {h.passengerId?.slice(-6) || ''}</span>
                 </div>
               </div>
-              <span className="badge-pill warning">
+              <span className="badge-pill" style={{ color: 'var(--mode-hail)', borderColor: 'rgba(239, 68, 68, 0.4)' }}>
                 {h.fareEstimate ? `P${Number(h.fareEstimate).toFixed(2)}` : 'PENDING'}
               </span>
             </div>

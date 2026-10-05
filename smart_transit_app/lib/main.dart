@@ -5,7 +5,7 @@ import 'core/constants.dart';
 import 'core/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/transit_provider.dart';
-import 'screens/auth/welcome_screen.dart';
+import 'screens/splash/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,7 +34,7 @@ class SmartTransitApp extends StatelessWidget {
       title: 'SmartTransit',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const WelcomeScreen(),
+      home: const SplashScreen(),
     );
   }
 }

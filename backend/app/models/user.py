@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, Integer, DateTime, func, Boolean
+from sqlalchemy import Column, String, Float, Integer, DateTime, func, Boolean, ForeignKey
 from app.database import Base
 
 class UserRole:
@@ -19,9 +19,9 @@ class User(Base):
 class DriverProfile(Base):
     __tablename__ = "driver_profiles"
 
-    driver_id = Column(String, primary_key=True, index=True)
-    vehicle_id = Column(String, nullable=True)
-    assigned_route_id = Column(String, nullable=True)
+    driver_id = Column(String, ForeignKey("users.id"), primary_key=True, index=True)
+    vehicle_id = Column(String, ForeignKey("vehicles.id"), nullable=True)
+    assigned_route_id = Column(String, ForeignKey("routes.id"), nullable=True)
     service_type = Column(String, default="COMBI") # COMBI, TAXI, BUS
     is_online = Column(Boolean, default=False)
     rating_avg = Column(Float, default=5.0)

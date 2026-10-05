@@ -164,22 +164,25 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
                               final mode = item['mode'] as String;
 
                               IconData iconData = Icons.airport_shuttle;
-                              Color modeColor = AppTheme.accentBlue;
+                              Color modeColor = AppTheme.combiColor;
                               if (mode == 'BUS') {
                                 iconData = Icons.directions_bus;
-                                modeColor = Colors.purple;
+                                modeColor = AppTheme.busColor;
                               } else if (mode == 'TAXI') {
                                 iconData = Icons.local_taxi;
-                                modeColor = AppTheme.accentGreen;
+                                modeColor = AppTheme.taxiColor;
+                              } else if (mode == 'WALK' || mode == 'WALKING') {
+                                iconData = Icons.directions_walk;
+                                modeColor = AppTheme.walkingColor;
                               }
 
                               return Card(
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  side: const BorderSide(color: AppTheme.lightGrey),
+                                  side: const BorderSide(color: AppTheme.borderGrey),
                                 ),
-                                color: AppTheme.white,
+                                color: AppTheme.cardSurface,
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(

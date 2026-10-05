@@ -83,10 +83,10 @@ export default function LiveMap({
 
         const circleMarker = L.circleMarker(latlng, {
           radius: 8,
-          color: isTaxi ? '#f59e0b' : isBus ? '#22d3ee' : '#5b8cff',
+          color: isTaxi ? '#FB7345' : isBus ? '#6366F1' : '#087E8B',
           weight: 2,
-          fillColor: isTaxi ? '#f59e0b' : isBus ? '#22d3ee' : '#5b8cff',
-          fillOpacity: 0.85,
+          fillColor: isTaxi ? '#FB7345' : isBus ? '#6366F1' : '#087E8B',
+          fillOpacity: 0.9,
         }).addTo(map);
 
         circleMarker.bindPopup(popupHtml);
@@ -94,7 +94,7 @@ export default function LiveMap({
       });
     }
 
-    // Render Passengers
+    // Render Passengers / Active Hails
     if (showPassengers) {
       passengers.forEach((passenger) => {
         if (!passenger.coords || passenger.coords.lat === undefined || passenger.coords.lng === undefined) return;
@@ -105,7 +105,7 @@ export default function LiveMap({
 
         const popupHtml = `
           <div style="font-family:'Space Grotesk',sans-serif; color:#0f172a; min-width:130px;">
-            <div style="font-weight:700; font-size:13px; color:#15803d; margin-bottom:4px;">${passengerTitle}</div>
+            <div style="font-weight:700; font-size:13px; color:#EF4444; margin-bottom:4px;">${passengerTitle}</div>
             <div style="font-size:12px;"><b>Target:</b> ${routeLabel}</div>
             <div style="font-size:11px; color:#64748b; margin-top:2px;">Awaiting Pickup</div>
           </div>
@@ -113,9 +113,9 @@ export default function LiveMap({
 
         const circleMarker = L.circleMarker(latlng, {
           radius: 6,
-          color: '#22c55e',
+          color: '#EF4444',
           weight: 2,
-          fillColor: '#22c55e',
+          fillColor: '#EF4444',
           fillOpacity: 0.9,
         }).addTo(map);
 
@@ -143,7 +143,7 @@ export default function LiveMap({
             type="checkbox"
             checked={showPassengers}
             onChange={(e) => setShowPassengers(e.target.checked)}
-            style={{ width: '14px', height: '14px', accentColor: 'var(--success)' }}
+            style={{ width: '14px', height: '14px', accentColor: 'var(--mode-hail)' }}
           />
           Passengers ({passengers.length})
         </label>

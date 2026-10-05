@@ -167,8 +167,8 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
         padding: const EdgeInsets.all(20),
         decoration: const BoxDecoration(
           color: AppTheme.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border(top: BorderSide(color: AppTheme.lightGrey, width: 1)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: const Border(top: BorderSide(color: AppTheme.borderGrey, width: 1)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -178,8 +178,11 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: const BoxDecoration(color: AppTheme.offWhite, shape: BoxShape.circle),
-                  child: const Icon(Icons.local_taxi, color: AppTheme.accentGreen, size: 24),
+                  decoration: BoxDecoration(
+                    color: AppTheme.taxiColor.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.local_taxi, color: AppTheme.taxiColor, size: 24),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -188,7 +191,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                     children: [
                       Text(
                         'Taxi Assigned (${transit.assignedDriverId ?? "Driver En Route"})',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.black),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.brandNavy),
                       ),
                       Text(
                         isWithinProximity
@@ -196,7 +199,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                             : (distMeters != null
                                 ? 'Cab is en route (${distMeters < 1000 ? distMeters.toStringAsFixed(0) + "m" : (distMeters / 1000).toStringAsFixed(1) + "km"} away) • P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}'
                                 : 'Driver is en route to pickup point • P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}'),
-                        style: const TextStyle(color: AppTheme.midGrey, fontSize: 13),
+                        style: const TextStyle(color: AppTheme.secondaryText, fontSize: 13),
                       ),
                     ],
                   ),
@@ -208,11 +211,11 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               ElevatedButton(
                 onPressed: () => transit.confirmBoarding(auth.userId),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentGreen,
+                  backgroundColor: AppTheme.primaryTeal,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-                child: const Text('Confirm Boarding (In the Cab)', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text('Confirm Boarding (In the Cab)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ],
           ],
@@ -225,9 +228,9 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: const BoxDecoration(
-          color: AppTheme.white,
+          color: AppTheme.cardSurface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border(top: BorderSide(color: AppTheme.lightGrey, width: 1)),
+          border: Border(top: BorderSide(color: AppTheme.borderGrey, width: 1)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -237,8 +240,11 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: const BoxDecoration(color: AppTheme.offWhite, shape: BoxShape.circle),
-                  child: const Icon(Icons.directions_car, color: AppTheme.accentGreen, size: 24),
+                  decoration: BoxDecoration(
+                    color: AppTheme.taxiColor.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.directions_car, color: AppTheme.taxiColor, size: 24),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -247,11 +253,11 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                     children: [
                       const Text(
                         'Trip in Progress',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: AppTheme.black),
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: AppTheme.brandNavy),
                       ),
                       Text(
                         'Cruising with ${transit.assignedDriverId ?? "Driver"} • Enjoy your ride!',
-                        style: const TextStyle(color: AppTheme.midGrey, fontSize: 13),
+                        style: const TextStyle(color: AppTheme.secondaryText, fontSize: 13),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -261,10 +267,10 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: vehicleStationary ? Colors.orange.shade50 : AppTheme.offWhite,
+                    color: vehicleStationary ? AppTheme.statusWarning.withValues(alpha: 0.12) : AppTheme.surfaceGrey,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: vehicleStationary ? Colors.orange.shade300 : AppTheme.lightGrey,
+                      color: vehicleStationary ? AppTheme.statusWarning : AppTheme.borderGrey,
                     ),
                   ),
                   child: Row(
@@ -273,7 +279,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                       Icon(
                         vehicleStationary ? Icons.pause_circle_outline : Icons.speed,
                         size: 13,
-                        color: vehicleStationary ? Colors.orange.shade700 : AppTheme.accentGreen,
+                        color: vehicleStationary ? AppTheme.statusWarning : AppTheme.statusSuccess,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -283,7 +289,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: vehicleStationary ? Colors.orange.shade700 : AppTheme.accentGreen,
+                          color: vehicleStationary ? AppTheme.statusWarning : AppTheme.statusSuccess,
                         ),
                       ),
                     ],
@@ -295,16 +301,17 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.offWhite,
+                color: AppTheme.surfaceGrey,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.borderGrey),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Trip Fare:', style: TextStyle(color: AppTheme.midGrey, fontWeight: FontWeight.w600)),
+                  const Text('Trip Fare:', style: TextStyle(color: AppTheme.secondaryText, fontWeight: FontWeight.w600)),
                   Text(
                     'P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppTheme.black),
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppTheme.brandNavy),
                   ),
                 ],
               ),
@@ -322,7 +329,8 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.black,
+                backgroundColor: AppTheme.brandNavy,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
@@ -336,9 +344,9 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
       return Container(
         padding: const EdgeInsets.all(22),
         decoration: const BoxDecoration(
-          color: AppTheme.white,
+          color: AppTheme.cardSurface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border(top: BorderSide(color: AppTheme.lightGrey, width: 1)),
+          border: Border(top: BorderSide(color: AppTheme.borderGrey, width: 1)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -346,28 +354,28 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                color: AppTheme.offWhite,
+              decoration: BoxDecoration(
+                color: AppTheme.statusSuccess.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_circle, color: AppTheme.accentGreen, size: 36),
+              child: const Icon(Icons.check_circle, color: AppTheme.statusSuccess, size: 36),
             ),
             const SizedBox(height: 12),
             const Text(
               'Trip Completed!',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppTheme.black),
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppTheme.brandNavy),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
             Text(
               'Fare: P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.midGrey),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.secondaryText),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             const Text(
               'Rate your Driver',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.black),
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.brandNavy),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
@@ -378,7 +386,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 return IconButton(
                   icon: Icon(
                     starNum <= _tripRating ? Icons.star : Icons.star_border,
-                    color: Colors.amber,
+                    color: AppTheme.statusWarning,
                     size: 32,
                   ),
                   onPressed: () => setState(() => _tripRating = starNum),
@@ -396,7 +404,8 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 setState(() => _tripRating = 5);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentGreen,
+                backgroundColor: AppTheme.primaryTeal,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),

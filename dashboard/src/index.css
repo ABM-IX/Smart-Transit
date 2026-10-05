@@ -1,17 +1,41 @@
 :root {
-  --bg: #0b0f17;
-  --surface: #121827;
-  --surface-2: #0f1422;
-  --surface-3: #1a2236;
-  --text-primary: #f5f7ff;
-  --text-secondary: #c7d2fe;
-  --text-muted: #94a3b8;
-  --accent: #5b8cff;
-  --accent-2: #22d3ee;
-  --accent-soft: rgba(91, 140, 255, 0.14);
-  --danger: #ef4444;
-  --success: #22c55e;
-  --warning: #f59e0b;
+  /* Brand Navy & Neutrals */
+  --brand-navy: #0B1F2A;
+  --primary-teal: #087E8B;
+  --surface-grey: #F4F7F8;
+  --card-surface: #FFFFFF;
+  --border-grey: #D9E2E5;
+  --secondary-text: #64748B;
+  --botswana-sky: #6EC6E8;
+
+  /* Transport Mode Tokens */
+  --mode-combi: #087E8B;
+  --mode-bus: #6366F1;
+  --mode-taxi: #FB7345;
+  --mode-walking: #64748B;
+  --mode-hail: #EF4444;
+
+  /* Status Tokens */
+  --status-success: #16A34A;
+  --status-warning: #F59E0B;
+  --status-danger: #DC2626;
+  --status-info: #2563EB;
+
+  /* UI Tokens for Dashboard Surface / Command Center */
+  --bg: #0B1F2A;
+  --surface: #102A38;
+  --surface-2: #0B1F2A;
+  --surface-3: #183748;
+  --border: #1E3A4B;
+  --text-primary: #F4F7F8;
+  --text-secondary: #CBD5E1;
+  --text-muted: #64748B;
+  --accent: #087E8B;
+  --accent-2: #6EC6E8;
+  --accent-soft: rgba(8, 126, 139, 0.16);
+  --danger: #DC2626;
+  --success: #16A34A;
+  --warning: #F59E0B;
   --shadow-sm: 0 8px 16px rgba(0, 0, 0, 0.25);
   --shadow-md: 0 16px 30px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.5);
@@ -25,8 +49,8 @@
 
 body {
   font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: radial-gradient(1200px 700px at 80% -10%, rgba(91, 140, 255, 0.18), transparent 60%),
-    radial-gradient(900px 600px at 10% 10%, rgba(34, 211, 238, 0.12), transparent 55%),
+  background: radial-gradient(1200px 700px at 80% -10%, rgba(8, 126, 139, 0.18), transparent 60%),
+    radial-gradient(900px 600px at 10% 10%, rgba(110, 198, 232, 0.12), transparent 55%),
     var(--bg);
   color: var(--text-primary);
   height: 100vh;

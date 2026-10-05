@@ -15,18 +15,41 @@
         rel="stylesheet">
     <style>
         :root {
-            --bg: #0b0f17;
-            --surface: #121827;
-            --surface-2: #0f1422;
-            --surface-3: #1a2236;
-            --text-primary: #f5f7ff;
-            --text-secondary: #c7d2fe;
-            --text-muted: #94a3b8;
-            --accent: #5b8cff;
-            --accent-2: #22d3ee;
-            --accent-soft: rgba(91, 140, 255, 0.14);
-            --danger: #ef4444;
-            --success: #22c55e;
+            /* Agreed Palette Tokens */
+            --brand-navy: #0B1F2A;
+            --primary-teal: #087E8B;
+            --surface-grey: #F4F7F8;
+            --card-surface: #FFFFFF;
+            --border-grey: #D9E2E5;
+            --secondary-text: #64748B;
+            --botswana-sky: #6EC6E8;
+
+            /* Transport Mode Tokens */
+            --mode-combi: #087E8B;
+            --mode-bus: #6366F1;
+            --mode-taxi: #FB7345;
+            --mode-walking: #64748B;
+            --mode-hail: #EF4444;
+
+            /* Status Tokens */
+            --status-success: #16A34A;
+            --status-warning: #F59E0B;
+            --status-danger: #DC2626;
+            --status-info: #2563EB;
+
+            /* UI Tokens */
+            --bg: #0B1F2A;
+            --surface: #102A38;
+            --surface-2: #0B1F2A;
+            --surface-3: #183748;
+            --text-primary: #F4F7F8;
+            --text-secondary: #CBD5E1;
+            --text-muted: #64748B;
+            --accent: #087E8B;
+            --accent-2: #6EC6E8;
+            --accent-soft: rgba(8, 126, 139, 0.16);
+            --danger: #DC2626;
+            --success: #16A34A;
             --shadow-sm: 0 8px 16px rgba(0, 0, 0, 0.25);
             --shadow-md: 0 16px 30px rgba(0, 0, 0, 0.35);
             --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.5);
@@ -40,8 +63,8 @@
 
         body {
             font-family: 'Space Grotesk', sans-serif;
-            background: radial-gradient(1200px 700px at 80% -10%, rgba(91, 140, 255, 0.18), transparent 60%),
-                radial-gradient(900px 600px at 10% 10%, rgba(34, 211, 238, 0.12), transparent 55%),
+            background: radial-gradient(1200px 700px at 80% -10%, rgba(8, 126, 139, 0.18), transparent 60%),
+                radial-gradient(900px 600px at 10% 10%, rgba(110, 198, 232, 0.12), transparent 55%),
                 var(--bg);
             color: var(--text-primary);
             height: 100vh;
@@ -384,11 +407,11 @@
                 <div class="section-label">Real-time Capacity</div>
                 <div class="metrics-grid">
                     <div class="metric-item">
-                        <span class="metric-val" id="m-vehicles" style="color: var(--accent);">0</span>
+                        <span class="metric-val" id="m-vehicles" style="color: var(--primary-teal);">0</span>
                         <span class="metric-label">Active Fleet</span>
                     </div>
                     <div class="metric-item">
-                        <span class="metric-val" id="m-passengers" style="color: var(--success);">0</span>
+                        <span class="metric-val" id="m-passengers" style="color: var(--botswana-sky);">0</span>
                         <span class="metric-label">Live Riders</span>
                     </div>
                     <div class="metric-item">
@@ -396,7 +419,7 @@
                         <span class="metric-label">Routes</span>
                     </div>
                     <div class="metric-item">
-                        <span class="metric-val" id="m-hails" style="color: #f59e0b;">0</span>
+                        <span class="metric-val" id="m-hails" style="color: var(--mode-hail);">0</span>
                         <span class="metric-label">Hails</span>
                     </div>
                 </div>
@@ -412,7 +435,7 @@
             <section>
                 <div class="section-label">Connection Management</div>
                 <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                    <input type="text" id="server-url" value="http://192.168.0.182:3000">
+                    <input type="text" id="server-url" value="http://localhost:8000">
                     <button class="btn-primary" onclick="connectSocket()">Link</button>
                 </div>
             </section>
@@ -489,6 +512,9 @@
             const latlng = [item.coords.lat, item.coords.lng];
             const routeLabel = item.routeId || 'Unassigned';
             const occupancy = item.occupancy || '?';
+            const isTaxi = item.serviceType === 'TAXI' || item.routeId === 'taxi-service';
+            const isBus = item.serviceType === 'BUS' || item.routeId?.startsWith('bus-');
+            const markerColor = type === 'driver' ? (isTaxi ? '#FB7345' : isBus ? '#6366F1' : '#087E8B') : '#EF4444';
             const title = type === 'driver' ? `Driver ${id}` : `Passenger ${id}`;
             const popupHtml = type === 'driver'
                 ? `<div style="font-family:'Space Grotesk', sans-serif; color:#0f172a;"><b>${title}</b><br>Route: ${routeLabel}<br>Occupancy: ${occupancy}</div>`
@@ -498,10 +524,10 @@
             } else {
                 const m = L.circleMarker(latlng, {
                     radius: type === 'driver' ? 7 : 5,
-                    color: type === 'driver' ? '#5B8CFF' : '#22C55E',
+                    color: markerColor,
                     weight: 2,
-                    fillColor: type === 'driver' ? '#5B8CFF' : '#22C55E',
-                    fillOpacity: 0.8
+                    fillColor: markerColor,
+                    fillOpacity: 0.85
                 }).addTo(map);
                 m.bindPopup(popupHtml);
                 markers.set(id, m);
@@ -533,12 +559,29 @@
 
             if (state.socket) state.socket.disconnect();
 
-            state.socket = io(url, { transports: ['polling'] });
+            state.socket = io(url, { transports: ['websocket', 'polling'], reconnection: true });
 
             state.socket.on("connect", () => {
                 led.className = "dot online";
                 statusText.innerText = "SYSTEM SECURED";
                 state.socket.emit("join", "dashboard");
+            });
+
+            state.socket.on("dashboard-snapshot", (snapshot) => {
+                if (snapshot && Array.isArray(snapshot.drivers)) {
+                    snapshot.drivers.forEach(d => {
+                        const id = d.driverId || d.driver_id || d.id;
+                        if (id) state.drivers.set(id, { ...d, driverId: id, coords: d.coords || { lat: d.current_lat, lng: d.current_lng } });
+                    });
+                }
+                if (snapshot && Array.isArray(snapshot.passengers)) {
+                    snapshot.passengers.forEach(p => {
+                        const id = p.passengerId || p.passenger_id || p.id;
+                        if (id) state.passengers.set(id, { ...p, passengerId: id });
+                    });
+                }
+                rebuildMarkers();
+                updateUI();
             });
 
             state.socket.on("fleet-update", (data) => {

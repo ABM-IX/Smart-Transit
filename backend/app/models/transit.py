@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, Integer, ForeignKey, DateTime, func, Enum
+from sqlalchemy import Column, String, Float, Integer, ForeignKey, DateTime, func, Enum, JSON
 from sqlalchemy.orm import relationship
 import enum
 from app.database import Base
@@ -17,6 +17,7 @@ class Route(Base):
     destination_name = Column(String, nullable=False)
     route_type = Column(String, default=RouteType.COMBI.value)
     base_fare = Column(Float, default=8.0)
+    waypoints = Column(JSON, nullable=True, default=list)
     created_at = Column(DateTime, default=func.now())
 
     stops = relationship("RouteStop", back_populates="route", cascade="all, delete-orphan")
