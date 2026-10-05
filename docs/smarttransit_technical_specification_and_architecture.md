@@ -1,11 +1,9 @@
 # SmartTransit — Technical Documentation: Architecture, Data Model, API Reference, Telematics Protocol, and Application Flow 🇧🇼
 
-> **Document Type:** Production System Specification, Technical Architecture Defense, and Partner Integration Blueprint  
-> **Prepared For:** Orange Digital Center (ODC) Collaborative Review & Technical Alignment with **TselaGoo**  
+> **Document Type:** Production System Specification & Architectural Reference  
 > **System Name:** SmartTransit (Botswana Intelligent Mobility & Paratransit Telematics Platform)  
 > **Maintainer & Lead Systems Architect:** Arabang Benville Mothofela (*First Minds / SmartTransit Engineering*)  
 > **Date:** October 2026  
-> **Reference Document:** *TselaGoo Technical Documentation (Architecture, Data Model, API Reference and Application Flow)*
 
 ---
 
@@ -16,7 +14,11 @@
 3. [System Architecture & Three-Tier Cyber-Physical Topology](#3-system-architecture--three-tier-cyber-physical-topology)
 4. [Database Specification & Data Model (Supabase PostgreSQL / Offline SQLite)](#4-database-specification--data-model)
 5. [Backend Service (FastAPI & AsyncIO Engine)](#5-backend-service-fastapi--asyncio-engine)
-6. [REST API Reference (All Endpoints, Payloads & Responses)](#6-rest-api-reference)
+6. [REST API Reference (All Endpoints, Contracts & Current Data Status)](#6-rest-api-reference)
+   - 6.1 System Health & Diagnostics (`/api/health`)
+   - 6.2 Transit Corridors & Stops (`/api/transit/routes`, `/api/transit/stops`, `/api/transit/fleet/active`)
+   - 6.3 Trips & On-Demand Taxi Hailing (`/api/trips/taxi/book`, `/api/trips/rating`)
+   - 6.4 AI Multi-Modal Journey Planner (`/api/ai/plan-journey`)
 7. [Full-Duplex Real-Time Telematics & WebSocket Protocol (Socket.IO)](#7-full-duplex-real-time-telematics--websocket-protocol-socketio)
 8. [Core Algorithms & Mathematical Formulations](#8-core-algorithms--mathematical-formulations)
    - 8.1 Newell–Daganzo Dynamic Headway Regularization (Anti-Bunching)
@@ -44,11 +46,12 @@
     - React + Vite vs. Plain HTML / Vanilla JS
     - Supabase PostgreSQL + PostGIS vs. Bare Relational DBs
     - Leaflet.js / OSM vs. Proprietary Google Maps API
-14. [Strategic Synergy & Integration Blueprint with TselaGoo](#14-strategic-synergy--integration-blueprint-with-tselagoo)
-    - 14.1 Shared Mission & Comparative Matrix
-    - 14.2 High-Value Mutual Integration Points at Orange Digital Center
-    - 14.3 Unified Architectural Vision
-15. [Observations, Known Gaps, and Technical Roadmap](#15-observations-known-gaps-and-technical-roadmap)
+14. [Transit Data Reality, Ingestion Architecture & Corridor Digitization](#14-transit-data-reality-ingestion-architecture--corridor-digitization)
+    - 14.1 The Paratransit Data Reality in Gaborone
+    - 14.2 Schema Readiness vs. Static Dataset Availability
+    - 14.3 Spatial Independence of Point-to-Point Taxi Hailing
+    - 14.4 Corridor Digitization & GTFS Field Survey Strategy
+15. [System Status, Known Constraints, and Engineering Roadmap](#15-system-status-known-constraints-and-engineering-roadmap)
 
 ---
 
@@ -69,7 +72,7 @@ In Botswana's urban centers—predominantly Greater Gaborone (encompassing Gabor
 ### 1.3 What SmartTransit Solves
 **SmartTransit** is an active **Intelligent Transportation System (ITS)** that converts informal African paratransit into a predictable, coordinated, cyber-physical transit network. 
 
-Unlike passive map viewers that merely display bunched vehicles, SmartTransit forms an active **closed-loop feedback system**:
+Rather than acting merely as a passive map lookup, SmartTransit forms an active **closed-loop feedback system**:
 - Ingests **1 Hz high-frequency GPS telemetry** from driver smartphones mounted on dashboards.
 - Computes real-time **Newell–Daganzo headway spacing errors** between successive corridor combis.
 - Broadcasts real-time in-cab pacing instructions (`SLOW DOWN`, `MAINTAIN CURRENT SPEED`, `SPEED UP`) to eliminate bunching.
@@ -118,25 +121,25 @@ SmartTransit/
 │   ├── main.py                          # ASGI application factory mounting FastAPI + Socket.IO
 │   ├── requirements.txt                 # Backend Python package manifest
 │   ├── schema_supabase.sql              # Supabase PostgreSQL production schema + RLS policies
-│   └── seed_data.py                     # Initial database seeding script (Gaborone routes & stops)
+│   └── seed_data.py                     # Initial database seeding script (Development mock schemas)
 │
 ├── smart_transit_app/                   # Cross-Platform Flutter Client (Android & iOS)
 │   ├── lib/
 │   │   ├── main.dart                    # App bootstrap, Provider registration, routing table
 │   │   ├── core/                        # Global design tokens, theme, constants, typography
-│   │   │   ├── theme.dart               # Botswana national palette (sky blue, black, white), dark glassmorphism
+│   │   │   ├── theme.dart               # Botswana national palette (sky blue, dark obsidian), glassmorphism
 │   │   │   └── constants.dart           # API URLs, WebSocket channel names, default coordinates
 │   │   ├── models/                      # Dart transit domain models
-│   │   │   ├── transit_route.dart       # Corridor metadata, waypoints polyline, base fare
-│   │   │   ├── transit_stop.dart        # Stop ID, name, lat/lng, sequence
-│   │   │   ├── driver_telemetry.dart    # Vehicle position, heading, speed, headway advisory
-│   │   │   └── hail_request.dart        # Taxi booking state, pickup, dropoff, metered fare
+│   │   │   ├── route_model.dart         # Corridor metadata, waypoints polyline, base fare
+│   │   │   ├── driver_model.dart        # Vehicle position, heading, speed, headway advisory
+│   │   │   ├── hail_request_model.dart  # Taxi booking state, pickup, dropoff, metered fare
+│   │   │   └── itinerary_model.dart     # Multi-modal trip itinerary model
 │   │   ├── providers/                   # Reactive state management (Provider architecture)
 │   │   │   ├── auth_provider.dart       # User authentication, role toggling (Passenger vs Driver)
 │   │   │   ├── transit_provider.dart    # Active routes, stops, nearby vehicle tracking
 │   │   │   └── taxi_booking_provider.dart # Hail state machine, live driver assignment, fare countdown
 │   │   ├── services/                    # Client infrastructure services
-│   │   │   ├── api_service.dart         # HTTP REST client with error normalization
+│   │   │   ├── api_service.dart         # HTTP REST client with error normalization & Supabase bindings
 │   │   │   ├── socket_service.dart      # Real-time Socket.IO client, event listeners, reconnect logic
 │   │   │   └── location_service.dart    # Background GPS locator, hardware permission handler
 │   │   ├── screens/
@@ -152,11 +155,11 @@ SmartTransit/
 │   │   │       ├── driver_dashboard.dart    # Shift toggle, earnings summary, corridor status
 │   │   │       ├── driver_home_screen.dart  # Live GPS broadcast cockpit, passenger count
 │   │   │       ├── taxi_driver_screen.dart  # On-demand hail radar, acceptance slider, navigation
-│   │   │       ├── driver_route_select_screen.dart # Corridor assignment picker (Route 1 to 4)
+│   │   │       ├── driver_route_select_screen.dart # Corridor assignment picker
 │   │   │       ├── incoming_hail_dialog.dart# High-contrast 10-second acceptance modal
 │   │   │       └── spacing_advisory_widget.dart # In-Cab Headway HUD (SLOW DOWN / SPEED UP badge)
 │   │   └── widgets/                     # Shared atomic widgets (Glassmorphic cards, custom map markers)
-│   └── pubspec.yaml                     # Flutter package dependencies (google_maps_flutter, socket_io_client)
+│   └── pubspec.yaml                     # Flutter package dependencies
 │
 ├── dashboard/                           # DRTS Regulatory & Fleet Command Web Console
 │   ├── src/
@@ -180,9 +183,9 @@ SmartTransit/
 │   └── migrations/
 │       └── 20260822000000_smarttransit_schema.sql # Master PostgreSQL DDL script
 │
-├── docs/                                # Engineering Defense, Academic Research & Pitch Decks
-│   ├── system_architecture_defense_and_database_specification.md # Formal 525-line architectural defense
-│   ├── botswana_competitor_analysis_and_differentiation_matrix.md# Teardown of Vaya, inDrive, Yango
+├── docs/                                # Formal Engineering Defense & Academic Specifications
+│   ├── system_architecture_defense_and_database_specification.md # 525-line architectural defense
+│   ├── botswana_competitor_analysis_and_differentiation_matrix.md# Market & technical competitor teardown
 │   ├── system_use_cases_and_engineering_diagrams_specification.md# UML sequence & state diagrams
 │   └── technical_methodology_and_literature_review_guide.md      # Literature review & mathematical foundations
 │
@@ -239,7 +242,7 @@ graph TD
 ### Key Architectural Decisions
 1. **Separation of Concerns Across Roles:**
    - **Driver Cockpit:** Hands-free, high-contrast, zero-touch interface mounted on the windshield, functioning as a high-frequency IoT telemetry emitter.
-   - **Commuter App:** Pedestrian-optimized, location-aware mobile client providing transparent fares, live countdown ETAs, and multi-modal routing within 2 seconds of launch.
+   - **Commuter App:** Pedestrian-optimized, location-aware mobile client providing transparent fares, live countdown ETAs, and on-demand taxi hailing within 2 seconds of launch.
    - **Regulatory Command Center:** Wide-screen desktop web application engineered for operations managers and the Department of Road Transport and Safety (DRTS) to audit headways, monitor speed infractions, and plan transport policy.
 2. **Dual-Engine Persistence Strategy:**
    - **Cloud Production:** Supabase PostgreSQL with PostGIS extensions for spatial indexing, JSONB route waypoints, and Row Level Security.
@@ -253,7 +256,7 @@ graph TD
 
 ## 4. Database Specification & Data Model
 
-The data layer consists of **9 core relational tables** engineered for paratransit corridor topologies, driver telematics, and transactional ride hailing.
+The data layer consists of **9 relational tables** engineered for paratransit corridor topologies, driver telematics, and transactional ride hailing.
 
 ### 4.1 Relational Entity-Relationship Diagram
 
@@ -415,11 +418,11 @@ erDiagram
 | `model` | `VARCHAR(64)` | `NULLABLE` | Vehicle model (e.g., Toyota HiAce Quantum) |
 | `created_at` | `TIMESTAMPTZ` | `DEFAULT timezone('utc', now())` | Registry entry date |
 
-#### 4. `routes` — Transit Corridors & Waypoints
+#### 4. `routes` — Transit Corridors & Waypoints *(Schema Defined)*
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | `VARCHAR(64)` | `PRIMARY KEY` | Route identifier (e.g., `ROUTE_TLOKWENG`) |
-| `name` | `VARCHAR(128)` | `NOT NULL` | Public name (e.g., "Route 3: Station to BBS Mall via Fairgrounds") |
+| `id` | `VARCHAR(64)` | `PRIMARY KEY` | Route identifier |
+| `name` | `VARCHAR(128)` | `NOT NULL` | Public corridor designation |
 | `origin_name` | `VARCHAR(64)` | `NOT NULL` | Origin terminus label |
 | `destination_name`| `VARCHAR(64)` | `NOT NULL` | Destination terminus label |
 | `route_type` | `VARCHAR(20)` | `NOT NULL, DEFAULT 'COMBI'` | Modality: `COMBI`, `TAXI`, or `BUS` |
@@ -427,14 +430,17 @@ erDiagram
 | `waypoints` | `JSONB` | `DEFAULT '[]'::jsonb` | Ordered array of `{lat, lng}` coordinates for polyline rendering |
 | `created_at` | `TIMESTAMPTZ` | `DEFAULT timezone('utc', now())` | Route definition timestamp |
 
-#### 5. `stops` — Physical Boarding Points
+> [!IMPORTANT]
+> **Data Status Notice:** The `routes` table schema is fully implemented in the database and API. However, **no verified, live public transit route dataset has been created or loaded in production yet**. In production, queries to this table currently return empty collections (`[]`), because formal paratransit GPS surveys have not yet been conducted.
+
+#### 5. `stops` — Physical Boarding Points *(Schema Defined)*
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | `VARCHAR(64)` | `PRIMARY KEY` | Stop identifier (e.g., `STOP_MAIN_MALL`) |
+| `id` | `VARCHAR(64)` | `PRIMARY KEY` | Stop identifier |
 | `name` | `VARCHAR(128)` | `NOT NULL` | Standard or colloquial stop name |
 | `latitude` | `DOUBLE PRECISION`| `NOT NULL` | Geographic coordinate (WGS 84) |
 | `longitude` | `DOUBLE PRECISION`| `NOT NULL` | Geographic coordinate (WGS 84) |
-| `description` | `VARCHAR(255)` | `NULLABLE` | Local landmark reference (e.g., "Opposite Choppies") |
+| `description` | `VARCHAR(255)` | `NULLABLE` | Local landmark reference |
 | `created_at` | `TIMESTAMPTZ` | `DEFAULT timezone('utc', now())` | Stop creation timestamp |
 
 #### 6. `route_stops` — Route Stop Sequence Junction
@@ -493,7 +499,7 @@ erDiagram
 ## 5. Backend Service (FastAPI & AsyncIO Engine)
 
 The backend is built with **FastAPI** running on an asynchronous ASGI event loop (`uvicorn` with `uvloop`). It serves two distinct transport protocols on a single unified port:
-1. **HTTP REST API:** For declarative queries (fetching static route lines, stop catalogs, multi-modal trip plans, historical reports).
+1. **HTTP REST API:** For declarative queries (fetching routes, stops, trip plans, ratings, and historical reports).
 2. **WebSocket Gateway (Python-SocketIO):** For low-latency bidirectional streaming (1 Hz GPS coordinates, spacing advisories, taxi hail auctions, and live fleet telemetry).
 
 ### Backend Component Map
@@ -524,7 +530,7 @@ Returns system operational state, timestamp, version, and database connectivity.
   "version": "1.0.0",
   "environment": "production",
   "database": "connected",
-  "active_drivers_in_memory": 6,
+  "active_drivers_in_memory": 4,
   "timestamp": 1791223400.12
 }
 ```
@@ -534,44 +540,56 @@ Returns system operational state, timestamp, version, and database connectivity.
 ### 6.2 Transit Corridors & Stops
 
 #### `GET /api/transit/routes`
-Fetches all registered corridors, with optional filtering by modality.
+Fetches registered transit corridors from the database, with optional filtering by modality.
+
 - **Query Parameters:**
   - `route_type` (optional, string): Filter by `COMBI`, `TAXI`, or `BUS`.
-- **Response `200 OK`:**
+- **Implementation & Filtering:**
+  In `backend/app/routers/transit.py`, the endpoint executes a `SELECT` statement on the `routes` table and filters out any legacy mock test identifiers.
+- **Contract Schema:**
 ```json
 [
   {
-    "id": "ROUTE_BBS_STATION",
-    "name": "Route 3: Station to BBS Mall via Fairgrounds",
-    "origin_name": "Gaborone Bus Rank",
-    "destination_name": "BBS Mall",
+    "id": "string",
+    "name": "string",
+    "origin_name": "string",
+    "destination_name": "string",
     "route_type": "COMBI",
     "base_fare": 8.00,
     "waypoints": [
-      {"lat": -24.6546, "lng": 25.9145},
-      {"lat": -24.6590, "lng": 25.9325},
-      {"lat": -24.6407, "lng": 25.9295}
+      {"lat": 0.0, "lng": 0.0}
     ]
   }
 ]
 ```
+- **Current Operational Reality:**
+  > [!NOTE]
+  > **Empty Dataset State:** Because SmartTransit does not yet have an official paratransit corridor dataset populated in the database, this endpoint currently returns an empty array:
+  > ```json
+  > []
+  > ```
+  > The client-side application ([`api_service.dart`](file:///c:/Users/araba/Desktop/SmartTransit/smart_transit_app/lib/services/api_service.dart#L76-L88)) is explicitly configured to gracefully handle an empty route list without crashing or rendering phantom routes.
 
 #### `GET /api/transit/stops`
-Fetches all physical stops across the network, optionally filtered by route ID.
+Fetches physical stops across the network, optionally filtered by route ID.
+
 - **Query Parameters:**
-  - `route_id` (optional, string): Filter by corridor ID.
-- **Response `200 OK`:**
+  - `route_id` (optional, string): Filter stops by route ID.
+- **Contract Schema:**
 ```json
 [
   {
-    "id": "STOP_MAIN_MALL",
-    "name": "Main Mall Station",
-    "latitude": -24.6543,
-    "longitude": 25.9189,
-    "description": "Opposite Standard Chartered House"
+    "id": "string",
+    "name": "string",
+    "latitude": 0.0,
+    "longitude": 0.0,
+    "description": "string"
   }
 ]
 ```
+- **Current Operational Reality:**
+  > [!NOTE]
+  > Returns `[]` when no verified stops have been seeded into the database.
 
 #### `GET /api/transit/fleet/active`
 Returns a real-time snapshot of all currently online drivers across combis, taxis, and buses directly from the in-memory cache.
@@ -582,7 +600,7 @@ Returns a real-time snapshot of all currently online drivers across combis, taxi
     "driver_id": "drv-001",
     "service_type": "COMBI",
     "status": "ONLINE",
-    "route_id": "ROUTE_BBS_STATION",
+    "route_id": "route-active",
     "vehicle_id": "B 123 ABC",
     "coords": {"lat": -24.6560, "lng": 25.9160},
     "occupancy": 11,
@@ -691,7 +709,7 @@ Coordinates a multi-leg journey combining Doorstep Special Cabs, Arterial Minibu
       "scheduled_arrival": "09:50",
       "duration_mins": 20,
       "fare_bwp": 8.00,
-      "instructions": "Board Route 4 Combi to Central Station."
+      "instructions": "Board Route Combi to Central Station."
     },
     {
       "leg_number": 3,
@@ -702,7 +720,7 @@ Coordinates a multi-leg journey combining Doorstep Special Cabs, Arterial Minibu
       "scheduled_arrival": "14:30",
       "duration_mins": 255,
       "fare_bwp": 110.00,
-      "instructions": "Board AT&T Monnakgotla / Mahube Express Coach. Includes 25 min boarding buffer."
+      "instructions": "Board Intercity Coach. Includes 25 min boarding buffer."
     }
   ]
 }
@@ -826,7 +844,7 @@ For regional or long-distance travel, the system models the multi-modal transit 
 - **Backward Scheduling:** Given a target arrival time at an intercity destination (e.g., Francistown at 14:30), the algorithm traverses $G$ backward from destination to origin:
   1. Intercity leg requires $255\text{ min} \implies$ Coach departs Gaborone at 10:15.
   2. Adds a **15-minute luggage buffer** $\implies$ Commuter must arrive at Central Bus Rank by 10:00.
-  3. Combi leg from G-West takes $20\text{ min} \implies$ Combi departure at 09:30.
+  3. Combi leg takes $20\text{ min} \implies$ Combi departure at 09:30.
   4. Special cab first-mile pickup requires $12\text{ min} \implies$ Taxi pickup scheduled at commuter doorstep at 09:15.
   5. Produces a cohesive, multi-leg itinerary with synchronized transfers.
 
@@ -849,7 +867,7 @@ smart_transit_app/lib/
 ├── core/
 │   ├── theme.dart            # Botswana national palette (sky blue #00A3E0, dark obsidian #0F172A)
 │   └── constants.dart        # Server endpoints & socket channels
-├── models/                   # TransitRoute, TransitStop, DriverTelemetry, HailRequest
+├── models/                   # TransitRoute, DriverModel, HailRequestModel, ItineraryModel
 ├── providers/                # AuthProvider, TransitProvider, TaxiBookingProvider
 ├── screens/
 │   ├── auth/                 # Role Selection (Passenger vs Driver), Phone Auth
@@ -873,7 +891,7 @@ smart_transit_app/lib/
 
 ### 9.3 State Management & Offline Fallbacks
 - Uses **Provider** architecture (`ChangeNotifier`) for reactive, deterministic state updates.
-- If the mobile device loses cellular reception, the app caches recent corridor stops locally, allowing commuters to browse route maps and standard gazetted tariffs offline.
+- If the mobile device loses cellular reception, the app caches recent coordinates and state locally, reconnecting automatically with exponential backoff when signal is restored.
 
 ---
 
@@ -883,7 +901,7 @@ The Command Center is a high-density, desktop-class Single Page Application (SPA
 
 ### 10.1 Real-Time Fleet Telematics Map & Virtual DOM Optimization
 - **High-Frequency Marker Reconciliation:** Ingests dozens of 1 Hz vehicle telemetry pings per second. Rather than triggering expensive browser reflows through imperative DOM manipulation, React's Virtual DOM diffing engine surgical updates only the specific marker coordinates and table cells that changed.
-- **Corridor Visualization:** Renders color-coded vector polylines for arterial routes (Route 1 to Route 4). Vehicles are represented as directional avatars indicating real-time heading, speed, and occupancy.
+- **Corridor Visualization:** Renders color-coded vector polylines for arterial routes. Vehicles are represented as directional avatars indicating real-time heading, speed, and occupancy.
 - **Demand Density Heatmaps:** Uses `leaflet.heat` to aggregate active passenger hail coordinates, displaying glowing spatial heatmaps of underserved commuter clusters across Gaborone.
 
 ### 10.2 DRTS Statutory Regulatory Audit Reports (RPT-01 to RPT-05)
@@ -903,10 +921,10 @@ The dashboard includes an automated reporting engine (`reportGenerator.js`) that
 Commuter App               FastAPI Backend (REST)         Socket.IO Gateway         PostgreSQL / Cache
      |                               |                            |                        |
      |-- 1. GET /api/transit/routes ->|                            |                        |
-     |                               |-- 2. Query active corridors ----------------------->|
-     |<- 3. Return Routes + Waypoints-|                            |                        |
+     |                               |-- 2. Query registered routes----------------------->|
+     |<- 3. Return Routes [] --------|                            |                        |
      |                                                             |                        |
-     |-- 4. Emit 'join' { role: 'passengers', routeId: 'ROUTE_3' }->|                        |
+     |-- 4. Emit 'join' { role: 'passengers', routeId: 'active' }->|                        |
      |                                                             |-- 5. Add to Room       |
      |<- 6. 'active-drivers-snapshot' (Current online combis) -----|                        |
      |                                                             |                        |
@@ -983,7 +1001,7 @@ DEBUG=True
 CORS_ORIGINS="http://localhost:3000,http://localhost:5173,http://localhost:8000,https://smarttransit.bw"
 
 # Database Configuration (Dual-Engine)
-# If SUPABASE_URL is omitted or invalid, system automatically uses SQLite
+# Defaults to SQLite edge persistence if Supabase URL is not active
 DATABASE_URL="sqlite+aiosqlite:///./smarttransit.db"
 # Production Supabase PostgreSQL:
 # DATABASE_URL="postgresql+asyncpg://postgres:[PASSWORD]@db.[PROJECT_ID].supabase.co:5432/postgres"
@@ -1008,9 +1026,6 @@ source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
-
-# Run initial database seed (loads Gaborone routes & stops)
-python seed_data.py
 
 # Launch FastAPI + Socket.IO server
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
@@ -1062,96 +1077,45 @@ npm run dev
 
 ---
 
-## 14. Strategic Synergy & Integration Blueprint with TselaGoo
+## 14. Transit Data Reality, Ingestion Architecture & Corridor Digitization
 
-### 14.1 Shared Mission & Comparative Matrix
+### 14.1 The Paratransit Data Reality in Gaborone
+A fundamental characteristic of informal urban mobility in Botswana is that **no digitized transit dataset exists**. Unlike European or North American transit agencies that publish standardized GTFS (General Transit Feed Specification) feeds, the Department of Road Transport and Safety (DRTS) and local taxi associations manage routes through paper permits, verbal corridor descriptions, and informal rank queues.
 
-Both **SmartTransit** and **TselaGoo** were incubated within Botswana's innovation ecosystem and connected via the **Orange Digital Center**. Both projects share a single patriotic objective: **to modernize and elevate public transport for everyday Batswana commuters**.
+### 14.2 Schema Readiness vs. Static Dataset Availability
+It is vital to distinguish between **architectural capability** and **data availability**:
+1. **The Architecture is 100% Schema-Ready:**
+   The database tables (`routes`, `stops`, `route_stops`), Pydantic validation schemas, and REST endpoints (`/api/transit/routes`, `/api/transit/stops`) are fully designed, indexed, and operational.
+2. **Current Production State is Empty (`[]`):**
+   SmartTransit **does not currently possess or load an official public transit corridor dataset**. Any previously referenced route IDs (such as `ROUTE_BBS_STATION`, `route-u01`, etc.) were developer mock subjects used during initial test scaffolding. In the active codebase, these dummy records are filtered out ([`backend/app/routers/transit.py:22-24`](file:///c:/Users/araba/Desktop/SmartTransit/backend/app/routers/transit.py#L22-L24) and [`smart_transit_app/lib/services/api_service.dart:76-82`](file:///c:/Users/araba/Desktop/SmartTransit/smart_transit_app/lib/services/api_service.dart#L76-L82)), meaning the routes endpoint cleanly returns `[]`.
 
-However, each system approached the challenge from a distinct, complementary engineering angle:
+### 14.3 Spatial Independence of Point-to-Point Taxi Hailing
+Crucially, SmartTransit's **on-demand special cab hailing ($k$-NN dispatch)** is **completely independent of static route datasets**:
+- Commuter pickup coordinates and driver locations are acquired directly from smartphone GPS hardware.
+- The spatial dispatch engine computes real-time spherical Haversine distances dynamically.
+- The entire hail lifecycle (auction broadcast $\rightarrow$ driver swipe acceptance $\rightarrow$ dynamic ETA countdown $\rightarrow$ fare settlement) functions autonomously without requiring any pre-existing route or stop dataset.
 
-| Capability / Architecture | **TselaGoo** (Minibus Combi Route Finder) | **SmartTransit** (Intelligent Telematics & Fleet Platform) |
-| :--- | :--- | :--- |
-| **Primary Focus** | Static Route Discovery, Stop Autocomplete & BFS Journey Search | Dynamic Real-Time Headway Control, Live GPS Telematics & Fleet Dispatch |
-| **Transit Modalities** | Minibus Combis (30 Local, 10 Intercity routes) | **Tri-Modal:** Combis + Special Cabs + Intercity Coaches |
-| **Client Interface** | Responsive Web SPA (React 19 + Vite) | **Native Cross-Platform Mobile App (Flutter)** + Web Dashboard (React) |
-| **Active Headway Pacing** | ❌ None (No driver telemetry feedback loop) | **✅ Newell–Daganzo Dynamic In-Cab Spacing HUD (`SLOW`/`SPEED`)** |
-| **On-Demand Taxi Hailing**| ❌ None (Combi-only corridor lookup) | **✅ Spatial $k$-NN Dispatch Engine ($k=5$, sub-second matching)** |
-| **Boarding Detection** | ❌ Manual stop arrival check | **✅ Autonomous Co-Movement Proximity Geofencing ($20\text{ m}$, $>2\text{ m/s}$)** |
-| **Regulatory Supervision** | ❌ No administrative command portal | **✅ DRTS Regulatory Web Dashboard with Statutory CSV Exports (RPT-01..05)** |
-| **Route Geometry Assets** | **✅ Rich GPX Field Recordings & Precomputed OSRM Segment Polylines** | Simplified JSON Waypoint Coordinate Lists |
-| **Transit Data Catalog** | **✅ 103 Locations, 40 Routes, 172 Stop Rows Curated** | Core Arterial Corridors (Routes 1–4, Intercity Regional Hubs) |
-
----
-
-### 14.2 High-Value Mutual Integration Points at Orange Digital Center
-
-A collaboration between SmartTransit and TselaGoo creates an **unbeatable, comprehensive mobility ecosystem for Botswana**:
-
-#### 1. Merging TselaGoo's Geometry Engine into SmartTransit
-- **The Asset:** TselaGoo possesses rich, field-recorded GPX traces (`broadhurst_2.gpx`, `phakalane.gpx`, `tlokweng_4.gpx`) and an offline OSRM polyline stitching pipeline (`compute_polylines.py`).
-- **The Synergy:** SmartTransit can ingest TselaGoo's road-accurate segmented polylines (`route_geometry`) into its PostgreSQL database. This immediately provides SmartTransit's Flutter vector map with millimeter-accurate road-following curves across all 40 Gaborone corridors.
-
-#### 2. Elevating TselaGoo with SmartTransit's Real-Time Telematics
-- **The Asset:** SmartTransit has a functioning **1 Hz Socket.IO driver telematics engine** and in-cab pacing cockpit.
-- **The Synergy:** TselaGoo's web interface (`Home.tsx`) can subscribe to SmartTransit's WebSocket gateway (`/socket.io`). TselaGoo users searching for combis will instantly see **live, moving combi markers and real-time countdown ETAs** powered by SmartTransit's driver network.
-
-#### 3. Powering TselaGoo's Multi-Transfer Journeys with SmartTransit's Special Cabs
-- **The Asset:** TselaGoo's pathfinder discovers journeys with up to 3 transfers, but commuter feedback indicates that walking between transfer hubs or reaching peripheral stops is unsafe or exhausting.
-- **The Synergy:** When a TselaGoo search result requires a transfer or first-mile connection, the TselaGoo UI can embed a **"Hail SmartTransit Cab" button**, triggering SmartTransit's spatial $k$-NN dispatch engine to bridge the transfer gap seamlessly.
-
-#### 4. Unified DRTS Regulatory Data Alliance
-- Combining TselaGoo's comprehensive route and stop catalog with SmartTransit's **Command Center Dashboard** provides the Department of Road Transport and Safety (DRTS) with Botswana's first **complete digital transit audit platform**:
-  - TselaGoo provides the **static baseline** (official route paths, stops, gazetted fares).
-  - SmartTransit provides the **dynamic operational telemetry** (speed compliance, headway adherence, passenger demand heatmaps).
+### 14.4 Corridor Digitization & GTFS Field Survey Strategy
+To populate the `routes` and `stops` tables with authentic paratransit data, SmartTransit has engineered a structured field survey methodology:
+1. **Driver Telematics Track Logging:** As enrolled combi drivers pilot their routes during daily operations, the in-cab Flutter app logs high-resolution GPS traces (latitude, longitude, speed, timestamp).
+2. **Stop Clustering & Identification:** Unsupervised spatial clustering (DBSCAN) will be applied to aggregate driver dwell points ($v \approx 0$ for $>15\text{ s}$ outside traffic signals) to automatically identify and catalogue unofficial paratransit boarding stops across Greater Gaborone.
+3. **Polyline Vectorization & GTFS Publishing:** Processed traces will be converted into smoothed vector waypoints and exported as Botswana's first open General Transit Feed Specification (GTFS) feed.
 
 ---
 
-### 14.3 Unified Architectural Vision
-
-```
-+----------------------------------------------------------------------------------------------------+
-|                               UNIFIED BOTSWANA MOBILITY ECOSYSTEM                                  |
-+----------------------------------------------------------------------------------------------------+
-|                                                                                                    |
-|    [ COMMUTER INTERFACES ]                     [ DRIVER / VEHICLE ]         [ REGULATORY OVERSIGHT ]|
-|    • TselaGoo Web Portal (React 19)            • SmartTransit Driver App    • SmartTransit DRTS     |
-|    • SmartTransit Mobile App (Flutter)           (In-Cab Spacing HUD)         Command Dashboard     |
-|              |                                           |                           |             |
-|              v                                           v                           v             |
-|    +------------------------------------------------------------------------------------------+    |
-|    |                                CENTRAL TRANSIT GATEWAY                                   |    |
-|    |    • Static Route & Stop Discovery (TselaGoo Graph & OSRM Polyline Engine)               |    |
-|    |    • Real-Time 1 Hz Telematics & Newell-Daganzo Spacing Engine (SmartTransit)            |    |
-|    |    • On-Demand Spatial k-NN Taxi Dispatch & Trip State Machine (SmartTransit)            |    |
-|    +------------------------------------------------------------------------------------------+    |
-|                                                  |                                                 |
-|                                                  v                                                 |
-|    +------------------------------------------------------------------------------------------+    |
-|    |                             UNIFIED GEOSPATIAL DATABASE                                  |    |
-|    |    • 103 Locations, 40 Corridors, 172 Stop Rows (TselaGoo Curated Dataset)               |    |
-|    |    • Road-Accurate Segmented Polylines (TselaGoo GPX / OSRM Geometry)                    |    |
-|    |    • Drivers, Vehicles, Live Telematics, Bookings, Ratings (SmartTransit Schema)         |    |
-|    +------------------------------------------------------------------------------------------+    |
-+----------------------------------------------------------------------------------------------------+
-```
-
----
-
-## 15. Observations, Known Gaps, and Technical Roadmap
+## 15. System Status, Known Constraints, and Engineering Roadmap
 
 ### 15.1 Current System Status
-- **Backend & Telematics:** Operational. Handles WebSocket lifecycle, 1 Hz GPS coordinate streaming, Newell–Daganzo headway advisories, speed-floored ETAs, and $k$-NN taxi dispatch.
-- **Mobile Clients:** Functional. Pre-compiled Flutter APKs (`v1.0.0`, `v1.1.0`) demonstrate role toggling, live vector map tracking, taxi hailing, and in-cab driver pacing.
-- **Web Dashboard:** Operational. Real-time Leaflet map rendering active vehicles, fleet list, metrics grid, and statutory CSV exports.
+- **Backend Core & WebSockets:** Fully operational. Supports 1 Hz GPS streaming, Newell–Daganzo headway calculations, speed-floored ETAs, and $k$-NN taxi dispatch.
+- **Mobile Client (`smart_transit_app`):** Fully operational. Supports driver shift toggles, in-cab spacing HUD, passenger taxi hailing, and live vector map rendering.
+- **Web Command Center (`dashboard/`):** Operational. Real-time Leaflet map rendering active fleet icons, tabular manifest, metrics grid, and statutory CSV exports.
 
-### 15.2 Strategic Roadmap
-1. **Corridor Expansion:** Import TselaGoo's complete 40-route catalog and GPX geometry into the production Supabase database.
-2. **Cashless Digital Fare Settlement:** Integrate local mobile money APIs (Orange Money, Mascom MyZaka, Absa Spark) for in-app combi and taxi fare settlement.
-3. **Hardware IoT OBD-II / Solar Tracker Units:** Transition from driver smartphone GPS to dedicated low-cost IoT telematics units installed directly into vehicle electrical systems.
-4. **Offline GTFS-RT Export:** Implement GTFS-Realtime feed endpoints to make Greater Gaborone's informal paratransit globally indexable on open transport platforms.
+### 15.2 Known Constraints & Next Steps
+1. **Corridor Dataset Ingestion:** Execute the field survey plan to map Gaborone's arterial combi routes (Broadhurst, Tlokweng, Mogoditshane, G-West) and populate the `routes` and `stops` database tables.
+2. **Payment Gateway Integration:** Implement direct integration with local mobile wallets (Orange Money, Mascom MyZaka) for digital cashless fare settlement.
+3. **Hardware IoT Edge Trackers:** Evaluate dedicated low-cost OBD-II/GPS tracking hardware for vehicle installation to supplement smartphone-based driver beacons.
 
 ---
 
 *Authored by the SmartTransit Systems Architecture & Engineering Team.*  
-*First Minds • Orange Digital Center Partnership Initiative • Republic of Botswana* 🇧🇼
+*First Minds • Republic of Botswana* 🇧🇼
