@@ -10,7 +10,10 @@ class ApiService {
 
   ApiService();
 
-  Future<List<TransitRoute>> fetchRoutes({String? routeType, bool onlyWithRegisteredDrivers = false}) async {
+  Future<List<TransitRoute>> fetchRoutes({
+    String? routeType,
+    bool onlyWithRegisteredDrivers = false,
+  }) async {
     // 1. Direct Supabase Cloud Query (Primary Single Source of Truth for Real Registered Routes)
     try {
       if (onlyWithRegisteredDrivers) {
@@ -65,7 +68,7 @@ class ApiService {
     try {
       final uri = Uri.parse('$baseUrl/api/transit/routes').replace(
         queryParameters: {
-          if (routeType != null) 'route_type': routeType,
+          'route_type': ?routeType,
           if (onlyWithRegisteredDrivers) 'has_drivers': 'true',
         },
       );
@@ -74,11 +77,16 @@ class ApiService {
         final List<dynamic> data = jsonDecode(response.body);
         if (data.isNotEmpty) {
           // Exclude any obsolete test subjects / mock dummy routes like 'route-u01', 'route-u02', etc.
-          final cleanList = data.map((json) => TransitRoute.fromJson(json)).where((r) {
-            final id = r.id.toLowerCase();
-            final name = r.name.toLowerCase();
-            return !id.startsWith('route-u0') && !name.contains('route u1') && !name.contains('route u2');
-          }).toList();
+          final cleanList = data
+              .map((json) => TransitRoute.fromJson(json))
+              .where((r) {
+                final id = r.id.toLowerCase();
+                final name = r.name.toLowerCase();
+                return !id.startsWith('route-u0') &&
+                    !name.contains('route u1') &&
+                    !name.contains('route u2');
+              })
+              .toList();
           return cleanList;
         }
       }
@@ -173,15 +181,17 @@ class ApiService {
 
     // 2. Supabase Edge Function Fallback
     try {
-      final response = await http.post(
-        Uri.parse('${AppConstants.supabaseUrl}/functions/v1/plan-journey'),
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': AppConstants.supabasePublishableKey,
-          'Authorization': 'Bearer ${AppConstants.supabasePublishableKey}',
-        },
-        body: body,
-      ).timeout(const Duration(seconds: 5));
+      final response = await http
+          .post(
+            Uri.parse('${AppConstants.supabaseUrl}/functions/v1/plan-journey'),
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': AppConstants.supabasePublishableKey,
+              'Authorization': 'Bearer ${AppConstants.supabasePublishableKey}',
+            },
+            body: body,
+          )
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         return ItineraryModel.fromJson(jsonDecode(response.body));

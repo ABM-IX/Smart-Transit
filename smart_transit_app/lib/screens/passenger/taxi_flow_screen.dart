@@ -37,15 +37,23 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
       final uri = Uri.parse(
         'https://nominatim.openstreetmap.org/search?format=json&q=${Uri.encodeComponent(query)}&countrycodes=bw',
       );
-      final res = await http.get(uri, headers: {'User-Agent': 'SmartTransit-App'});
+      final res = await http.get(
+        uri,
+        headers: {'User-Agent': 'SmartTransit-App'},
+      );
       if (res.statusCode == 200) {
         final List<dynamic> data = jsonDecode(res.body);
         setState(() {
-          _suggestions = data.take(5).map((item) => {
-            'name': item['display_name']?.toString() ?? '',
-            'lat': double.tryParse(item['lat']?.toString() ?? '') ?? 0.0,
-            'lon': double.tryParse(item['lon']?.toString() ?? '') ?? 0.0,
-          }).toList();
+          _suggestions = data
+              .take(5)
+              .map(
+                (item) => {
+                  'name': item['display_name']?.toString() ?? '',
+                  'lat': double.tryParse(item['lat']?.toString() ?? '') ?? 0.0,
+                  'lon': double.tryParse(item['lon']?.toString() ?? '') ?? 0.0,
+                },
+              )
+              .toList();
         });
       }
     } catch (_) {
@@ -59,7 +67,10 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
     return Scaffold(
       backgroundColor: AppTheme.white,
       appBar: AppBar(
-        title: const Text('Taxi Service', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text(
+          'Taxi Service',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppTheme.black),
           onPressed: widget.onBack,
@@ -74,7 +85,9 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
     // Only taxi drivers
-    final taxiDrivers = transit.activeDrivers.where((d) => d.serviceType == 'TAXI').toList();
+    final taxiDrivers = transit.activeDrivers
+        .where((d) => d.serviceType == 'TAXI')
+        .toList();
 
     return Stack(
       children: [
@@ -86,7 +99,10 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
         // Live Taxis Count Badge
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
             child: StatusPill(
               label: '${taxiDrivers.length} Online Cabs Nearby',
               color: AppTheme.black,
@@ -104,7 +120,8 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             top: false,
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).orientation == Orientation.landscape
+                maxHeight:
+                    MediaQuery.of(context).orientation == Orientation.landscape
                     ? MediaQuery.of(context).size.height * 0.55
                     : MediaQuery.of(context).size.height * 0.65,
               ),
@@ -131,18 +148,31 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(color: AppTheme.black, strokeWidth: 2),
+            const CircularProgressIndicator(
+              color: AppTheme.black,
+              strokeWidth: 2,
+            ),
             const SizedBox(height: 16),
             const Text(
               'Finding Closest Available Cab...',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: AppTheme.black),
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 17,
+                color: AppTheme.black,
+              ),
             ),
             const SizedBox(height: 6),
-            const Text('Dispatching request to drivers nearby.', style: TextStyle(color: AppTheme.midGrey, fontSize: 13)),
+            const Text(
+              'Dispatching request to drivers nearby.',
+              style: TextStyle(color: AppTheme.midGrey, fontSize: 13),
+            ),
             const SizedBox(height: 16),
             TextButton(
               onPressed: () => transit.cancelHail(auth.userId),
-              child: const Text('Cancel Request', style: TextStyle(color: AppTheme.accentRed)),
+              child: const Text(
+                'Cancel Request',
+                style: TextStyle(color: AppTheme.accentRed),
+              ),
             ),
           ],
         ),
@@ -150,7 +180,9 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
     }
 
     if (transit.passengerStatus == PassengerTripStatus.driverAccepted) {
-      final taxiDrivers = transit.activeDrivers.where((d) => d.serviceType == 'TAXI').toList();
+      final taxiDrivers = transit.activeDrivers
+          .where((d) => d.serviceType == 'TAXI')
+          .toList();
       double? distMeters = transit.etaDistanceMeters;
       if (distMeters == null && taxiDrivers.isNotEmpty) {
         const double p = 0.017453292519943295;
@@ -158,7 +190,13 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
         final lon1 = transit.currentLocation.longitude;
         final lat2 = taxiDrivers.first.latitude;
         final lon2 = taxiDrivers.first.longitude;
-        final a = 0.5 - math.cos((lat2 - lat1) * p) / 2 + math.cos(lat1 * p) * math.cos(lat2 * p) * (1 - math.cos((lon2 - lon1) * p)) / 2;
+        final a =
+            0.5 -
+            math.cos((lat2 - lat1) * p) / 2 +
+            math.cos(lat1 * p) *
+                math.cos(lat2 * p) *
+                (1 - math.cos((lon2 - lon1) * p)) /
+                2;
         distMeters = 12742 * math.asin(math.sqrt(a)) * 1000.0;
       }
       final isWithinProximity = distMeters != null && distMeters <= 25.0;
@@ -167,8 +205,8 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
         padding: const EdgeInsets.all(20),
         decoration: const BoxDecoration(
           color: AppTheme.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: const Border(top: BorderSide(color: AppTheme.borderGrey, width: 1)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border(top: BorderSide(color: AppTheme.borderGrey, width: 1)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -182,7 +220,11 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                     color: AppTheme.taxiColor.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.local_taxi, color: AppTheme.taxiColor, size: 24),
+                  child: const Icon(
+                    Icons.local_taxi,
+                    color: AppTheme.taxiColor,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -191,15 +233,22 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                     children: [
                       Text(
                         'Taxi Assigned (${transit.assignedDriverId ?? "Driver En Route"})',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.brandNavy),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: AppTheme.brandNavy,
+                        ),
                       ),
                       Text(
                         isWithinProximity
                             ? 'Cab arrived at pickup point!'
                             : (distMeters != null
-                                ? 'Cab is en route (${distMeters < 1000 ? distMeters.toStringAsFixed(0) + "m" : (distMeters / 1000).toStringAsFixed(1) + "km"} away) • P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}'
-                                : 'Driver is en route to pickup point • P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}'),
-                        style: const TextStyle(color: AppTheme.secondaryText, fontSize: 13),
+                                  ? 'Cab is en route (${distMeters < 1000 ? "${distMeters.toStringAsFixed(0)}m" : "${(distMeters / 1000).toStringAsFixed(1)}km"} away) • P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}'
+                                  : 'Driver is en route to pickup point • P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}'),
+                        style: const TextStyle(
+                          color: AppTheme.secondaryText,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -213,9 +262,17 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryTeal,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
-                child: const Text('Confirm Boarding (In the Cab)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                child: const Text(
+                  'Confirm Boarding (In the Cab)',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ],
           ],
@@ -244,7 +301,11 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                     color: AppTheme.taxiColor.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.directions_car, color: AppTheme.taxiColor, size: 24),
+                  child: const Icon(
+                    Icons.directions_car,
+                    color: AppTheme.taxiColor,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -253,11 +314,18 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                     children: [
                       const Text(
                         'Trip in Progress',
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: AppTheme.brandNavy),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 17,
+                          color: AppTheme.brandNavy,
+                        ),
                       ),
                       Text(
                         'Cruising with ${transit.assignedDriverId ?? "Driver"} • Enjoy your ride!',
-                        style: const TextStyle(color: AppTheme.secondaryText, fontSize: 13),
+                        style: const TextStyle(
+                          color: AppTheme.secondaryText,
+                          fontSize: 13,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -265,21 +333,32 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 ),
                 // Live speed badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: vehicleStationary ? AppTheme.statusWarning.withValues(alpha: 0.12) : AppTheme.surfaceGrey,
+                    color: vehicleStationary
+                        ? AppTheme.statusWarning.withValues(alpha: 0.12)
+                        : AppTheme.surfaceGrey,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: vehicleStationary ? AppTheme.statusWarning : AppTheme.borderGrey,
+                      color: vehicleStationary
+                          ? AppTheme.statusWarning
+                          : AppTheme.borderGrey,
                     ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        vehicleStationary ? Icons.pause_circle_outline : Icons.speed,
+                        vehicleStationary
+                            ? Icons.pause_circle_outline
+                            : Icons.speed,
                         size: 13,
-                        color: vehicleStationary ? AppTheme.statusWarning : AppTheme.statusSuccess,
+                        color: vehicleStationary
+                            ? AppTheme.statusWarning
+                            : AppTheme.statusSuccess,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -289,7 +368,9 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: vehicleStationary ? AppTheme.statusWarning : AppTheme.statusSuccess,
+                          color: vehicleStationary
+                              ? AppTheme.statusWarning
+                              : AppTheme.statusSuccess,
                         ),
                       ),
                     ],
@@ -308,10 +389,20 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Trip Fare:', style: TextStyle(color: AppTheme.secondaryText, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Trip Fare:',
+                    style: TextStyle(
+                      color: AppTheme.secondaryText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   Text(
                     'P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppTheme.brandNavy),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      color: AppTheme.brandNavy,
+                    ),
                   ),
                 ],
               ),
@@ -332,7 +423,9 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 backgroundColor: AppTheme.brandNavy,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
           ],
@@ -358,24 +451,40 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 color: AppTheme.statusSuccess.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_circle, color: AppTheme.statusSuccess, size: 36),
+              child: const Icon(
+                Icons.check_circle,
+                color: AppTheme.statusSuccess,
+                size: 36,
+              ),
             ),
             const SizedBox(height: 12),
             const Text(
               'Trip Completed!',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppTheme.brandNavy),
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 20,
+                color: AppTheme.brandNavy,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
             Text(
               'Fare: P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.secondaryText),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.secondaryText,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             const Text(
               'Rate your Driver',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.brandNavy),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                color: AppTheme.brandNavy,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
@@ -407,9 +516,14 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 backgroundColor: AppTheme.primaryTeal,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
-              child: const Text('Submit Rating & Done', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+              child: const Text(
+                'Submit Rating & Done',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+              ),
             ),
           ],
         ),
@@ -436,7 +550,9 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 selectedColor: AppTheme.black,
                 backgroundColor: AppTheme.white,
                 labelStyle: TextStyle(
-                  color: _serviceType == 'STANDARD' ? AppTheme.white : AppTheme.black,
+                  color: _serviceType == 'STANDARD'
+                      ? AppTheme.white
+                      : AppTheme.black,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -449,7 +565,9 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 selectedColor: AppTheme.black,
                 backgroundColor: AppTheme.white,
                 labelStyle: TextStyle(
-                  color: _serviceType == 'SPECIAL' ? AppTheme.white : AppTheme.black,
+                  color: _serviceType == 'SPECIAL'
+                      ? AppTheme.white
+                      : AppTheme.black,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -465,11 +583,17 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             onChanged: _searchAddress,
             decoration: InputDecoration(
               hintText: 'Where to? (e.g. Main Mall, Game City)',
-              prefixIcon: const Icon(Icons.location_on_outlined, color: AppTheme.black),
+              prefixIcon: const Icon(
+                Icons.location_on_outlined,
+                color: AppTheme.black,
+              ),
               suffixIcon: _isSearching
                   ? const Padding(
                       padding: EdgeInsets.all(12),
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.black),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.black,
+                      ),
                     )
                   : null,
               filled: true,
@@ -494,7 +618,8 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: _suggestions.length,
-                separatorBuilder: (ctx, idx2) => const Divider(height: 1, color: AppTheme.lightGrey),
+                separatorBuilder: (ctx, idx2) =>
+                    const Divider(height: 1, color: AppTheme.lightGrey),
                 itemBuilder: (context, idx) {
                   final s = _suggestions[idx];
                   return ListTile(
@@ -503,7 +628,10 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                       s['name'] ?? '',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13, color: AppTheme.black),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppTheme.black,
+                      ),
                     ),
                     onTap: () {
                       _destController.text = s['name'] ?? '';

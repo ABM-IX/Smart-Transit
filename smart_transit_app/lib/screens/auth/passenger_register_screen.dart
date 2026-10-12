@@ -11,16 +11,20 @@ class PassengerRegisterScreen extends StatefulWidget {
   const PassengerRegisterScreen({super.key});
 
   @override
-  State<PassengerRegisterScreen> createState() => _PassengerRegisterScreenState();
+  State<PassengerRegisterScreen> createState() =>
+      _PassengerRegisterScreenState();
 }
 
 class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController(text: '+267 ');
+  final TextEditingController _phoneController = TextEditingController(
+    text: '+267 ',
+  );
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -56,10 +60,16 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
       // Check if user has an immediate active session (email confirmation off)
       if (response.session != null && response.user != null) {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final transitProvider = Provider.of<TransitProvider>(context, listen: false);
+        final transitProvider = Provider.of<TransitProvider>(
+          context,
+          listen: false,
+        );
         await authProvider.loadProfile(response.user!.id);
         if (!mounted) return;
-        transitProvider.connectSocket(role: 'passengers', userId: response.user!.id);
+        transitProvider.connectSocket(
+          role: 'passengers',
+          userId: response.user!.id,
+        );
 
         Navigator.pushAndRemoveUntil(
           context,
@@ -76,12 +86,17 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Row(
             children: [
               Icon(Icons.check_circle, color: AppTheme.accentGreen, size: 28),
               SizedBox(width: 10),
-              Text('Account Created', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Text(
+                'Account Created',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
             ],
           ),
           content: SingleChildScrollView(
@@ -91,12 +106,20 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
               children: [
                 Text(
                   'Welcome to SmartTransit, ${_nameController.text.trim()}!',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.black),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: AppTheme.black,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   'Your commuter profile has been successfully registered. You can now sign in to track live combis, buses, and hail cabs across Botswana.',
-                  style: TextStyle(fontSize: 13, color: AppTheme.darkGrey, height: 1.4),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.darkGrey,
+                    height: 1.4,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Container(
@@ -108,12 +131,19 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.info_outline, size: 16, color: AppTheme.midGrey),
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: AppTheme.midGrey,
+                      ),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Tip: Check your email inbox if email verification is enabled on your Supabase project.',
-                          style: TextStyle(fontSize: 11, color: AppTheme.midGrey),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.midGrey,
+                          ),
                         ),
                       ),
                     ],
@@ -141,7 +171,9 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Registration Error: ${e.toString().replaceAll('Exception: ', '')}'),
+          content: Text(
+            'Registration Error: ${e.toString().replaceAll('Exception: ', '')}',
+          ),
           backgroundColor: AppTheme.accentRed,
         ),
       );
@@ -170,9 +202,12 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
               children: [
                 // Header Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: AppTheme.accentBlue.withOpacity(0.12),
+                    color: AppTheme.accentBlue.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
@@ -199,7 +234,11 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
                 const SizedBox(height: 6),
                 const Text(
                   'Create your commuter account for real-time travel and cab booking across Botswana.',
-                  style: TextStyle(fontSize: 14, color: AppTheme.midGrey, height: 1.4),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.midGrey,
+                    height: 1.4,
+                  ),
                 ),
                 const SizedBox(height: 24),
 
@@ -250,7 +289,9 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
                     icon: Icons.email_outlined,
                   ),
                   validator: (val) {
-                    if (val == null || !val.contains('@') || !val.contains('.')) {
+                    if (val == null ||
+                        !val.contains('@') ||
+                        !val.contains('.')) {
                       return 'Please enter a valid email address';
                     }
                     return null;
@@ -268,11 +309,14 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
                     icon: Icons.lock_outline,
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                         color: AppTheme.midGrey,
                         size: 20,
                       ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
                   validator: (val) {
@@ -294,11 +338,16 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
                     icon: Icons.lock_outline,
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                        _obscureConfirmPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                         color: AppTheme.midGrey,
                         size: 20,
                       ),
-                      onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                      onPressed: () => setState(
+                        () =>
+                            _obscureConfirmPassword = !_obscureConfirmPassword,
+                      ),
                     ),
                   ),
                   validator: (val) {
@@ -320,7 +369,10 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
                         ? const SizedBox(
                             width: 22,
                             height: 22,
-                            child: CircularProgressIndicator(color: AppTheme.white, strokeWidth: 2.5),
+                            child: CircularProgressIndicator(
+                              color: AppTheme.white,
+                              strokeWidth: 2.5,
+                            ),
                           )
                         : const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -338,12 +390,17 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Already have an account? ', style: TextStyle(color: AppTheme.midGrey)),
+                    const Text(
+                      'Already have an account? ',
+                      style: TextStyle(color: AppTheme.midGrey),
+                    ),
                     GestureDetector(
                       onTap: () {
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const LoginScreen(),
+                          ),
                         );
                       },
                       child: const Text(

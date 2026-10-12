@@ -59,7 +59,9 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
 
         loaded.add({
           'id': row['id']?.toString() ?? '',
-          'route': row['route_id'] ?? '${row['pickup_name'] ?? 'Origin'} → ${row['dropoff_name'] ?? 'Dropoff'}',
+          'route':
+              row['route_id'] ??
+              '${row['pickup_name'] ?? 'Origin'} → ${row['dropoff_name'] ?? 'Dropoff'}',
           'date': dateStr,
           'trips': 1,
           'passengers': 1,
@@ -96,7 +98,10 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
     return Scaffold(
       backgroundColor: AppTheme.white,
       appBar: AppBar(
-        title: const Text('Shift & Trip History', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text(
+          'Shift & Trip History',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
         leading: widget.onBack != null
             ? IconButton(
                 icon: const Icon(Icons.arrow_back, color: AppTheme.black),
@@ -124,7 +129,10 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
                 Container(height: 30, width: 1, color: AppTheme.lightGrey),
                 _buildSummaryStat('$_totalPax', 'Pax Carried'),
                 Container(height: 30, width: 1, color: AppTheme.lightGrey),
-                _buildSummaryStat('P${_totalRevenue.toStringAsFixed(2)}', 'Total Revenue'),
+                _buildSummaryStat(
+                  'P${_totalRevenue.toStringAsFixed(2)}',
+                  'Total Revenue',
+                ),
               ],
             ),
           ),
@@ -136,62 +144,72 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
                     child: CircularProgressIndicator(color: AppTheme.black),
                   )
                 : _shifts.isEmpty
-                    ? Center(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 64,
-                                height: 64,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.offWhite,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: AppTheme.lightGrey),
-                                ),
-                                child: const Icon(Icons.history_toggle_off, size: 32, color: AppTheme.midGrey),
-                              ),
-                              const SizedBox(height: 14),
-                              const Text(
-                                'No Completed Trips Yet',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.black,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'You have not completed any passenger rides yet on this account. Start your shift on the map and complete rides with commuters to record trip logs and revenue here.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: AppTheme.midGrey,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
+                ? Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32.0,
+                        vertical: 16.0,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: AppTheme.offWhite,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppTheme.lightGrey),
+                            ),
+                            child: const Icon(
+                              Icons.history_toggle_off,
+                              size: 32,
+                              color: AppTheme.midGrey,
+                            ),
                           ),
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadDriverHistory,
-                        color: AppTheme.black,
-                        child: ListView.separated(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _shifts.length,
-                          separatorBuilder: (ctx, idx) => const SizedBox(height: 12),
-                          itemBuilder: (context, idx) {
-                            final shift = _shifts[idx];
-                            final isInProgress = shift['status'] == 'In Progress';
+                          const SizedBox(height: 14),
+                          const Text(
+                            'No Completed Trips Yet',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.black,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'You have not completed any passenger rides yet on this account. Start your shift on the map and complete rides with commuters to record trip logs and revenue here.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.midGrey,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadDriverHistory,
+                    color: AppTheme.black,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _shifts.length,
+                      separatorBuilder: (ctx, idx) =>
+                          const SizedBox(height: 12),
+                      itemBuilder: (context, idx) {
+                        final shift = _shifts[idx];
+                        final isInProgress = shift['status'] == 'In Progress';
 
                         return Card(
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                             side: BorderSide(
-                              color: isInProgress ? AppTheme.accentGreen : AppTheme.lightGrey,
+                              color: isInProgress
+                                  ? AppTheme.accentGreen
+                                  : AppTheme.lightGrey,
                               width: isInProgress ? 1.5 : 1.0,
                             ),
                           ),
@@ -202,20 +220,29 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
                                       child: Text(
                                         shift['route'] as String,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                        ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: isInProgress
-                                            ? AppTheme.accentGreen.withOpacity(0.15)
+                                            ? AppTheme.accentGreen.withValues(
+                                                alpha: 0.15,
+                                              )
                                             : AppTheme.offWhite,
                                         borderRadius: BorderRadius.circular(12),
                                       ),
@@ -224,7 +251,9 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
-                                          color: isInProgress ? AppTheme.accentGreen : AppTheme.midGrey,
+                                          color: isInProgress
+                                              ? AppTheme.accentGreen
+                                              : AppTheme.midGrey,
                                         ),
                                       ),
                                     ),
@@ -232,11 +261,15 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       '${shift['trips']} Trips • ${shift['passengers']} Passengers',
-                                      style: const TextStyle(fontSize: 13, color: AppTheme.midGrey),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: AppTheme.midGrey,
+                                      ),
                                     ),
                                     Text(
                                       'P${(shift['revenue'] as double).toStringAsFixed(2)}',
@@ -248,17 +281,27 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
                                     ),
                                   ],
                                 ),
-                                const Divider(height: 20, color: AppTheme.lightGrey),
+                                const Divider(
+                                  height: 20,
+                                  color: AppTheme.lightGrey,
+                                ),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       'Vehicle: ${shift['vehicle']}',
-                                      style: const TextStyle(fontSize: 11, color: AppTheme.midGrey),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppTheme.midGrey,
+                                      ),
                                     ),
                                     Text(
                                       shift['date'] as String,
-                                      style: const TextStyle(fontSize: 11, color: AppTheme.midGrey),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppTheme.midGrey,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -280,7 +323,11 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
       children: [
         Text(
           value,
-          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppTheme.black),
+          style: const TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 16,
+            color: AppTheme.black,
+          ),
         ),
         const SizedBox(height: 2),
         Text(

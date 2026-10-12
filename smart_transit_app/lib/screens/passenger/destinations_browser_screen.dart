@@ -16,7 +16,8 @@ class DestinationsBrowserScreen extends StatefulWidget {
   });
 
   @override
-  State<DestinationsBrowserScreen> createState() => _DestinationsBrowserScreenState();
+  State<DestinationsBrowserScreen> createState() =>
+      _DestinationsBrowserScreenState();
 }
 
 class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
@@ -26,10 +27,11 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
   Widget build(BuildContext context) {
     final transit = Provider.of<TransitProvider>(context);
     final targetType = widget.mode == TransportMode.bus ? 'BUS' : 'COMBI';
-    
+
     final filteredRoutes = transit.routes.where((r) {
       final matchesType = r.routeType.toUpperCase() == targetType;
-      final matchesQuery = _searchQuery.isEmpty ||
+      final matchesQuery =
+          _searchQuery.isEmpty ||
           r.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           r.originName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           r.destinationName.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -62,7 +64,9 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
           const SizedBox(height: 18),
 
           Text(
-            widget.mode == TransportMode.bus ? 'Intercity & Regional Routes' : 'Urban Combi Routes',
+            widget.mode == TransportMode.bus
+                ? 'Intercity & Regional Routes'
+                : 'Urban Combi Routes',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -75,7 +79,10 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
             child: filteredRoutes.isEmpty
                 ? Center(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24.0,
+                        vertical: 12.0,
+                      ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -91,7 +98,11 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
                             _searchQuery.isNotEmpty
                                 ? 'No corridors matching "$_searchQuery"'
                                 : 'No Active ${widget.mode == TransportMode.bus ? "Bus" : "Combi"} Corridors',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.black),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: AppTheme.black,
+                            ),
                           ),
                           const SizedBox(height: 6),
                           Text(
@@ -99,7 +110,11 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
                                 ? 'Try searching for a different destination or route number.'
                                 : 'Corridors only appear once an operator registers on them. Check back soon or hail a direct cab!',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 13, color: AppTheme.midGrey, height: 1.4),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.midGrey,
+                              height: 1.4,
+                            ),
                           ),
                         ],
                       ),
@@ -107,7 +122,8 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
                   )
                 : ListView.separated(
                     itemCount: filteredRoutes.length,
-                    separatorBuilder: (context, idx) => const SizedBox(height: 10),
+                    separatorBuilder: (context, idx) =>
+                        const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final route = filteredRoutes[index];
                       return _buildRouteCard(route, transit);
@@ -120,7 +136,9 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
   }
 
   Widget _buildRouteCard(TransitRoute route, TransitProvider transit) {
-    final hasLiveDriver = transit.activeDrivers.any((d) => d.routeId == route.id);
+    final hasLiveDriver = transit.activeDrivers.any(
+      (d) => d.routeId == route.id,
+    );
     return Card(
       child: InkWell(
         onTap: () => widget.onRouteSelected(route),
@@ -138,7 +156,9 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
                   border: Border.all(color: AppTheme.black, width: 1.5),
                 ),
                 child: Icon(
-                  widget.mode == TransportMode.bus ? Icons.directions_bus : Icons.airport_shuttle,
+                  widget.mode == TransportMode.bus
+                      ? Icons.directions_bus
+                      : Icons.airport_shuttle,
                   color: AppTheme.black,
                   size: 20,
                 ),
@@ -159,7 +179,10 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
                     const SizedBox(height: 2),
                     Text(
                       '${route.originName} → ${route.destinationName}',
-                      style: const TextStyle(fontSize: 13, color: AppTheme.midGrey),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppTheme.midGrey,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (hasLiveDriver) ...[
@@ -167,15 +190,24 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: AppTheme.accentGreen.withOpacity(0.15),
+                              color: AppTheme.accentGreen.withValues(
+                                alpha: 0.15,
+                              ),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.circle, size: 6, color: AppTheme.accentGreen),
+                                Icon(
+                                  Icons.circle,
+                                  size: 6,
+                                  color: AppTheme.accentGreen,
+                                ),
                                 SizedBox(width: 4),
                                 Text(
                                   'ACTIVE VEHICLES ONLINE',
@@ -207,7 +239,11 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Icon(Icons.chevron_right, color: AppTheme.midGrey, size: 18),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppTheme.midGrey,
+                    size: 18,
+                  ),
                 ],
               ),
             ],

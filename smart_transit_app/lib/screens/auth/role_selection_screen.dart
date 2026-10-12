@@ -23,10 +23,15 @@ class RoleSelectionScreen extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 12.0,
+              ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight - 24 > 0 ? constraints.maxHeight - 24 : 0,
+                  minHeight: constraints.maxHeight - 24 > 0
+                      ? constraints.maxHeight - 24
+                      : 0,
                 ),
                 child: IntrinsicHeight(
                   child: Column(
@@ -37,11 +42,12 @@ class RoleSelectionScreen extends StatelessWidget {
                         'assets/icon/app_icon_transparent.png',
                         height: 54,
                         fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => const Icon(
-                          Icons.directions_transit,
-                          size: 40,
-                          color: AppTheme.black,
-                        ),
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
+                              Icons.directions_transit,
+                              size: 40,
+                              color: AppTheme.black,
+                            ),
                       ),
                       const SizedBox(height: 16),
 
@@ -57,7 +63,11 @@ class RoleSelectionScreen extends StatelessWidget {
                       const SizedBox(height: 8),
                       const Text(
                         'Select how you would like to use SmartTransit across Botswana.',
-                        style: TextStyle(fontSize: 14, color: AppTheme.midGrey, height: 1.4),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.midGrey,
+                          height: 1.4,
+                        ),
                       ),
                       const SizedBox(height: 24),
 
@@ -70,11 +80,17 @@ class RoleSelectionScreen extends StatelessWidget {
                         description:
                             'Real-time combi & bus tracking, instant taxi hailing, ETA alerts, and digital transit itineraries.',
                         icon: Icons.person_outline,
-                        features: ['Live Bus & Combi Radar', 'Hail Nearby Cabs', 'Personal Trip History'],
+                        features: [
+                          'Live Bus & Combi Radar',
+                          'Hail Nearby Cabs',
+                          'Personal Trip History',
+                        ],
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const PassengerRegisterScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const PassengerRegisterScreen(),
+                            ),
                           );
                         },
                       ),
@@ -90,11 +106,17 @@ class RoleSelectionScreen extends StatelessWidget {
                         description:
                             'Operate a combi, intercity coach, or taxi service. Receive live dispatch alerts and headway spacing advisory.',
                         icon: Icons.directions_bus_outlined,
-                        features: ['Assigned Corridor GPS', 'Live Passenger Dispatch', 'Digital Shift Earnings'],
+                        features: [
+                          'Assigned Corridor GPS',
+                          'Live Passenger Dispatch',
+                          'Digital Shift Earnings',
+                        ],
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const DriverRegisterScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const DriverRegisterScreen(),
+                            ),
                           );
                         },
                       ),
@@ -108,13 +130,18 @@ class RoleSelectionScreen extends StatelessWidget {
                         children: [
                           const Text(
                             'Already have an account? ',
-                            style: TextStyle(color: AppTheme.darkGrey, fontSize: 14),
+                            style: TextStyle(
+                              color: AppTheme.darkGrey,
+                              fontSize: 14,
+                            ),
                           ),
                           GestureDetector(
                             onTap: () {
                               Navigator.pushReplacement(
                                 context,
-                                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                                MaterialPageRoute(
+                                  builder: (_) => const LoginScreen(),
+                                ),
                               );
                             },
                             child: const Text(
@@ -162,7 +189,7 @@ class RoleSelectionScreen extends StatelessWidget {
           border: Border.all(color: AppTheme.lightGrey, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.black.withOpacity(0.04),
+              color: AppTheme.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -189,9 +216,12 @@ class RoleSelectionScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: badgeColor.withOpacity(0.12),
+                          color: badgeColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -216,13 +246,21 @@ class RoleSelectionScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios, size: 16, color: AppTheme.midGrey),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: AppTheme.midGrey,
+                ),
               ],
             ),
             const SizedBox(height: 12),
             Text(
               description,
-              style: const TextStyle(fontSize: 13, color: AppTheme.darkGrey, height: 1.4),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppTheme.darkGrey,
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -232,11 +270,19 @@ class RoleSelectionScreen extends StatelessWidget {
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.check_circle, size: 14, color: AppTheme.accentGreen),
+                    const Icon(
+                      Icons.check_circle,
+                      size: 14,
+                      color: AppTheme.accentGreen,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       feat,
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.midGrey),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.midGrey,
+                      ),
                     ),
                   ],
                 );

@@ -51,12 +51,16 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
         loaded.add({
           'id': row['id']?.toString() ?? '',
           'mode': (row['service_type'] as String? ?? 'COMBI').toUpperCase(),
-          'routeName': row['route_id'] ?? '${row['pickup_name'] ?? 'Origin'} → ${row['dropoff_name'] ?? 'Destination'}',
+          'routeName':
+              row['route_id'] ??
+              '${row['pickup_name'] ?? 'Origin'} → ${row['dropoff_name'] ?? 'Destination'}',
           'origin': row['pickup_name'] ?? 'Pickup Point',
           'destination': row['dropoff_name'] ?? 'Destination',
           'fare': (row['fare'] as num?)?.toDouble() ?? 8.0,
           'date': dateStr,
-          'driver': row['driver_id'] != null ? 'Driver: ${row['driver_id']}' : 'SmartTransit Operator',
+          'driver': row['driver_id'] != null
+              ? 'Driver: ${row['driver_id']}'
+              : 'SmartTransit Operator',
           'status': row['status'] ?? 'Completed',
         });
       }
@@ -86,7 +90,10 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
     return Scaffold(
       backgroundColor: AppTheme.white,
       appBar: AppBar(
-        title: const Text('Trip History', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text(
+          'Trip History',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
         leading: widget.onBack != null
             ? IconButton(
                 icon: const Icon(Icons.arrow_back, color: AppTheme.black),
@@ -135,21 +142,36 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
                     child: filteredTrips.isEmpty
                         ? Center(
                             child: SingleChildScrollView(
-                              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 20.0),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32.0,
+                                vertical: 20.0,
+                              ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.directions_transit_outlined, size: 56, color: AppTheme.lightGrey),
+                                  const Icon(
+                                    Icons.directions_transit_outlined,
+                                    size: 56,
+                                    color: AppTheme.lightGrey,
+                                  ),
                                   const SizedBox(height: 16),
                                   const Text(
                                     'No Trip History Yet',
-                                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppTheme.black),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 18,
+                                      color: AppTheme.black,
+                                    ),
                                   ),
                                   const SizedBox(height: 8),
                                   const Text(
                                     'Your completed combi rides, bus trips, and taxi bookings will appear here automatically.',
                                     textAlign: TextAlign.center,
-                                    style: TextStyle(fontSize: 13, color: AppTheme.midGrey, height: 1.4),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: AppTheme.midGrey,
+                                      height: 1.4,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -158,7 +180,8 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
                         : ListView.separated(
                             padding: const EdgeInsets.all(16),
                             itemCount: filteredTrips.length,
-                            separatorBuilder: (ctx, idx) => const SizedBox(height: 12),
+                            separatorBuilder: (ctx, idx) =>
+                                const SizedBox(height: 12),
                             itemBuilder: (context, idx) {
                               final item = filteredTrips[idx];
                               final mode = item['mode'] as String;
@@ -180,26 +203,38 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  side: const BorderSide(color: AppTheme.borderGrey),
+                                  side: const BorderSide(
+                                    color: AppTheme.borderGrey,
+                                  ),
                                 ),
                                 color: AppTheme.cardSurface,
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Row(
                                             children: [
                                               Container(
-                                                padding: const EdgeInsets.all(8),
+                                                padding: const EdgeInsets.all(
+                                                  8,
+                                                ),
                                                 decoration: BoxDecoration(
-                                                  color: modeColor.withOpacity(0.12),
+                                                  color: modeColor.withValues(
+                                                    alpha: 0.12,
+                                                  ),
                                                   shape: BoxShape.circle,
                                                 ),
-                                                child: Icon(iconData, color: modeColor, size: 20),
+                                                child: Icon(
+                                                  iconData,
+                                                  color: modeColor,
+                                                  size: 20,
+                                                ),
                                               ),
                                               const SizedBox(width: 10),
                                               Text(
@@ -225,33 +260,53 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
                                       const SizedBox(height: 10),
                                       Text(
                                         item['routeName'] as String,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
                                       ),
                                       const SizedBox(height: 4),
                                       Row(
                                         children: [
-                                          const Icon(Icons.my_location, size: 14, color: AppTheme.midGrey),
+                                          const Icon(
+                                            Icons.my_location,
+                                            size: 14,
+                                            color: AppTheme.midGrey,
+                                          ),
                                           const SizedBox(width: 4),
                                           Expanded(
                                             child: Text(
                                               '${item['origin']} → ${item['destination']}',
-                                              style: const TextStyle(fontSize: 12, color: AppTheme.midGrey),
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: AppTheme.midGrey,
+                                              ),
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const Divider(height: 20, color: AppTheme.lightGrey),
+                                      const Divider(
+                                        height: 20,
+                                        color: AppTheme.lightGrey,
+                                      ),
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
                                             item['driver'] as String,
-                                            style: const TextStyle(fontSize: 11, color: AppTheme.midGrey),
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: AppTheme.midGrey,
+                                            ),
                                           ),
                                           Text(
                                             item['date'] as String,
-                                            style: const TextStyle(fontSize: 11, color: AppTheme.midGrey),
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: AppTheme.midGrey,
+                                            ),
                                           ),
                                         ],
                                       ),

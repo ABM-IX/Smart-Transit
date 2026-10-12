@@ -57,7 +57,11 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     } catch (_) {}
   }
 
-  void _showEditVehicleRouteDialog(BuildContext context, AuthProvider auth, TransitProvider transit) {
+  void _showEditVehicleRouteDialog(
+    BuildContext context,
+    AuthProvider auth,
+    TransitProvider transit,
+  ) {
     final plateController = TextEditingController(text: auth.vehiclePlate);
     TransitRoute? selectedRoute;
     try {
@@ -73,7 +77,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         (r) => r.id == auth.assignedRouteId,
         orElse: () => TransitRoute(
           id: auth.assignedRouteId,
-          name: friendlyFallback.isNotEmpty ? friendlyFallback : 'Assigned Corridor',
+          name: friendlyFallback.isNotEmpty
+              ? friendlyFallback
+              : 'Assigned Corridor',
           originName: 'Terminal A',
           destinationName: 'Terminal B',
           routeType: auth.serviceType,
@@ -86,12 +92,17 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Row(
             children: [
               Icon(Icons.edit_note, color: AppTheme.black),
               SizedBox(width: 8),
-              Text('Update Shift Config', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Text(
+                'Update Shift Config',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
             ],
           ),
           content: SingleChildScrollView(
@@ -99,7 +110,10 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Vehicle Number Plate', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                const Text(
+                  'Vehicle Number Plate',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: plateController,
@@ -108,12 +122,17 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                     hintText: 'e.g. B-123-BW',
                     filled: true,
                     fillColor: AppTheme.offWhite,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
                 if (auth.serviceType != 'TAXI') ...[
-                  const Text('Assigned Corridor', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const Text(
+                    'Assigned Corridor',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
                   const SizedBox(height: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -131,7 +150,10 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                             value: r,
                             child: Text(
                               r.name,
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           );
@@ -149,7 +171,10 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: AppTheme.midGrey)),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: AppTheme.midGrey),
+              ),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -188,7 +213,10 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     return Scaffold(
       backgroundColor: AppTheme.white,
       appBar: AppBar(
-        title: const Text('Driver Profile', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text(
+          'Driver Profile',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
         leading: widget.onBack != null
             ? IconButton(
                 icon: const Icon(Icons.arrow_back, color: AppTheme.black),
@@ -199,7 +227,8 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           IconButton(
             icon: const Icon(Icons.edit, color: AppTheme.black),
             tooltip: 'Update Vehicle & Route',
-            onPressed: () => _showEditVehicleRouteDialog(context, auth, transit),
+            onPressed: () =>
+                _showEditVehicleRouteDialog(context, auth, transit),
           ),
           const SizedBox(width: 8),
         ],
@@ -222,7 +251,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                     radius: 40,
                     backgroundColor: AppTheme.black,
                     child: Text(
-                      auth.userName.isNotEmpty ? auth.userName[0].toUpperCase() : 'D',
+                      auth.userName.isNotEmpty
+                          ? auth.userName[0].toUpperCase()
+                          : 'D',
                       style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -233,34 +264,56 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   const SizedBox(height: 12),
                   Text(
                     auth.userName,
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppTheme.black),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 20,
+                      color: AppTheme.black,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${auth.serviceType} Operator • Plate: ${auth.vehiclePlate}',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.darkGrey),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.darkGrey,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'ID: ${auth.userId.length > 12 ? "${auth.userId.substring(0, 12)}..." : auth.userId}',
-                    style: const TextStyle(fontSize: 11, color: AppTheme.midGrey),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.midGrey,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: AppTheme.accentGreen.withOpacity(0.12),
+                      color: AppTheme.accentGreen.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: AppTheme.accentGreen),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.verified, size: 14, color: AppTheme.accentGreen),
+                        Icon(
+                          Icons.verified,
+                          size: 14,
+                          color: AppTheme.accentGreen,
+                        ),
                         SizedBox(width: 4),
                         Text(
                           'Licensed Transit Operator 🇧🇼',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.accentGreen),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.accentGreen,
+                          ),
                         ),
                       ],
                     ),
@@ -278,7 +331,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                     _ratingCount > 0 && _averageRating != null
                         ? '${_averageRating!.toStringAsFixed(1)} ★'
                         : 'New ★',
-                    _ratingCount > 0 ? '$_ratingCount Reviews' : 'No ratings yet',
+                    _ratingCount > 0
+                        ? '$_ratingCount Reviews'
+                        : 'No ratings yet',
                     Icons.star,
                   ),
                 ),
@@ -313,31 +368,78 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.directions_car, color: AppTheme.black),
-                    title: const Text('Registered Vehicle', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: Text('${auth.vehiclePlate} (${auth.serviceType} Service)'),
+                    leading: const Icon(
+                      Icons.directions_car,
+                      color: AppTheme.black,
+                    ),
+                    title: const Text(
+                      'Registered Vehicle',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    subtitle: Text(
+                      '${auth.vehiclePlate} (${auth.serviceType} Service)',
+                    ),
                     trailing: IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.midGrey),
-                      onPressed: () => _showEditVehicleRouteDialog(context, auth, transit),
+                      icon: const Icon(
+                        Icons.edit_outlined,
+                        size: 18,
+                        color: AppTheme.midGrey,
+                      ),
+                      onPressed: () =>
+                          _showEditVehicleRouteDialog(context, auth, transit),
                     ),
                   ),
                   const Divider(height: 1, color: AppTheme.lightGrey),
                   ListTile(
-                    leading: const Icon(Icons.alt_route, color: AppTheme.accentBlue),
-                    title: const Text('Assigned Corridor', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    leading: const Icon(
+                      Icons.alt_route,
+                      color: AppTheme.accentBlue,
+                    ),
+                    title: const Text(
+                      'Assigned Corridor',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                     subtitle: Text(auth.assignedRouteId),
-                    trailing: const Icon(Icons.check_circle, color: AppTheme.accentGreen, size: 20),
+                    trailing: const Icon(
+                      Icons.check_circle,
+                      color: AppTheme.accentGreen,
+                      size: 20,
+                    ),
                   ),
                   const Divider(height: 1, color: AppTheme.lightGrey),
                   ListTile(
-                    leading: const Icon(Icons.phone_android, color: AppTheme.black),
-                    title: const Text('Driver Phone Number', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    leading: const Icon(
+                      Icons.phone_android,
+                      color: AppTheme.black,
+                    ),
+                    title: const Text(
+                      'Driver Phone Number',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                     subtitle: Text(auth.phoneNumber),
                   ),
                   const Divider(height: 1, color: AppTheme.lightGrey),
                   ListTile(
-                    leading: const Icon(Icons.email_outlined, color: AppTheme.black),
-                    title: const Text('Email Address', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    leading: const Icon(
+                      Icons.email_outlined,
+                      color: AppTheme.black,
+                    ),
+                    title: const Text(
+                      'Email Address',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                     subtitle: Text(auth.userEmail),
                   ),
                 ],
@@ -371,7 +473,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 backgroundColor: AppTheme.accentRed,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
           ],
@@ -387,7 +491,11 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         alignment: Alignment.centerLeft,
         child: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.midGrey),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: AppTheme.midGrey,
+          ),
         ),
       ),
     );
@@ -407,7 +515,11 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           const SizedBox(height: 6),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AppTheme.black),
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 14,
+              color: AppTheme.black,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),

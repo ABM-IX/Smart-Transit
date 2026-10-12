@@ -58,7 +58,10 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
     return Scaffold(
       backgroundColor: AppTheme.white,
       appBar: AppBar(
-        title: const Text('Passenger Profile', style: TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text(
+          'Passenger Profile',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
         leading: widget.onBack != null
             ? IconButton(
                 icon: const Icon(Icons.arrow_back, color: AppTheme.black),
@@ -87,7 +90,9 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                         radius: 40,
                         backgroundColor: AppTheme.black,
                         child: Text(
-                          auth.userName.isNotEmpty ? auth.userName[0].toUpperCase() : 'P',
+                          auth.userName.isNotEmpty
+                              ? auth.userName[0].toUpperCase()
+                              : 'P',
                           style: const TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
@@ -101,30 +106,48 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                           color: AppTheme.accentGreen,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.check, size: 14, color: AppTheme.white),
+                        child: const Icon(
+                          Icons.check,
+                          size: 14,
+                          color: AppTheme.white,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Text(
                     auth.userName,
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppTheme.black),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 20,
+                      color: AppTheme.black,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'Passenger ID: ${auth.userId}',
-                    style: const TextStyle(fontSize: 12, color: AppTheme.midGrey),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.midGrey,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: AppTheme.accentBlue.withOpacity(0.1),
+                      color: AppTheme.accentBlue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
                       'SmartTransit Verified Rider 🇧🇼',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.accentBlue),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.accentBlue,
+                      ),
                     ),
                   ),
                 ],
@@ -136,15 +159,27 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
             Row(
               children: [
                 Expanded(
-                  child: _buildStatTile('$_totalTrips', 'Total Trips', Icons.directions_bus),
+                  child: _buildStatTile(
+                    '$_totalTrips',
+                    'Total Trips',
+                    Icons.directions_bus,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _buildStatTile('P${_totalSpent.toStringAsFixed(2)}', 'Total Spent', Icons.payments),
+                  child: _buildStatTile(
+                    'P${_totalSpent.toStringAsFixed(2)}',
+                    'Total Spent',
+                    Icons.payments,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _buildStatTile(_totalTrips > 0 ? '5.0 ★' : 'New ★', 'Rider Status', Icons.star),
+                  child: _buildStatTile(
+                    _totalTrips > 0 ? '5.0 ★' : 'New ★',
+                    'Rider Status',
+                    Icons.star,
+                  ),
                 ),
               ],
             ),
@@ -161,17 +196,43 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.phone_android, color: AppTheme.black),
-                    title: const Text('Phone Number', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    leading: const Icon(
+                      Icons.phone_android,
+                      color: AppTheme.black,
+                    ),
+                    title: const Text(
+                      'Phone Number',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                     subtitle: Text(auth.phoneNumber),
-                    trailing: const Icon(Icons.verified, size: 18, color: AppTheme.accentGreen),
+                    trailing: const Icon(
+                      Icons.verified,
+                      size: 18,
+                      color: AppTheme.accentGreen,
+                    ),
                   ),
                   const Divider(height: 1, color: AppTheme.lightGrey),
                   ListTile(
-                    leading: const Icon(Icons.email_outlined, color: AppTheme.black),
-                    title: const Text('Email Address', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    leading: const Icon(
+                      Icons.email_outlined,
+                      color: AppTheme.black,
+                    ),
+                    title: const Text(
+                      'Email Address',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                     subtitle: Text(auth.userEmail),
-                    trailing: const Icon(Icons.verified, size: 18, color: AppTheme.accentGreen),
+                    trailing: const Icon(
+                      Icons.verified,
+                      size: 18,
+                      color: AppTheme.accentGreen,
+                    ),
                   ),
                 ],
               ),
@@ -188,24 +249,59 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.account_balance_wallet, color: AppTheme.accentGreen),
-                    title: const Text('Default Payment Method', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: const Text('Cash / Mobile Money (MyZaka / Orange Money)'),
-                    trailing: const Icon(Icons.chevron_right, color: AppTheme.midGrey),
+                    leading: const Icon(
+                      Icons.account_balance_wallet,
+                      color: AppTheme.accentGreen,
+                    ),
+                    title: const Text(
+                      'Default Payment Method',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'Cash / Mobile Money (MyZaka / Orange Money)',
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: AppTheme.midGrey,
+                    ),
                   ),
                   const Divider(height: 1, color: AppTheme.lightGrey),
                   ListTile(
-                    leading: const Icon(Icons.alt_route, color: AppTheme.accentBlue),
-                    title: const Text('Preferred Transport Mode', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    leading: const Icon(
+                      Icons.alt_route,
+                      color: AppTheme.accentBlue,
+                    ),
+                    title: const Text(
+                      'Preferred Transport Mode',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                     subtitle: const Text('Combi (Express Routes)'),
-                    trailing: const Icon(Icons.chevron_right, color: AppTheme.midGrey),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: AppTheme.midGrey,
+                    ),
                   ),
                   const Divider(height: 1, color: AppTheme.lightGrey),
                   ListTile(
                     leading: const Icon(Icons.security, color: AppTheme.black),
-                    title: const Text('Safety & Emergency Contacts', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    title: const Text(
+                      'Safety & Emergency Contacts',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                     subtitle: const Text('1 Contact Saved'),
-                    trailing: const Icon(Icons.chevron_right, color: AppTheme.midGrey),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: AppTheme.midGrey,
+                    ),
                   ),
                 ],
               ),
@@ -230,7 +326,9 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                 backgroundColor: AppTheme.accentRed,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
           ],
@@ -246,7 +344,11 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
         alignment: Alignment.centerLeft,
         child: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.midGrey),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: AppTheme.midGrey,
+          ),
         ),
       ),
     );
@@ -266,7 +368,11 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
           const SizedBox(height: 6),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AppTheme.black),
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 15,
+              color: AppTheme.black,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
