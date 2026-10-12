@@ -41,6 +41,8 @@ async def passenger_request_taxi(sid, data):
         "passenger_id": passenger_id,
         "routeId": "taxi-service",
         "route_id": "taxi-service",
+        "serviceType": "TAXI",
+        "service_type": "TAXI",
         "coords": pickup,
         "socket_id": sid,
         "status": "WAITING",
@@ -51,6 +53,8 @@ async def passenger_request_taxi(sid, data):
         'passengerId': passenger_id,
         'passenger_id': passenger_id,
         'routeId': 'taxi-service',
+        'serviceType': 'TAXI',
+        'service_type': 'TAXI',
         'coords': pickup,
         'status': 'WAITING'
     }, room='dashboard')
@@ -131,7 +135,15 @@ async def hail(sid, data):
     if not passenger_id or not route_id or not pickup_loc:
         return
 
-    service_type = str(data.get("serviceType") or "STANDARD").upper()
+    service_type = str(data.get("serviceType") or data.get("type") or "").upper()
+    if not service_type or service_type == "STANDARD":
+        if route_id.startswith("bus-"):
+            service_type = "BUS"
+        elif route_id == "taxi-service":
+            service_type = "TAXI"
+        else:
+            service_type = "COMBI"
+
     request_id = f"req-{uuid.uuid4().hex[:8]}"
     fare_estimate = get_fare(service_type, pickup_loc, destination_loc)
 
@@ -144,12 +156,13 @@ async def hail(sid, data):
         "pickupLoc": pickup_loc,
         "destinationLoc": destination_loc,
         "serviceType": service_type,
+        "service_type": service_type,
         "fareEstimate": fare_estimate,
         "requestedAt": time.time()
     }
 
     active_hails[passenger_id] = hail_payload
-    if route_id == "taxi-service":
+    if route_id == "taxi-service" or service_type == "TAXI":
         active_taxi_requests[request_id] = hail_payload
 
     # Register passenger & update dashboard
@@ -158,6 +171,8 @@ async def hail(sid, data):
         "passenger_id": passenger_id,
         "routeId": route_id,
         "route_id": route_id,
+        "serviceType": service_type,
+        "service_type": service_type,
         "coords": pickup_loc,
         "socket_id": sid,
         "status": "WAITING",
@@ -168,6 +183,8 @@ async def hail(sid, data):
         'passengerId': passenger_id,
         'passenger_id': passenger_id,
         'routeId': route_id,
+        'serviceType': service_type,
+        'service_type': service_type,
         'coords': pickup_loc,
         'status': 'WAITING'
     }, room='dashboard')

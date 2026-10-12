@@ -146,24 +146,39 @@ export default function LiveMap({
         const coords = coordsOf(passenger);
         if (!coords) return;
         const id = passenger.passengerId || passenger.passenger_id || passenger.id;
+        const type = serviceType(passenger);
+        if (filterType !== 'ALL' && type !== filterType) return;
+
+        const modeColors = {
+          BUS: '#60a5fa',
+          COMBI: '#22d3ee',
+          TAXI: '#f59e0b',
+        };
+        const color = modeColors[type] || MODE_COLORS.PASSENGER;
+
         const marker = L.circleMarker([coords.lat, coords.lng], {
-          radius: 6,
-          color: MODE_COLORS.PASSENGER,
+          radius: 7,
+          color,
           weight: 2,
-          fillColor: MODE_COLORS.PASSENGER,
+          fillColor: color,
           fillOpacity: 0.85,
         }).addTo(map);
+
         marker.bindPopup(`
-          <div style="font-family:Inter,Arial,sans-serif;color:#0f172a;min-width:150px">
-            <strong>Passenger ${String(id || 'waiting').slice(-8)}</strong>
-            <div>Route: ${passenger.routeId || passenger.route_id || 'Unassigned'}</div>
+          <div style="font-family:Inter,Arial,sans-serif;color:#0f172a;min-width:160px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <strong style="font-size:13px">${type} Commuter</strong>
+              <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#e2e8f0;font-weight:700;color:#0f172a">${type}</span>
+            </div>
+            <div>Rider: <b>${String(id || 'waiting').slice(-8)}</b></div>
+            <div>Route: ${passenger.routeId || passenger.route_id || 'On-Demand'}</div>
             <div>Status: ${passenger.status || 'WAITING'}</div>
           </div>
         `);
         markers.set(`passenger-${id}`, marker);
       });
     }
-  }, [visibleDrivers, passengers, showDrivers, showPassengers, selectedVehicleId, onSelectVehicle]);
+  }, [visibleDrivers, passengers, showDrivers, showPassengers, filterType, selectedVehicleId, onSelectVehicle]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;

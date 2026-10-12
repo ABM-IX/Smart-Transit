@@ -333,7 +333,10 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
           const SizedBox(height: 14),
 
           ElevatedButton.icon(
-            onPressed: () => transit.requestCombiHail(auth.userId),
+            onPressed: () => transit.requestCombiHail(
+              auth.userId,
+              serviceType: widget.mode == TransportMode.bus ? 'BUS' : 'COMBI',
+            ),
             icon: const Icon(Icons.pan_tool_alt_outlined, size: 20),
             label: Text(
               widget.mode == TransportMode.bus

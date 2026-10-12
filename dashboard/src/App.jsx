@@ -77,12 +77,25 @@ function normalizeFleetUnit(record = {}) {
 
 function normalizePassenger(record = {}) {
   const passengerId = normalizeId(record, 'passengerId', record.passenger_id || record.passengerId || 'passenger');
+  const serviceType = getServiceType(record);
   return {
     ...record,
     passengerId,
     passenger_id: passengerId,
     routeId: record.routeId || record.route_id || 'Unassigned',
+    serviceType,
+    service_type: serviceType,
     status: record.status || 'WAITING',
+  };
+}
+
+function normalizeHail(record = {}) {
+  const serviceType = getServiceType(record);
+  return {
+    ...record,
+    serviceType,
+    service_type: serviceType,
+    routeId: record.routeId || record.route_id || (serviceType === 'TAXI' ? 'taxi-service' : 'Unassigned'),
   };
 }
 
@@ -234,7 +247,7 @@ export default function App() {
           setPassengers(nextPassengers);
         }
 
-        if (Array.isArray(snapshot.hails)) setHails(snapshot.hails);
+        if (Array.isArray(snapshot.hails)) setHails(snapshot.hails.map(normalizeHail));
         if (Array.isArray(snapshot.trips)) setTrips(snapshot.trips);
       },
       onFleetUpdate: (data) => {
@@ -278,23 +291,45 @@ export default function App() {
       },
       onNewHail: (data) => {
         if (!data) return;
+        const normalized = normalizeHail(data);
+        const mode = normalized.serviceType;
+        const modeLabel = MODE_META[mode]?.label || mode;
         setHails((prev) => {
-          const reqId = data.requestId || data.passengerId;
+          const reqId = normalized.requestId || normalized.passengerId;
           const filtered = prev.filter((h) => (h.requestId || h.passengerId) !== reqId);
-          return [data, ...filtered].slice(0, 30);
+          return [normalized, ...filtered].slice(0, 30);
         });
-        addEvent({ type: 'Taxi request', tone: 'warning', message: `Pending request ${data.requestId || data.passengerId || ''}` });
+        addEvent({
+          type: `${modeLabel} Hail Request`,
+          mode,
+          tone: 'warning',
+          message: `Passenger ${String(normalized.passengerId || 'unknown').slice(-6)} requested ${modeLabel.toLowerCase()} on ${normalized.routeId || 'direct corridor'}`,
+        });
       },
       onHailAccepted: (data) => {
         const pId = data?.passengerId || data?.passenger_id;
         const reqId = data?.requestId;
+        const mode = getServiceType(data);
+        const modeLabel = MODE_META[mode]?.label || mode;
         setHails((prev) => prev.filter((h) => h.requestId !== reqId && (h.passengerId || h.passenger_id) !== pId));
-        addEvent({ type: 'Taxi assigned', tone: 'success', message: `Driver ${data?.driverId || 'confirmed'} accepted a request` });
+        addEvent({
+          type: `${modeLabel} Assigned`,
+          mode,
+          tone: 'success',
+          message: `Driver ${String(data?.driverId || 'confirmed').slice(-6)} accepted ${modeLabel.toLowerCase()} hail for passenger ${String(pId || '').slice(-6)}`,
+        });
       },
       onHailCancelled: (data) => {
         const pId = data?.passengerId || data?.passenger_id;
+        const mode = getServiceType(data);
+        const modeLabel = MODE_META[mode]?.label || mode;
         setHails((prev) => prev.filter((h) => (h.passengerId || h.passenger_id) !== pId));
-        addEvent({ type: 'Request cancelled', tone: 'muted', message: `Passenger ${pId || 'unknown'} cancelled` });
+        addEvent({
+          type: `${modeLabel} Cancelled`,
+          mode,
+          tone: 'muted',
+          message: `Passenger ${String(pId || 'unknown').slice(-6)} cancelled ${modeLabel.toLowerCase()} hail`,
+        });
       },
       onTripStarted: (data) => {
         setTrips((prev) => [data, ...prev.filter((t) => (t.tripId || t.trip_id) !== (data.tripId || data.trip_id))].slice(0, 30));
@@ -366,6 +401,10 @@ export default function App() {
     const liveByMode = (mode) => liveUnits.filter((unit) => unit.serviceType === mode);
     const routesForMode = routes.filter((route) => !modeForData || String(route.route_type || '').toUpperCase() === modeForData);
 
+    const busHails = hails.filter((h) => getServiceType(h) === 'BUS');
+    const combiHails = hails.filter((h) => getServiceType(h) === 'COMBI');
+    const taxiHails = hails.filter((h) => getServiceType(h) === 'TAXI');
+
     return {
       registeredVehicles: driversList.length,
       liveVehicles: liveUnits.length,
@@ -373,13 +412,16 @@ export default function App() {
       onlineDrivers: driversList.length,
       activeTrips: trips.length,
       pendingHails: hails.length,
+      busHails: busHails.length,
+      combiHails: combiHails.length,
+      taxiHails: taxiHails.length,
       verifiedRoutes: routesForMode.length,
       verifiedStops: stops.length,
-      bus: { registered: byMode('BUS').length, live: liveByMode('BUS').length },
-      combi: { registered: byMode('COMBI').length, live: liveByMode('COMBI').length },
-      taxi: { registered: byMode('TAXI').length, live: liveByMode('TAXI').length },
+      bus: { registered: byMode('BUS').length, live: liveByMode('BUS').length, hails: busHails.length },
+      combi: { registered: byMode('COMBI').length, live: liveByMode('COMBI').length, hails: combiHails.length },
+      taxi: { registered: byMode('TAXI').length, live: liveByMode('TAXI').length, hails: taxiHails.length },
     };
-  }, [driversList, routes, stops, trips.length, hails.length, modeForData]);
+  }, [driversList, routes, stops, trips.length, hails, modeForData]);
 
   const modeCounts = {
     BUS: metrics.bus.registered,
@@ -530,7 +572,7 @@ function OverviewView({ metrics, connection, baseline, modeCounts, events }) {
     { label: 'Reporting telemetry', value: metrics.liveVehicles, note: `Fresh within ${STALE_SECONDS}s` },
     { label: 'Drivers online', value: metrics.onlineDrivers, note: 'Socket active driver records' },
     { label: 'Active trips', value: metrics.activeTrips, note: 'Socket trip lifecycle records' },
-    { label: 'Pending taxi requests', value: metrics.pendingHails, note: 'Live hail queue' },
+    { label: 'Pending hail requests', value: metrics.pendingHails, note: `${metrics.busHails} Bus • ${metrics.combiHails} Combi • ${metrics.taxiHails} Taxi` },
     { label: 'Verified routes', value: statefulCount(baseline.routes, metrics.verifiedRoutes), note: dataLabel(baseline.routes, 'Backend route dataset') },
     { label: 'Verified stops', value: statefulCount(baseline.stops, metrics.verifiedStops), note: dataLabel(baseline.stops, 'Backend stop dataset') },
     { label: 'Stale GPS signals', value: metrics.staleVehicles, note: 'Older than freshness threshold' },
@@ -605,6 +647,7 @@ function ManagementView({
   const meta = MODE_META[mode] || MODE_META.ALL;
   const modeFleet = normalizedMode ? allFleet.filter((unit) => unit.serviceType === normalizedMode) : allFleet;
   const modeRoutes = routes.filter((route) => !normalizedMode || String(route.route_type || '').toUpperCase() === normalizedMode);
+  const modeHails = hails.filter((h) => !normalizedMode || getServiceType(h) === normalizedMode);
   const liveCount = modeFleet.filter(isFresh).length;
   const staleCount = modeFleet.filter((unit) => unit.last_update && !isFresh(unit)).length;
   const activeAssignments = modeFleet.filter((unit) => unit.routeId && unit.routeId !== 'Unassigned').length;
@@ -615,7 +658,7 @@ function ManagementView({
     { label: mode === 'TAXI' ? 'Available or online' : 'Currently in service', value: modeFleet.length, note: 'Backend does not expose full duty roster' },
     { label: 'Active route assignments', value: activeAssignments, note: 'From driver telemetry payloads' },
     { label: 'Requires attention', value: staleCount, note: 'Stale telemetry signals' },
-    { label: mode === 'TAXI' ? 'Pending dispatch requests' : 'Verified routes', value: mode === 'TAXI' ? hails.length : statefulCount(routesState, modeRoutes.length), note: mode === 'TAXI' ? 'Live hail queue' : dataLabel(routesState, 'Routes available') },
+    { label: `Pending ${meta.label.toLowerCase()} requests`, value: modeHails.length, note: `Live hail queue for ${meta.label.toLowerCase()}` },
   ];
 
   return (
@@ -654,27 +697,63 @@ function ManagementView({
         <VehicleDetail vehicle={selectedVehicle} />
       </section>
 
-      {mode === 'COMBI' && (
+      {mode === 'BUS' && (
         <section className="panel span-12">
           <div className="panel-header">
             <div>
-              <h3>Route Coordination</h3>
-              <p>Advisories are calculated only where route IDs and fresh timestamps exist.</p>
+              <h3>Bus Hail & Boarding Queue</h3>
+              <p>Active commuter requests hailing regional and intercity buses along designated stops.</p>
             </div>
           </div>
-          <RouteCoordination fleet={modeFleet} />
+          <ModeHailQueue hails={modeHails} mode="BUS" />
         </section>
+      )}
+
+      {mode === 'COMBI' && (
+        <>
+          <section className="panel span-12">
+            <div className="panel-header">
+              <div>
+                <h3>Combi Hail Queue</h3>
+                <p>Curbside and stop requests hailing approaching combis along fixed transit corridors.</p>
+              </div>
+            </div>
+            <ModeHailQueue hails={modeHails} mode="COMBI" />
+          </section>
+
+          <section className="panel span-12">
+            <div className="panel-header">
+              <div>
+                <h3>Route Coordination</h3>
+                <p>Advisories are calculated only where route IDs and fresh timestamps exist.</p>
+              </div>
+            </div>
+            <RouteCoordination fleet={modeFleet} />
+          </section>
+        </>
       )}
 
       {mode === 'TAXI' && (
         <section className="panel span-12">
           <div className="panel-header">
             <div>
-              <h3>Dispatch Queue</h3>
-              <p>Dashboard can observe requests and assignments; admin assignment endpoint is not exposed.</p>
+              <h3>Taxi Dispatch Queue</h3>
+              <p>On-demand direct special and shared taxi hail requests awaiting driver acceptance.</p>
             </div>
           </div>
-          <TaxiDispatch hails={hails} trips={trips} taxis={modeFleet} />
+          <TaxiDispatch hails={modeHails} trips={trips} taxis={modeFleet} />
+        </section>
+      )}
+
+      {mode === 'ALL' && (
+        <section className="panel span-12">
+          <div className="panel-header">
+            <div>
+              <h3>Network Hail Queue</h3>
+              <p>All active passenger hail requests across buses, combis, and taxis.</p>
+            </div>
+          </div>
+          <ModeHailQueue hails={modeHails} mode="ALL" />
         </section>
       )}
 
@@ -931,17 +1010,91 @@ function RouteCoordination({ fleet }) {
   );
 }
 
-function TaxiDispatch({ hails, trips, taxis }) {
+function ModeHailQueue({ hails = [], mode = 'COMBI' }) {
+  const meta = MODE_META[mode] || MODE_META.ALL;
+  const Icon = mode === 'BUS' ? Bus : Car;
+  const modeColor = mode === 'BUS' ? '#60a5fa' : mode === 'COMBI' ? '#22d3ee' : '#f59e0b';
+  const modeBg = mode === 'BUS' ? 'rgba(96, 165, 250, 0.15)' : mode === 'COMBI' ? 'rgba(34, 211, 238, 0.15)' : 'rgba(245, 158, 11, 0.15)';
+
+  return (
+    <div className="dispatch-grid">
+      <div style={{ gridColumn: 'span 2' }}>
+        <h4>Live {meta.label} Hail Queue ({hails.length})</h4>
+        {hails.length === 0 && (
+          <StateNotice
+            title={`No pending ${meta.label.toLowerCase()} requests`}
+            detail={`There are currently no active passenger hails for ${meta.noun}. Hails appear in real-time when passengers tap 'Hail ${meta.label}' in the mobile app.`}
+          />
+        )}
+        {hails.length > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px', marginTop: '12px' }}>
+            {hails.map((hail, index) => {
+              const pId = hail.passengerId || hail.passenger_id || 'unknown';
+              const routeId = hail.routeId || hail.route_id || 'Corridor';
+              const reqId = hail.requestId || `hail-${index}`;
+              const fare = hail.fareEstimate ? `P${Number(hail.fareEstimate).toFixed(2)}` : (mode === 'BUS' ? 'Bus Fare' : 'P8.00 Standard');
+
+              return (
+                <article
+                  className="dispatch-row"
+                  key={reqId}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    padding: '14px',
+                    borderRadius: '10px',
+                    border: `1px solid ${modeBg}`,
+                    background: 'var(--surface)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ padding: '6px', borderRadius: '6px', background: modeBg, color: modeColor }}>
+                        <Icon size={16} />
+                      </div>
+                      <strong>Passenger {String(pId).slice(-6)}</strong>
+                    </div>
+                    <span className="badge-pill" style={{ color: modeColor, borderColor: modeBg }}>
+                      {mode}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    <div>Route / Corridor: <b>{routeId}</b></div>
+                    {hail.pickupLoc && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        Pickup GPS: {Number(hail.pickupLoc.lat ?? hail.pickupLoc.latitude).toFixed(4)}, {Number(hail.pickupLoc.lng ?? hail.pickupLoc.longitude).toFixed(4)}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', paddingTop: '8px', borderTop: '1px solid var(--border)' }}>
+                    <small style={{ color: 'var(--text-muted)' }}>Status: WAITING</small>
+                    <strong style={{ color: modeColor, fontSize: '0.88rem' }}>{fare}</strong>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TaxiDispatch({ hails = [], trips = [], taxis = [] }) {
   return (
     <div className="dispatch-grid">
       <div>
-        <h4>Pending Requests</h4>
-        {hails.length === 0 && <StateNotice title="No pending taxi requests" detail="The live hail queue is empty." />}
+        <h4>Pending Taxi Requests ({hails.length})</h4>
+        {hails.length === 0 && <StateNotice title="No pending taxi requests" detail="The live taxi hail queue is empty." />}
         {hails.map((hail) => (
           <article className="dispatch-row" key={hail.requestId || hail.passengerId}>
-            <strong>{hail.requestId || 'Taxi request'}</strong>
-            <span>Passenger {hail.passengerId || hail.passenger_id || 'unknown'} - {hail.serviceType || 'TAXI'}</span>
-            <small>{hail.fareEstimate ? `Fare estimate P${Number(hail.fareEstimate).toFixed(2)}` : 'Fare unavailable'}</small>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <strong>{hail.requestId || 'Taxi request'}</strong>
+              <span className="badge-pill mode-taxi">TAXI</span>
+            </div>
+            <span>Passenger {String(hail.passengerId || hail.passenger_id || 'unknown').slice(-6)}</span>
+            <small>{hail.fareEstimate ? `Fare estimate P${Number(hail.fareEstimate).toFixed(2)}` : 'On-Demand Metered Fare'}</small>
           </article>
         ))}
       </div>
@@ -982,21 +1135,57 @@ function SupportMatrix({ mode, routesState, stopsState }) {
 
 function EventList({ events }) {
   if (!events.length) {
-    return <StateNotice title="No active alerts" detail="Socket lifecycle, taxi requests, boardings, and trip updates will appear here." />;
+    return <StateNotice title="No active alerts" detail="Socket lifecycle, mode hails, boardings, and trip updates will appear here." />;
   }
 
   return (
     <div className="event-list">
-      {events.map((event) => (
-        <article className={`event-row ${event.tone || 'info'}`} key={event.id}>
-          <AlertTriangle size={15} />
-          <div>
-            <strong>{event.type}</strong>
-            <span>{event.message}</span>
-          </div>
-          <time>{new Date(event.at).toLocaleTimeString('en-GB')}</time>
-        </article>
-      ))}
+      {events.map((event) => {
+        const mode = event.mode || (event.type.includes('Bus') ? 'BUS' : event.type.includes('Combi') ? 'COMBI' : event.type.includes('Taxi') ? 'TAXI' : null);
+        const Icon = mode === 'BUS' ? Bus : mode === 'COMBI' ? Car : mode === 'TAXI' ? Car : AlertTriangle;
+        const modeColor = mode === 'BUS' ? '#60a5fa' : mode === 'COMBI' ? '#22d3ee' : mode === 'TAXI' ? '#f59e0b' : null;
+
+        return (
+          <article className={`event-row ${event.tone || 'info'}`} key={event.id}>
+            <div
+              style={{
+                padding: '6px',
+                borderRadius: '8px',
+                background: modeColor ? `${modeColor}22` : 'rgba(255,255,255,0.06)',
+                color: modeColor || 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Icon size={16} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <strong>{event.type}</strong>
+                {mode && (
+                  <span
+                    className="badge-pill"
+                    style={{
+                      fontSize: '0.65rem',
+                      padding: '1px 6px',
+                      color: modeColor,
+                      borderColor: `${modeColor}44`,
+                    }}
+                  >
+                    {mode}
+                  </span>
+                )}
+              </div>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{event.message}</span>
+            </div>
+            <time style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+              {new Date(event.at).toLocaleTimeString('en-GB')}
+            </time>
+          </article>
+        );
+      })}
     </div>
   );
 }

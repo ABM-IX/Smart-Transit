@@ -80,12 +80,17 @@ async def join(sid, data):
         if role == 'passengers':
             p_id = payload.get("passengerId") or payload.get("id")
             coords = payload.get("coords")
+            service_type = str(payload.get("serviceType") or payload.get("type") or "").upper()
+            if not service_type:
+                service_type = "BUS" if route_id.startswith("bus-") else ("TAXI" if route_id == "taxi-service" else "COMBI")
             if p_id:
                 active_passengers[p_id] = {
                     "passenger_id": p_id,
                     "passengerId": p_id,
                     "route_id": route_id,
                     "routeId": route_id,
+                    "serviceType": service_type,
+                    "service_type": service_type,
                     "coords": coords,
                     "socket_id": sid,
                     "last_update": time.time()
@@ -96,6 +101,8 @@ async def join(sid, data):
                         'passengerId': p_id,
                         'passenger_id': p_id,
                         'routeId': route_id,
+                        'serviceType': service_type,
+                        'service_type': service_type,
                         'coords': coords,
                         'status': 'WAITING'
                     }, room='dashboard')

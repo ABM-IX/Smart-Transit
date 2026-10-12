@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Car, User, Navigation } from 'lucide-react';
+import { Bus, Car, User, Navigation } from 'lucide-react';
 
 export default function FleetList({ drivers = [], passengers = [], hails = [] }) {
   const [activeTab, setActiveTab] = useState('drivers'); // 'drivers' | 'passengers' | 'hails'
@@ -135,29 +135,40 @@ export default function FleetList({ drivers = [], passengers = [], hails = [] })
         )}
 
         {activeTab === 'hails' &&
-          hails.map((h, index) => (
-            <div className="item-row" key={h.requestId || h.passengerId || index}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div
-                  style={{
-                    padding: '6px',
-                    borderRadius: '8px',
-                    background: 'rgba(239, 68, 68, 0.15)',
-                    color: 'var(--mode-hail)',
-                  }}
-                >
-                  <Navigation size={16} />
+          hails.map((h, index) => {
+            const raw = String(h.serviceType || h.service_type || '').toUpperCase();
+            const route = String(h.routeId || h.route_id || '').toLowerCase();
+            const isTaxi = raw.includes('TAXI') || route === 'taxi-service';
+            const isBus = raw.includes('BUS') || route.startsWith('bus-');
+            const mode = isTaxi ? 'TAXI' : (isBus ? 'BUS' : 'COMBI');
+            const Icon = isBus ? Bus : Car;
+            const modeColor = isTaxi ? '#f59e0b' : (isBus ? '#60a5fa' : '#22d3ee');
+            const modeBg = isTaxi ? 'rgba(245, 158, 11, 0.15)' : (isBus ? 'rgba(96, 165, 250, 0.15)' : 'rgba(34, 211, 238, 0.15)');
+
+            return (
+              <div className="item-row" key={h.requestId || h.passengerId || index}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div
+                    style={{
+                      padding: '6px',
+                      borderRadius: '8px',
+                      background: modeBg,
+                      color: modeColor,
+                    }}
+                  >
+                    <Icon size={16} />
+                  </div>
+                  <div className="item-meta">
+                    <b>{mode} Hail</b>
+                    <span>{h.routeId || 'On-Demand'} • Rider {h.passengerId?.slice(-6) || ''}</span>
+                  </div>
                 </div>
-                <div className="item-meta">
-                  <b>{h.serviceType || 'TAXI'} Hail</b>
-                  <span>{h.routeId || 'On-Demand'} • Rider {h.passengerId?.slice(-6) || ''}</span>
-                </div>
+                <span className="badge-pill" style={{ color: modeColor, borderColor: modeBg }}>
+                  {h.fareEstimate ? `P${Number(h.fareEstimate).toFixed(2)}` : 'PENDING'}
+                </span>
               </div>
-              <span className="badge-pill" style={{ color: 'var(--mode-hail)', borderColor: 'rgba(239, 68, 68, 0.4)' }}>
-                {h.fareEstimate ? `P${Number(h.fareEstimate).toFixed(2)}` : 'PENDING'}
-              </span>
-            </div>
-          ))}
+            );
+          })}
       </div>
     </section>
   );

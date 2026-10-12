@@ -292,14 +292,18 @@ class TransitProvider extends ChangeNotifier {
   }
 
   // --- PASSENGER ACTIONS ---
-  void requestCombiHail(String passengerId) {
+  void requestCombiHail(String passengerId, {String? serviceType}) {
     if (_selectedRoute == null) return;
+    final resolvedType = serviceType ??
+        (_selectedRoute!.routeType.toUpperCase() == 'BUS' || _selectedRoute!.id.startsWith('bus-')
+            ? 'BUS'
+            : 'COMBI');
     _passengerStatus = PassengerTripStatus.hailPending;
     _socket.emit('hail', {
       'passengerId': passengerId,
       'routeId': _selectedRoute!.id,
       'pickupLoc': {'lat': _currentLocation.latitude, 'lng': _currentLocation.longitude},
-      'serviceType': 'COMBI'
+      'serviceType': resolvedType
     });
     notifyListeners();
   }
