@@ -78,43 +78,7 @@ async def init_db():
             await conn.run_sync(Base.metadata.create_all)
         print("[DATABASE] Local fallback database initialized successfully.")
     
-    await seed_initial_transit_data(AsyncSessionLocal)
 
-async def seed_initial_transit_data(session_factory):
-    """Automatically seeds default Botswana routes and stops if the database is unpopulated."""
-    try:
-        try:
-            from seed_data import SAMPLE_ROUTES, SAMPLE_STOPS
-        except ImportError:
-            from backend.seed_data import SAMPLE_ROUTES, SAMPLE_STOPS
-
-        from app.models.transit import Route, Stop
-        async with session_factory() as session:
-            r_res = await session.execute(text("SELECT count(*) FROM routes"))
-            count = r_res.scalar() or 0
-            if count == 0:
-                print("[DATABASE] Populating initial Botswana transit corridors & stops...")
-                for r in SAMPLE_ROUTES:
-                    await session.merge(Route(
-                        id=r["id"],
-                        name=r["name"],
-                        origin_name=r["origin_name"],
-                        destination_name=r["destination_name"],
-                        route_type=r["route_type"],
-                        base_fare=r["base_fare"]
-                    ))
-                for s in SAMPLE_STOPS:
-                    await session.merge(Stop(
-                        id=s["id"],
-                        name=s["name"],
-                        latitude=s["latitude"],
-                        longitude=s["longitude"],
-                        description=s.get("description")
-                    ))
-                await session.commit()
-                print("[DATABASE] Default transit network seeded successfully.")
-    except Exception as ex:
-        print(f"[DATABASE NOTICE] Auto-seeding check finished: {ex}")
 
 async def check_db_health() -> dict:
     """Actively pings the database and returns diagnostics."""

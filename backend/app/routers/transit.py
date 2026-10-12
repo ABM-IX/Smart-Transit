@@ -19,8 +19,7 @@ async def get_routes(route_type: Optional[str] = None, db: AsyncSession = Depend
             stmt = stmt.where(Route.route_type == route_type.upper())
         result = await db.execute(stmt)
         routes = result.scalars().all()
-        # Filter out legacy test subjects (e.g. route-u01..route-u04)
-        filtered = [
+        return [
             RouteBase(
                 id=r.id,
                 name=r.name,
@@ -29,9 +28,8 @@ async def get_routes(route_type: Optional[str] = None, db: AsyncSession = Depend
                 route_type=r.route_type,
                 base_fare=r.base_fare
             )
-            for r in routes if not r.id.lower().startswith("route-u0") and "test" not in r.name.lower()
+            for r in routes
         ]
-        return filtered
     except Exception:
         return []
 
