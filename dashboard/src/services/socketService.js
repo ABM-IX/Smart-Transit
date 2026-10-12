@@ -6,7 +6,25 @@ class DashboardSocketService {
     this.isConnected = false;
   }
 
-  connect(url, { onConnect, onDisconnect, onSnapshot, onFleetUpdate, onFleetRemove, onNewHail, onHailAccepted, onHailCancelled }) {
+  connect(url, handlers = {}) {
+    const {
+      onConnect,
+      onDisconnect,
+      onConnectError,
+      onSystemStatus,
+      onSnapshot,
+      onFleetUpdate,
+      onFleetRemove,
+      onNewHail,
+      onHailAccepted,
+      onHailCancelled,
+      onTripStarted,
+      onTripCompleted,
+      onBoarding,
+      onStopRequested,
+      onDriverFeedback,
+    } = handlers;
+
     if (this.socket) {
       this.socket.disconnect();
     }
@@ -27,6 +45,15 @@ class DashboardSocketService {
     this.socket.on('disconnect', () => {
       this.isConnected = false;
       if (onDisconnect) onDisconnect();
+    });
+
+    this.socket.on('connect_error', (error) => {
+      this.isConnected = false;
+      if (onConnectError) onConnectError(error);
+    });
+
+    this.socket.on('system-status', (data) => {
+      if (onSystemStatus) onSystemStatus(data);
     });
 
     this.socket.on('dashboard-snapshot', (snapshot) => {
@@ -51,6 +78,26 @@ class DashboardSocketService {
 
     this.socket.on('hail-cancelled', (data) => {
       if (onHailCancelled) onHailCancelled(data);
+    });
+
+    this.socket.on('trip-started', (data) => {
+      if (onTripStarted) onTripStarted(data);
+    });
+
+    this.socket.on('trip-completed', (data) => {
+      if (onTripCompleted) onTripCompleted(data);
+    });
+
+    this.socket.on('boarding', (data) => {
+      if (onBoarding) onBoarding(data);
+    });
+
+    this.socket.on('stop-requested', (data) => {
+      if (onStopRequested) onStopRequested(data);
+    });
+
+    this.socket.on('driver-feedback', (data) => {
+      if (onDriverFeedback) onDriverFeedback(data);
     });
   }
 

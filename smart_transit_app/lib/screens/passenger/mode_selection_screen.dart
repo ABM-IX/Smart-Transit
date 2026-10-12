@@ -33,7 +33,7 @@ class ModeSelectionScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Combi Card (Teal #087E8B)
+          // Combi Card (Electric Royal Blue from logo S-circuit)
           _buildModeCard(
             title: 'Combi',
             subtitle: 'Flexible urban arterial routes & local network',
@@ -45,7 +45,7 @@ class ModeSelectionScreen extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          // Bus Card (Indigo #6366F1)
+          // Bus Card (Deep Midnight Navy from logo SMART text)
           _buildModeCard(
             title: 'Bus / Coach',
             subtitle: 'Scheduled long-distance & regional intercity routes',
@@ -57,7 +57,7 @@ class ModeSelectionScreen extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          // Taxi Card (Coral Orange #FB7345)
+          // Taxi Card (Cyan / Sky Blue from logo TRANSIT text)
           _buildModeCard(
             title: 'Taxi / Cab',
             subtitle: 'Private special or shared on-demand direct hail',

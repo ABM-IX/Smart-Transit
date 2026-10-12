@@ -1,42 +1,87 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Layers, Activity } from 'lucide-react';
+import { Activity, AlertTriangle, Layers } from 'lucide-react';
+
+const MODE_COLORS = {
+  BUS: '#60a5fa',
+  COMBI: '#22d3ee',
+  TAXI: '#f59e0b',
+  PASSENGER: '#ef4444',
+};
+
+function serviceType(record = {}) {
+  const raw = String(record.serviceType || record.service_type || '').toUpperCase();
+  const route = String(record.routeId || record.route_id || '').toLowerCase();
+  if (raw.includes('TAXI') || route === 'taxi-service') return 'TAXI';
+  if (raw.includes('BUS') || route.startsWith('bus-')) return 'BUS';
+  return 'COMBI';
+}
+
+function coordsOf(record = {}) {
+  const coords = record.coords || record.pickupLoc || record.pickup;
+  if (!coords) return null;
+  const lat = Number(coords.lat ?? coords.latitude);
+  const lng = Number(coords.lng ?? coords.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
+}
+
+function isFresh(timestamp) {
+  if (!timestamp) return false;
+  const ms = typeof timestamp === 'number' ? timestamp * 1000 : Date.parse(timestamp);
+  return Number.isFinite(ms) && Date.now() - ms <= 120000;
+}
+
+function lastSeen(timestamp) {
+  if (!timestamp) return 'No timestamp';
+  const ms = typeof timestamp === 'number' ? timestamp * 1000 : Date.parse(timestamp);
+  if (!Number.isFinite(ms)) return 'Invalid timestamp';
+  const seconds = Math.max(0, Math.floor((Date.now() - ms) / 1000));
+  if (seconds < 60) return `${seconds}s ago`;
+  return `${Math.floor(seconds / 60)}m ago`;
+}
 
 export default function LiveMap({
   drivers = [],
   passengers = [],
   routes = [],
+  selectedMode = 'ALL',
+  selectedVehicleId,
+  onSelectVehicle,
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef(new Map());
-  const heatLayerRef = useRef(null);
-
+  const routeLayerRef = useRef(null);
   const [showDrivers, setShowDrivers] = useState(true);
   const [showPassengers, setShowPassengers] = useState(true);
-  const [filterType, setFilterType] = useState('ALL');
-  const [heatmapEnabled, setHeatmapEnabled] = useState(false);
+  const [filterType, setFilterType] = useState(selectedMode || 'ALL');
+  const [selectedRoute, setSelectedRoute] = useState('ALL');
+  const [tileStatus, setTileStatus] = useState('loading');
 
-  // Initialize Map
+  useEffect(() => {
+    setFilterType(selectedMode || 'ALL');
+  }, [selectedMode]);
+
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    // Centered on Gaborone, Botswana
     const map = L.map(mapContainerRef.current, {
       center: [-24.6282, 25.9231],
-      zoom: 13,
+      zoom: 12,
       zoomControl: false,
     });
 
-    // Dark styled Carto tiles
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '© CARTO, OpenStreetMap contributors',
+    const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
       maxZoom: 19,
-    }).addTo(map);
+    });
 
+    tiles.on('load', () => setTileStatus('ready'));
+    tiles.on('tileerror', () => setTileStatus('error'));
+    tiles.addTo(map);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-
     mapInstanceRef.current = map;
 
     return () => {
@@ -45,139 +90,162 @@ export default function LiveMap({
     };
   }, []);
 
-  // Update Markers
+  const visibleDrivers = useMemo(() => {
+    return drivers.filter((driver) => {
+      const type = serviceType(driver);
+      const route = driver.routeId || driver.route_id;
+      if (filterType !== 'ALL' && type !== filterType) return false;
+      if (selectedRoute !== 'ALL' && route !== selectedRoute) return false;
+      return Boolean(coordsOf(driver));
+    });
+  }, [drivers, filterType, selectedRoute]);
+
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
     const markers = markersRef.current;
-
-    // Clear existing markers
-    markers.forEach((marker) => map.removeLayer(marker));
+    markers.forEach((marker) => marker.remove());
     markers.clear();
 
-    // Render Drivers
     if (showDrivers) {
-      drivers.forEach((driver) => {
-        if (!driver.coords || driver.coords.lat === undefined || driver.coords.lng === undefined) return;
+      visibleDrivers.forEach((driver) => {
+        const coords = coordsOf(driver);
+        const type = serviceType(driver);
+        const id = driver.driverId || driver.driver_id || driver.id;
+        const selected = id && id === selectedVehicleId;
+        const fresh = isFresh(driver.last_update || driver.lastUpdate);
+        const color = fresh ? MODE_COLORS[type] : '#94a3b8';
 
-        const isTaxi = driver.serviceType === 'TAXI' || driver.routeId === 'taxi-service';
-        const isBus = driver.serviceType === 'BUS' || (driver.routeId && driver.routeId.startsWith('bus-'));
-        const type = isTaxi ? 'TAXI' : isBus ? 'BUS' : 'COMBI';
-
-        if (filterType !== 'ALL' && filterType !== type) return;
-
-        const latlng = [driver.coords.lat, driver.coords.lng];
-        const driverTitle = `Fleet Unit: Driver ${driver.driverId?.slice(-6) || 'Online'}`;
-        const routeLabel = driver.routeId || 'Unassigned';
-        const occupancy = driver.occupancy !== undefined ? `${driver.occupancy} PAX` : 'Available';
-
-        const popupHtml = `
-          <div style="font-family:'Space Grotesk',sans-serif; color:#0f172a; min-width:140px;">
-            <div style="font-weight:700; font-size:14px; color:#1e3a8a; margin-bottom:4px;">${driverTitle}</div>
-            <div style="font-size:12px; margin-bottom:2px;"><b>Service:</b> ${type}</div>
-            <div style="font-size:12px; margin-bottom:2px;"><b>Route:</b> ${routeLabel}</div>
-            <div style="font-size:12px;"><b>Occupancy:</b> ${occupancy}</div>
-          </div>
-        `;
-
-        const circleMarker = L.circleMarker(latlng, {
-          radius: 8,
-          color: isTaxi ? '#FB7345' : isBus ? '#6366F1' : '#087E8B',
-          weight: 2,
-          fillColor: isTaxi ? '#FB7345' : isBus ? '#6366F1' : '#087E8B',
-          fillOpacity: 0.9,
+        const marker = L.circleMarker([coords.lat, coords.lng], {
+          radius: selected ? 12 : 8,
+          color,
+          weight: selected ? 4 : 2,
+          fillColor: color,
+          fillOpacity: fresh ? 0.9 : 0.45,
         }).addTo(map);
 
-        circleMarker.bindPopup(popupHtml);
-        markers.set(`driver-${driver.driverId}`, circleMarker);
+        marker.bindPopup(`
+          <div style="font-family:Inter,Arial,sans-serif;color:#0f172a;min-width:180px">
+            <strong>${type} unit ${String(id || 'unknown').slice(-8)}</strong>
+            <div>Vehicle: ${driver.vehiclePlate || driver.vehicleId || 'Unregistered'}</div>
+            <div>Route: ${driver.routeId || driver.route_id || 'Unassigned'}</div>
+            <div>Status: ${fresh ? 'Live' : 'Stale or missing timestamp'}</div>
+            <div>Last update: ${lastSeen(driver.last_update || driver.lastUpdate)}</div>
+          </div>
+        `);
+        marker.on('click', () => {
+          if (id && onSelectVehicle) onSelectVehicle(id);
+        });
+        markers.set(`driver-${id}`, marker);
       });
     }
 
-    // Render Passengers / Active Hails
     if (showPassengers) {
       passengers.forEach((passenger) => {
-        if (!passenger.coords || passenger.coords.lat === undefined || passenger.coords.lng === undefined) return;
-
-        const latlng = [passenger.coords.lat, passenger.coords.lng];
-        const passengerTitle = `Rider: ${passenger.passengerId?.slice(-6) || 'Waiting'}`;
-        const routeLabel = passenger.routeId || 'Any Route';
-
-        const popupHtml = `
-          <div style="font-family:'Space Grotesk',sans-serif; color:#0f172a; min-width:130px;">
-            <div style="font-weight:700; font-size:13px; color:#EF4444; margin-bottom:4px;">${passengerTitle}</div>
-            <div style="font-size:12px;"><b>Target:</b> ${routeLabel}</div>
-            <div style="font-size:11px; color:#64748b; margin-top:2px;">Awaiting Pickup</div>
-          </div>
-        `;
-
-        const circleMarker = L.circleMarker(latlng, {
+        const coords = coordsOf(passenger);
+        if (!coords) return;
+        const id = passenger.passengerId || passenger.passenger_id || passenger.id;
+        const marker = L.circleMarker([coords.lat, coords.lng], {
           radius: 6,
-          color: '#EF4444',
+          color: MODE_COLORS.PASSENGER,
           weight: 2,
-          fillColor: '#EF4444',
-          fillOpacity: 0.9,
+          fillColor: MODE_COLORS.PASSENGER,
+          fillOpacity: 0.85,
         }).addTo(map);
-
-        circleMarker.bindPopup(popupHtml);
-        markers.set(`passenger-${passenger.passengerId}`, circleMarker);
+        marker.bindPopup(`
+          <div style="font-family:Inter,Arial,sans-serif;color:#0f172a;min-width:150px">
+            <strong>Passenger ${String(id || 'waiting').slice(-8)}</strong>
+            <div>Route: ${passenger.routeId || passenger.route_id || 'Unassigned'}</div>
+            <div>Status: ${passenger.status || 'WAITING'}</div>
+          </div>
+        `);
+        markers.set(`passenger-${id}`, marker);
       });
     }
-  }, [drivers, passengers, showDrivers, showPassengers, filterType]);
+  }, [visibleDrivers, passengers, showDrivers, showPassengers, selectedVehicleId, onSelectVehicle]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    if (routeLayerRef.current) {
+      routeLayerRef.current.remove();
+      routeLayerRef.current = null;
+    }
+
+    if (selectedRoute === 'ALL') return;
+    const route = routes.find((item) => item.id === selectedRoute);
+    const points = Array.isArray(route?.waypoints) ? route.waypoints.map(coordsOf).filter(Boolean) : [];
+    if (points.length < 2) return;
+
+    routeLayerRef.current = L.polyline(points.map((point) => [point.lat, point.lng]), {
+      color: '#38bdf8',
+      weight: 4,
+      opacity: 0.8,
+    }).addTo(map);
+    map.fitBounds(routeLayerRef.current.getBounds(), { padding: [40, 40] });
+  }, [routes, selectedRoute]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const marker = markersRef.current.get(`driver-${selectedVehicleId}`);
+    if (map && marker) {
+      map.setView(marker.getLatLng(), Math.max(map.getZoom(), 14), { animate: true });
+      marker.openPopup();
+    }
+  }, [selectedVehicleId]);
 
   return (
     <main className="map-container">
-      {/* Top Floating Filters */}
       <div className="map-filters">
         <label className="filter-chip">
-          <input
-            type="checkbox"
-            checked={showDrivers}
-            onChange={(e) => setShowDrivers(e.target.checked)}
-            style={{ width: '14px', height: '14px', accentColor: 'var(--accent)' }}
-          />
-          Drivers ({drivers.length})
+          <input type="checkbox" checked={showDrivers} onChange={(event) => setShowDrivers(event.target.checked)} />
+          Vehicles ({visibleDrivers.length})
         </label>
         <label className="filter-chip">
-          <input
-            type="checkbox"
-            checked={showPassengers}
-            onChange={(e) => setShowPassengers(e.target.checked)}
-            style={{ width: '14px', height: '14px', accentColor: 'var(--mode-hail)' }}
-          />
-          Passengers ({passengers.length})
+          <input type="checkbox" checked={showPassengers} onChange={(event) => setShowPassengers(event.target.checked)} />
+          Demand ({passengers.length})
         </label>
         <label className="filter-chip">
-          Transit Mode
-          <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+          <Layers size={14} />
+          <select value={filterType} onChange={(event) => setFilterType(event.target.value)}>
             <option value="ALL">All Modes</option>
+            <option value="BUS">Bus</option>
             <option value="COMBI">Combi</option>
             <option value="TAXI">Taxi</option>
-            <option value="BUS">Bus</option>
+          </select>
+        </label>
+        <label className="filter-chip">
+          Route
+          <select value={selectedRoute} onChange={(event) => setSelectedRoute(event.target.value)}>
+            <option value="ALL">All verified</option>
+            {routes.map((route) => (
+              <option key={route.id} value={route.id}>{route.name || route.id}</option>
+            ))}
           </select>
         </label>
       </div>
 
-      {/* Floating Status Controls */}
       <div className="map-floating-controls">
+        {tileStatus === 'error' && (
+          <div className="floating-card danger">
+            <AlertTriangle size={15} />
+            Map tiles unavailable
+          </div>
+        )}
         <div className="floating-card">
-          <input
-            type="checkbox"
-            id="heatmap-toggle"
-            checked={heatmapEnabled}
-            onChange={(e) => setHeatmapEnabled(e.target.checked)}
-            style={{ width: '16px', height: '16px', accentColor: 'var(--accent)' }}
-          />
-          <label htmlFor="heatmap-toggle" style={{ cursor: 'pointer' }}>Demand Overlay</label>
-        </div>
-
-        <div className="floating-card" style={{ color: 'var(--accent)' }}>
           <Activity size={15} />
-          <span>{drivers.length} Active Fleet Units</span>
+          <span>{visibleDrivers.length} mapped vehicles</span>
         </div>
       </div>
 
-      {/* Leaflet DOM Element */}
+      {visibleDrivers.length === 0 && passengers.length === 0 && (
+        <div className="map-empty-state">
+          <strong>No live locations</strong>
+          <span>Waiting for driver or passenger telemetry from the backend.</span>
+        </div>
+      )}
+
       <div ref={mapContainerRef} className="map-element" />
     </main>
   );

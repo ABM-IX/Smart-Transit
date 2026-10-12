@@ -5,7 +5,7 @@ import '../../core/theme.dart';
 import '../../models/route_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/transit_provider.dart';
-import '../auth/welcome_screen.dart';
+import '../auth/login_screen.dart';
 
 class DriverProfileScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -360,7 +360,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 if (context.mounted) {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
                     (route) => false,
                   );
                 }

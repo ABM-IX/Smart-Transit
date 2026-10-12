@@ -1,103 +1,105 @@
-import React, { useState } from 'react';
-import MetricsGrid from './MetricsGrid';
-import FleetChart from './FleetChart';
-import FleetList from './FleetList';
+import React, { useEffect, useState } from 'react';
 import { Link2 } from 'lucide-react';
 
 export default function Sidebar({
+  activeView,
+  navItems = [],
+  onNavigate,
   serverUrl,
   onServerUrlChange,
   onConnect,
-  drivers = [],
-  passengers = [],
-  hails = [],
-  routesCount = 8,
-  hailsCount = 0,
-  chartData = [],
+  connection,
+  modeCounts = {},
 }) {
   const [urlInput, setUrlInput] = useState(serverUrl);
 
-  const handleLink = (e) => {
-    e.preventDefault();
+  useEffect(() => setUrlInput(serverUrl), [serverUrl]);
+
+  const handleLink = (event) => {
+    event.preventDefault();
     onServerUrlChange(urlInput);
     onConnect(urlInput);
   };
 
   return (
     <aside className="sidebar">
-      {/* Real-time Capacity Metrics */}
-      <MetricsGrid
-        driversCount={drivers.length}
-        passengersCount={passengers.length}
-        routesCount={routesCount}
-        hailsCount={hailsCount}
-      />
-
-      {/* Fleet Distribution Chart */}
-      <FleetChart dataPoints={chartData.length > 0 ? chartData : undefined} />
-
-      {/* Connection Management */}
       <section>
-        <div className="section-label">Server Gateway Link (Cloud / LAN)</div>
-        <form onSubmit={handleLink} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+        <div className="section-label">Primary Navigation</div>
+        <nav className="nav-stack" aria-label="Command center navigation">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={activeView === item.id ? 'active' : ''}
+                onClick={() => onNavigate(item.id)}
+              >
+                <Icon size={17} />
+                <span>{item.label}</span>
+                {item.mode && <small>{modeCounts[item.mode] ?? 0}</small>}
+              </button>
+            );
+          })}
+        </nav>
+      </section>
+
+      <section>
+        <div className="section-label">Server Gateway Link</div>
+        <form onSubmit={handleLink} className="sidebar-link-form">
           <input
             type="text"
             value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
+            onChange={(event) => setUrlInput(event.target.value)}
             placeholder="https://smart-transit-uhyf.onrender.com"
           />
-          <button type="submit" className="btn-primary" title="Connect WebSocket Server">
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Link2 size={15} />
-              Link
-            </span>
+          <button type="submit" className="btn-primary" title="Connect server">
+            <Link2 size={15} />
           </button>
         </form>
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            className="btn-secondary"
-            style={{ fontSize: '11px', padding: '3px 8px' }}
-            onClick={() => {
-              const u = 'https://smart-transit-uhyf.onrender.com';
-              setUrlInput(u);
-              onServerUrlChange(u);
-              onConnect(u);
-            }}
-          >
-            Cloud (Render)
+        <div className="preset-row">
+          <button type="button" onClick={() => {
+            const url = 'https://smart-transit-uhyf.onrender.com';
+            setUrlInput(url);
+            onServerUrlChange(url);
+            onConnect(url);
+          }}>
+            Cloud
           </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            style={{ fontSize: '11px', padding: '3px 8px' }}
-            onClick={() => {
-              const u = 'http://10.189.239.26:8000';
-              setUrlInput(u);
-              onServerUrlChange(u);
-              onConnect(u);
-            }}
-          >
-            LAN (10.189)
+          <button type="button" onClick={() => {
+            const url = 'http://10.189.239.26:8000';
+            setUrlInput(url);
+            onServerUrlChange(url);
+            onConnect(url);
+          }}>
+            LAN
           </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            style={{ fontSize: '11px', padding: '3px 8px' }}
-            onClick={() => {
-              const u = 'http://localhost:8000';
-              setUrlInput(u);
-              onServerUrlChange(u);
-              onConnect(u);
-            }}
-          >
+          <button type="button" onClick={() => {
+            const url = 'http://localhost:8000';
+            setUrlInput(url);
+            onServerUrlChange(url);
+            onConnect(url);
+          }}>
             Localhost
           </button>
         </div>
       </section>
 
-      {/* Real-time Fleet & Rider Log */}
-      <FleetList drivers={drivers} passengers={passengers} hails={hails} />
+      <section className="sidebar-health">
+        <div className="section-label">Observed Health</div>
+        <div>
+          <span>Backend</span>
+          <strong>{connection?.backend || 'unknown'}</strong>
+        </div>
+        <div>
+          <span>Database</span>
+          <strong>{connection?.database || 'unknown'}</strong>
+        </div>
+        <div>
+          <span>Socket</span>
+          <strong>{connection?.socket || 'unknown'}</strong>
+        </div>
+      </section>
     </aside>
   );
 }

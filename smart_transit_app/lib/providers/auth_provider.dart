@@ -1,10 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_role.dart';
 import '../services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
+  static const String _sessionProfileKey = 'smarttransit_user_profile';
+  static const String _sessionLoggedInKey = 'smarttransit_is_logged_in';
+
   final AuthService _authService = AuthService();
   StreamSubscription<AuthState>? _authSubscription;
 
@@ -39,7 +44,48 @@ class AuthProvider extends ChangeNotifier {
   String get vehiclePlate => _profile?.vehiclePlate ?? _vehiclePlate;
   bool get isDriver => _role != UserRole.passenger;
 
+  Future<void> loadSavedSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isLoggedIn = prefs.getBool(_sessionLoggedInKey) ?? false;
+      final rawProfile = prefs.getString(_sessionProfileKey);
+      if (isLoggedIn && rawProfile != null && rawProfile.isNotEmpty) {
+        final Map<String, dynamic> data = jsonDecode(rawProfile);
+        final p = UserProfile.fromJson(data);
+        _profile = p;
+        _userName = p.fullName;
+        _serviceType = p.serviceType;
+        if (p.assignedRouteId != null && p.assignedRouteId!.isNotEmpty) {
+          _assignedRouteId = p.assignedRouteId!;
+        }
+        if (p.vehiclePlate != null && p.vehiclePlate!.isNotEmpty) {
+          _vehiclePlate = p.vehiclePlate!;
+        }
+        _role = UserRole.fromDatabase(p.role, p.serviceType);
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveSession(UserProfile p) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_sessionLoggedInKey, true);
+      await prefs.setString(_sessionProfileKey, jsonEncode(p.toJson()));
+    } catch (_) {}
+  }
+
+  Future<void> _clearSavedSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_sessionLoggedInKey);
+      await prefs.remove(_sessionProfileKey);
+    } catch (_) {}
+  }
+
   void _initAuth() {
+    loadSavedSession();
+
     final current = _authService.currentUser;
     if (current != null) {
       loadProfile(current.id);
@@ -49,7 +95,7 @@ class AuthProvider extends ChangeNotifier {
       final session = data.session;
       if (session != null) {
         loadProfile(session.user.id);
-      } else {
+      } else if (data.event == AuthChangeEvent.signedOut) {
         _resetToGuest();
       }
     });
@@ -81,6 +127,7 @@ class AuthProvider extends ChangeNotifier {
       _vehiclePlate = p.vehiclePlate!;
     }
     _role = UserRole.fromDatabase(p.role, p.serviceType);
+    _saveSession(p);
     notifyListeners();
   }
 
@@ -92,6 +139,13 @@ class AuthProvider extends ChangeNotifier {
     } else {
       _userName = 'Commuter';
       _serviceType = 'PASSENGER';
+    }
+    if (_profile != null) {
+      _profile = _profile!.copyWith(
+        role: newRole == UserRole.passenger ? 'PASSENGER' : 'DRIVER',
+        serviceType: _serviceType,
+      );
+      _saveSession(_profile!);
     }
     notifyListeners();
   }
@@ -111,6 +165,7 @@ class AuthProvider extends ChangeNotifier {
         assignedRouteId: _assignedRouteId,
         vehiclePlate: _vehiclePlate,
       );
+      _saveSession(_profile!);
       await _authService.updateDriverProfile(
         userId: _profile!.id,
         vehiclePlate: _vehiclePlate,
@@ -122,11 +177,13 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    await _clearSavedSession();
     await _authService.signOut();
     _resetToGuest();
   }
 
   void _resetToGuest() {
+    _clearSavedSession();
     _profile = null;
     _role = UserRole.passenger;
     _userName = 'Commuter';

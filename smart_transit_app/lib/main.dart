@@ -14,10 +14,13 @@ void main() async {
     anonKey: AppConstants.supabaseAnonKey,
   );
 
+  final authProvider = AuthProvider();
+  await authProvider.loadSavedSession();
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(create: (_) => TransitProvider()),
       ],
       child: const SmartTransitApp(),

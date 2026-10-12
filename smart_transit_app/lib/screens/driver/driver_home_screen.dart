@@ -7,7 +7,6 @@ import '../../providers/transit_provider.dart';
 import '../../widgets/custom_map_view.dart';
 import '../../widgets/status_pill.dart';
 import 'spacing_advisory_widget.dart';
-import '../auth/welcome_screen.dart';
 
 class DriverHomeScreen extends StatefulWidget {
   final UserRole driverRole;
@@ -75,29 +74,6 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                 children: [
                   Row(
                     children: [
-                      // Back / Logout button
-                      CircleAvatar(
-                        backgroundColor: AppTheme.white,
-                        child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: AppTheme.black, size: 20),
-                          onPressed: () {
-                            if (transit.isDriverOnline) {
-                              transit.toggleDriverOnline(
-                                driverId: auth.userId,
-                                serviceType: widget.driverRole.serviceType,
-                                routeId: widget.routeId,
-                                vehicleId: auth.vehiclePlate,
-                              );
-                            }
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
                       // Route & Vehicle Info
                       Expanded(
                         child: Container(

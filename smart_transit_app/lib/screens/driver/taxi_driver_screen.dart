@@ -6,7 +6,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/transit_provider.dart';
 import '../../widgets/custom_map_view.dart';
 import '../../widgets/status_pill.dart';
-import '../auth/welcome_screen.dart';
 
 enum TaxiDriverTripPhase { searching, requestReceived, enRouteToPickup, arrivedAtPickup, onTrip, completed }
 
@@ -54,28 +53,6 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                 children: [
                   Row(
                     children: [
-                      CircleAvatar(
-                        backgroundColor: AppTheme.white,
-                        child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: AppTheme.black, size: 20),
-                          onPressed: () {
-                            if (transit.isDriverOnline) {
-                              transit.toggleDriverOnline(
-                                driverId: auth.userId,
-                                serviceType: 'TAXI',
-                                routeId: 'taxi-service',
-                                vehicleId: auth.vehiclePlate,
-                              );
-                            }
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
                       // Taxi Badge
                       Expanded(
                         child: Container(

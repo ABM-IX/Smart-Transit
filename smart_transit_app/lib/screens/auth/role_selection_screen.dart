@@ -32,27 +32,18 @@ class RoleSelectionScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Logo badge
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: AppTheme.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppTheme.black, width: 2),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'ST',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 18,
-                              color: AppTheme.black,
-                            ),
-                          ),
+                      // SmartTransit Logo
+                      Image.asset(
+                        'assets/icon/app_icon_transparent.png',
+                        height: 54,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const Icon(
+                          Icons.directions_transit,
+                          size: 40,
+                          color: AppTheme.black,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
 
                       const Text(
                         'Join SmartTransit',

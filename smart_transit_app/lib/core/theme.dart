@@ -11,10 +11,15 @@ class AppTheme {
   static const Color secondaryText = Color(0xFF64748B);  // Subtitles, metadata & captions
   static const Color botswanaSky = Color(0xFF6EC6E8);    // Botswana sky accent
 
-  // --- Transport Mode Colors (Strict Semantic Separation) ---
-  static const Color combiColor = Color(0xFF087E8B);     // Combi (Teal)
-  static const Color busColor = Color(0xFF6366F1);       // Bus / Intercity Coach (Indigo)
-  static const Color taxiColor = Color(0xFFFB7345);      // Taxi / Special Cab (Coral Orange)
+  // --- Logo Brand Colors (Extracted Directly From Logo) ---
+  static const Color logoNavy = Color(0xFF06172F);         // Deep Midnight Navy ("SMART" & S body)
+  static const Color logoElectricBlue = Color(0xFF036CEA); // Electric Royal Blue (S circuit & nodes)
+  static const Color logoCyan = Color(0xFF0088D1);         // Bright Cyan / Sky Blue ("TRANSIT" & speed tracks)
+
+  // --- Transport Mode Colors (Derived from Logo Brand Palette) ---
+  static const Color combiColor = logoElectricBlue;        // Combi (Electric Royal Blue - Urban Corridor)
+  static const Color busColor = logoNavy;                  // Bus / Intercity Coach (Deep Midnight Navy - Intercity)
+  static const Color taxiColor = logoCyan;                 // Taxi / Special Cab (Cyan / Sky Blue - On-Demand)
   static const Color walkingColor = Color(0xFF64748B);   // Walking / neutral transfer (Slate)
   static const Color hailColor = Color(0xFFEF4444);      // Passenger hail / urgent rider action (Red)
 

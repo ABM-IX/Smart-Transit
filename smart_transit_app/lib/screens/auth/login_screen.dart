@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/user_role.dart';
 import '../../providers/auth_provider.dart';
@@ -187,6 +188,84 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  void _showServerSettingsDialog() {
+    final textController = TextEditingController(text: AppConstants.defaultServerUrl);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.cloud_sync, color: AppTheme.black),
+            SizedBox(width: 8),
+            Text('Server & Cloud Config', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Supabase Cloud Database & Storage is active globally. Enter your live backend/tunnel URL for real-time dispatch:',
+                style: TextStyle(fontSize: 13, color: AppTheme.darkGrey),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: textController,
+                decoration: const InputDecoration(
+                  labelText: 'Backend Server URL',
+                  hintText: 'https://smarttransit-backend.onrender.com',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.link),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  ActionChip(
+                    label: const Text('Cloud (Render)', style: TextStyle(fontSize: 11)),
+                    onPressed: () => textController.text = AppConstants.cloudServerUrl,
+                  ),
+                  ActionChip(
+                    label: const Text('Local LAN', style: TextStyle(fontSize: 11)),
+                    onPressed: () => textController.text = AppConstants.lanServerUrl,
+                  ),
+                  ActionChip(
+                    label: const Text('Localhost', style: TextStyle(fontSize: 11)),
+                    onPressed: () => textController.text = AppConstants.localhostUrl,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                AppConstants.customServerUrl = textController.text.trim();
+              });
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Server endpoint set to: ${AppConstants.defaultServerUrl}'),
+                  backgroundColor: AppTheme.black,
+                ),
+              );
+            },
+            child: const Text('Save & Connect'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -194,56 +273,82 @@ class _LoginScreenState extends State<LoginScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.black),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: AppTheme.black),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_ethernet, color: AppTheme.darkGrey),
+            tooltip: 'Server & Cloud Config',
+            onPressed: _showServerSettingsDialog,
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ST Logo
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppTheme.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppTheme.black, width: 2),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'ST',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 18,
-                        color: AppTheme.black,
-                      ),
-                    ),
-                  ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight - 32 > 0 ? constraints.maxHeight - 32 : 0,
                 ),
-                const SizedBox(height: 20),
-
-                const Text(
-                  'Welcome Back',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    color: AppTheme.black,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Sign in to your passenger or driver account.',
-                  style: TextStyle(fontSize: 14, color: AppTheme.midGrey),
-                ),
-                const SizedBox(height: 28),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // SmartTransit Logo & Centered Welcome Header
+                          Center(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Image.asset(
+                                  'assets/icon/app_icon_transparent.png',
+                                  height: 84,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: 84,
+                                      height: 84,
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.offWhite,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: AppTheme.lightGrey),
+                                      ),
+                                      child: const Icon(Icons.directions_transit, size: 40, color: AppTheme.black),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 18),
+                                const Text(
+                                  'Welcome to SmartTransit',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppTheme.black,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Sign in to your passenger or driver account.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: 14, color: AppTheme.midGrey),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 28),
 
                 // Email Field
                 TextFormField(
@@ -373,10 +478,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
+                const SizedBox(height: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

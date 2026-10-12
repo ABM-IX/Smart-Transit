@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rive/rive.dart';
 import '../../core/theme.dart';
+import '../../models/user_role.dart';
 import '../../providers/auth_provider.dart';
-import '../auth/welcome_screen.dart';
+import '../../providers/transit_provider.dart';
+import '../auth/login_screen.dart';
 import '../driver/driver_dashboard.dart';
 import '../passenger/passenger_dashboard.dart';
 
@@ -139,11 +141,23 @@ class _SplashScreenState extends State<SplashScreen> {
     final Widget destination;
 
     if (authProvider.isAuthenticated) {
+      final transit = context.read<TransitProvider>();
+      transit.fetchInitialData();
+      if (authProvider.isDriver) {
+        transit.connectSocket(
+          role: 'drivers',
+          userId: authProvider.userId,
+          routeId: authProvider.role == UserRole.driverTaxi ? 'taxi-dispatch' : authProvider.assignedRouteId,
+        );
+      } else {
+        transit.connectSocket(role: 'passengers', userId: authProvider.userId);
+      }
+
       destination = authProvider.isDriver
           ? DriverDashboard(initialRole: authProvider.role)
           : const PassengerDashboard();
     } else {
-      destination = const WelcomeScreen();
+      destination = const LoginScreen();
     }
 
     Navigator.of(context).pushReplacement(

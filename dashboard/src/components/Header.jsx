@@ -1,61 +1,66 @@
-import React, { useState, useEffect } from 'react';
-import { Shield, Radio, Database, AlertTriangle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { AlertTriangle, Database, Radio, ShieldCheck } from 'lucide-react';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 
-export default function Header({ isConnected, onEmergencyAlert }) {
+export default function Header({ isConnected, connection, statusMessage, onEmergencyAlert }) {
   const [timeStr, setTimeStr] = useState('');
 
   useEffect(() => {
     const updateTime = () => {
-      setTimeStr(new Date().toLocaleTimeString('en-US', { hour12: false }));
+      setTimeStr(new Date().toLocaleTimeString('en-GB', {
+        hour12: false,
+        timeZone: 'Africa/Gaborone',
+      }));
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
 
+  const dbConnected = connection?.database === 'connected';
+
   return (
-    <header>
+    <header className="app-header">
       <div className="brand-container">
         <img
           src="/Gemini_Generated_Image_pptoivpptoivppto.png"
-          alt="SmartTransit Logo"
+          alt="SmartTransit"
           className="logo-img"
-          onError={(e) => {
-            e.target.style.display = 'none';
+          onError={(event) => {
+            event.currentTarget.style.display = 'none';
           }}
         />
         <div className="header-info">
           <h1>SmartTransit Command Center</h1>
-          <p>{timeStr || '00:00:00'} • Gaborone Transit Grid</p>
+          <p>{timeStr || '00:00:00'} - Gaborone Transit Grid</p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        {/* Supabase status badge */}
-        <div className="status-pill" title="Supabase Database Status">
-          <Database size={14} color={isSupabaseConfigured() ? '#22c55e' : '#94a3b8'} />
-          <span style={{ fontSize: '0.72rem', color: isSupabaseConfigured() ? '#86efac' : '#94a3b8' }}>
-            {isSupabaseConfigured() ? 'SUPABASE ACTIVE' : 'LOCAL DB'}
-          </span>
+      <div className="header-actions">
+        <div className="status-pill" title="Database status reported by backend health endpoint">
+          <Database size={14} />
+          <span>{dbConnected ? 'DB CONNECTED' : isSupabaseConfigured() ? 'SUPABASE CONFIGURED' : 'DB UNVERIFIED'}</span>
         </div>
 
-        {/* WebSocket Connection pill */}
-        <div className="status-pill">
+        <div className="status-pill" title={statusMessage || 'Socket.IO telemetry gateway'}>
+          <Radio size={14} />
           <div className={`dot ${isConnected ? 'online' : ''}`} />
-          <span>{isConnected ? 'SYSTEM SECURED' : 'DISCONNECTED'}</span>
+          <span>{isConnected ? 'TELEMETRY LIVE' : 'TELEMETRY OFFLINE'}</span>
         </div>
 
-        {/* Emergency Alert Button */}
+        <div className="status-pill" title="Security state is not asserted unless backend verifies it">
+          <ShieldCheck size={14} />
+          <span>AUTH PRESERVED</span>
+        </div>
+
         <button
           className="emergency-btn"
           onClick={onEmergencyAlert}
-          title="Broadcast Emergency Fleet Alert"
+          title="Prepare emergency advisory"
+          type="button"
         >
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <AlertTriangle size={13} />
-            EMERGENCY ALERT
-          </span>
+          <AlertTriangle size={14} />
+          Emergency Alert
         </button>
       </div>
     </header>

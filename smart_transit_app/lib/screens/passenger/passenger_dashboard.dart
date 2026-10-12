@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme.dart';
 import '../../models/route_model.dart';
-import '../auth/welcome_screen.dart';
 import 'mode_selection_screen.dart';
 import 'destinations_browser_screen.dart';
 import 'bus_combi_map_screen.dart';
@@ -70,16 +69,8 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
       return Scaffold(
         backgroundColor: AppTheme.white,
         appBar: AppBar(
+          automaticallyImplyLeading: false,
           title: const Text('SmartTransit', style: TextStyle(fontWeight: FontWeight.w900)),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppTheme.black),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-              );
-            },
-          ),
           actions: [
             IconButton(
               icon: const Icon(Icons.auto_awesome, color: AppTheme.accentBlue),

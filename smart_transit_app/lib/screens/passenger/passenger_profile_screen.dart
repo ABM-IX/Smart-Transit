@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
-import '../auth/welcome_screen.dart';
+import '../auth/login_screen.dart';
 
 class PassengerProfileScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -219,7 +219,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                 if (context.mounted) {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
                     (route) => false,
                   );
                 }
