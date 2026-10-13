@@ -147,6 +147,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
 
       if (_selectedMode == 'TAXI') {
         routeId = 'taxi-dispatch';
+        await authService.ensureTaxiDispatchRoute();
       } else if (_createNewRoute || _selectedRoute == null) {
         final fare =
             double.tryParse(_fareController.text.trim()) ??
@@ -320,11 +321,10 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
+      final formattedMessage = AuthService.formatAuthErrorMessage(e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Registration Error: ${e.toString().replaceAll('Exception: ', '')}',
-          ),
+          content: Text('Registration Error: $formattedMessage'),
           backgroundColor: AppTheme.accentRed,
         ),
       );

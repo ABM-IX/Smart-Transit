@@ -169,3 +169,8 @@ CREATE POLICY "Allow insert/update for taxi_bookings" ON public.taxi_bookings FO
 
 CREATE POLICY "Allow public read access for reviews" ON public.reviews FOR SELECT USING (true);
 CREATE POLICY "Allow insert/update for reviews" ON public.reviews FOR ALL USING (true);
+
+-- Default Metropolitan Taxi Dispatch corridor
+INSERT INTO public.routes (id, name, origin_name, destination_name, route_type, base_fare)
+VALUES ('taxi-dispatch', 'Metropolitan Taxi Dispatch', 'Gaborone Metro', 'On-Demand Dispatch', 'TAXI', 15.00)
+ON CONFLICT (id) DO NOTHING;

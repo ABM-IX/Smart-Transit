@@ -8,9 +8,21 @@ RETURNS TRIGGER AS $$
 DECLARE
     v_role TEXT;
     v_service_type TEXT;
+    v_route_id TEXT;
 BEGIN
     v_role := COALESCE(UPPER(NEW.raw_user_meta_data->>'role'), 'PASSENGER');
     v_service_type := COALESCE(UPPER(NEW.raw_user_meta_data->>'service_type'), 'PASSENGER');
+    v_route_id := NEW.raw_user_meta_data->>'assigned_route_id';
+
+    -- Validate or seed operating route to prevent foreign key errors from breaking auth signup
+    IF v_route_id = 'taxi-dispatch' OR v_service_type = 'TAXI' THEN
+        INSERT INTO public.routes (id, name, origin_name, destination_name, route_type, base_fare, is_active)
+        VALUES ('taxi-dispatch', 'Metropolitan Taxi Dispatch', 'Gaborone Metro', 'On-Demand Dispatch', 'TAXI', 15.00, true)
+        ON CONFLICT (id) DO NOTHING;
+        v_route_id := 'taxi-dispatch';
+    ELSIF v_route_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.routes WHERE id = v_route_id) THEN
+        v_route_id := NULL;
+    END IF;
 
     INSERT INTO public.users (
         id,
@@ -33,7 +45,7 @@ BEGIN
         v_role,
         v_service_type,
         NEW.raw_user_meta_data->>'vehicle_plate',
-        NEW.raw_user_meta_data->>'assigned_route_id',
+        v_route_id,
         true,
         timezone('utc'::text, now()),
         timezone('utc'::text, now())

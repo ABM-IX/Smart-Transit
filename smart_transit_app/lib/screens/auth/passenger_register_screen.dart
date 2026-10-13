@@ -169,11 +169,10 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
+      final formattedMessage = AuthService.formatAuthErrorMessage(e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Registration Error: ${e.toString().replaceAll('Exception: ', '')}',
-          ),
+          content: Text('Registration Error: $formattedMessage'),
           backgroundColor: AppTheme.accentRed,
         ),
       );

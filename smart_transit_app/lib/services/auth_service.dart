@@ -127,6 +127,63 @@ class AuthService {
     return response;
   }
 
+  /// Ensure the default Metropolitan Taxi Dispatch corridor exists in public.routes
+  Future<void> ensureTaxiDispatchRoute() async {
+    try {
+      await _supabase.from('routes').upsert({
+        'id': 'taxi-dispatch',
+        'name': 'Metropolitan Taxi Dispatch',
+        'origin_name': 'Gaborone Metro',
+        'destination_name': 'On-Demand Dispatch',
+        'route_type': 'TAXI',
+        'base_fare': 15.00,
+        'is_active': true,
+      });
+    } catch (_) {}
+  }
+
+  /// Formats raw Supabase / Auth exceptions into user-friendly messages
+  static String formatAuthErrorMessage(Object error) {
+    final raw = error
+        .toString()
+        .replaceAll('Exception: ', '')
+        .replaceAll('AuthException: ', '')
+        .replaceAll('AuthRetryableFetchException: ', '');
+
+    if (raw.contains('Database error saving new user') ||
+        raw.contains('unexpected_failure')) {
+      return 'Server error saving driver profile. Please verify your selected corridor or try again.';
+    }
+    if (raw.contains('over_email_send_rate_limit') ||
+        raw.contains('rate limit')) {
+      return 'Email confirmation rate limit exceeded. Please wait a few minutes before trying again.';
+    }
+    if (raw.contains('already registered') ||
+        raw.contains('already in use') ||
+        raw.contains('User already registered')) {
+      return 'An account with this email address already exists. Please sign in instead.';
+    }
+    if (raw.contains('Password should be at least')) {
+      return 'Password must be at least 6 characters long.';
+    }
+    if (raw.contains('Invalid login credentials') ||
+        raw.contains('invalid_credentials')) {
+      return 'Invalid email or password.';
+    }
+
+    // Try extracting clean message from JSON if embedded
+    final regex = RegExp(r'"message"\s*:\s*"([^"]+)"');
+    final match = regex.firstMatch(raw);
+    if (match != null && match.group(1) != null) {
+      final inner = match.group(1)!;
+      if (inner.isNotEmpty && inner != 'unexpected_failure') {
+        return inner;
+      }
+    }
+
+    return raw;
+  }
+
   /// Dynamically create or ensure an operating corridor exists in public.routes
   Future<String> createOrGetRoute({
     required String name,
@@ -165,6 +222,11 @@ class AuthService {
   }) async {
     final normalizedServiceType = serviceType.toUpperCase().trim();
     final normalizedPlate = vehiclePlate.toUpperCase().trim();
+
+    // Ensure taxi dispatch route exists in public.routes if registering as a taxi
+    if (normalizedServiceType == 'TAXI' || assignedRouteId == 'taxi-dispatch') {
+      await ensureTaxiDispatchRoute();
+    }
 
     final response = await _supabase.auth.signUp(
       email: email.trim(),
