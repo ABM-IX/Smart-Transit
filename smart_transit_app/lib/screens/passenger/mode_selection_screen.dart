@@ -137,7 +137,10 @@ class ModeSelectionScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Row(
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
                                     Text(
                                       title,
@@ -147,7 +150,6 @@ class ModeSelectionScreen extends StatelessWidget {
                                         color: AppTheme.brandNavy,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 6,
@@ -182,25 +184,32 @@ class ModeSelectionScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                fare,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 14,
-                                  color: AppTheme.brandNavy,
+                          SizedBox(
+                            width: 104,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  fare,
+                                  maxLines: 2,
+                                  softWrap: true,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.end,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 14,
+                                    color: AppTheme.brandNavy,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Icon(
-                                Icons.arrow_forward_ios,
-                                size: 13,
-                                color: modeColor,
-                              ),
-                            ],
+                                const SizedBox(height: 4),
+                                Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 13,
+                                  color: modeColor,
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),

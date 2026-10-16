@@ -18,6 +18,13 @@ enum PassengerTripStatus {
   completed,
 }
 
+String _historyServiceType(String serviceType) {
+  final normalized = serviceType.toUpperCase();
+  return normalized == 'STANDARD' || normalized == 'SPECIAL'
+      ? 'TAXI'
+      : normalized;
+}
+
 class TransitProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
   final SocketService _socket = SocketService();
@@ -51,6 +58,7 @@ class TransitProvider extends ChangeNotifier {
   HailRequest? _latestHailAlert;
   String? _lastStopRequest;
   int _passengersCarried = 0;
+  int _driverTripsCompleted = 0;
 
   // Live vehicle speed received from ETA updates (used by passenger for stop logic)
   double _vehicleSpeedKmh = 0.0;
@@ -82,7 +90,22 @@ class TransitProvider extends ChangeNotifier {
   HailRequest? get latestHailAlert => _latestHailAlert;
   String? get lastStopRequest => _lastStopRequest;
   int get passengersCarried => _passengersCarried;
+  int get driverTripsCompleted => _driverTripsCompleted;
   double get vehicleSpeedKmh => _vehicleSpeedKmh;
+
+  Future<void> loadDriverTripCount(String driverId) async {
+    try {
+      final rows = await Supabase.instance.client
+          .from('trips')
+          .select('id')
+          .eq('driver_id', driverId)
+          .eq('status', 'COMPLETED');
+      _driverTripsCompleted = rows.length;
+      notifyListeners();
+    } catch (error) {
+      debugPrint('Could not load driver trip total: $error');
+    }
+  }
 
   void dismissHailAlert() {
     _latestHailAlert = null;
@@ -227,6 +250,18 @@ class TransitProvider extends ChangeNotifier {
             notifyListeners();
           }
         },
+        'hail-queued': (data) {
+          if (data is Map<String, dynamic>) {
+            _currentRequestId = data['requestId']?.toString();
+            notifyListeners();
+          }
+        },
+        'taxi-dispatched': (data) {
+          if (data is Map<String, dynamic>) {
+            _currentRequestId = data['requestId']?.toString();
+            notifyListeners();
+          }
+        },
         'new-taxi-request': (data) {
           if (data is Map<String, dynamic>) {
             final hail = HailRequest.fromJson(data);
@@ -347,6 +382,7 @@ class TransitProvider extends ChangeNotifier {
   // --- PASSENGER ACTIONS ---
   void requestCombiHail(String passengerId, {String? serviceType}) {
     if (_selectedRoute == null) return;
+    _currentRequestId = null;
     final resolvedType =
         serviceType ??
         (_selectedRoute!.routeType.toUpperCase() == 'BUS' ||
@@ -354,6 +390,7 @@ class TransitProvider extends ChangeNotifier {
             ? 'BUS'
             : 'COMBI');
     _passengerStatus = PassengerTripStatus.hailPending;
+    _estimatedFare = _selectedRoute!.baseFare;
     _socket.emit('hail', {
       'passengerId': passengerId,
       'routeId': _selectedRoute!.id,
@@ -362,6 +399,7 @@ class TransitProvider extends ChangeNotifier {
         'lng': _currentLocation.longitude,
       },
       'serviceType': resolvedType,
+      'fareEstimate': _selectedRoute!.baseFare,
     });
     notifyListeners();
   }
@@ -372,6 +410,7 @@ class TransitProvider extends ChangeNotifier {
     required LatLng pickup,
     LatLng? dropoff,
   }) {
+    _currentRequestId = null;
     _selectedRoute = null;
     _estimatedFare = AppConstants.taxiBaseFareBWP;
     _livePassengerLocation = pickup;
@@ -422,13 +461,16 @@ class TransitProvider extends ChangeNotifier {
     required String occupancyText,
   }) {
     int paxCount = 0;
+    final normalizedServiceType = serviceType.toUpperCase();
     if (occupancyText == 'Half Full') {
-      paxCount = serviceType == 'BUS' ? 25 : 7;
+      paxCount = normalizedServiceType == 'BUS' ? 25 : 7;
     } else if (occupancyText == 'Almost Full') {
-      paxCount = serviceType == 'BUS' ? 45 : 12;
+      paxCount = normalizedServiceType == 'BUS' ? 45 : 12;
     } else if (occupancyText == 'Full') {
-      paxCount = serviceType == 'BUS' ? 60 : 15;
+      paxCount = normalizedServiceType == 'BUS' ? 60 : 15;
     }
+
+    _passengersCarried = paxCount;
 
     _socket.emit('driver-location', {
       'driverId': driverId,
@@ -473,37 +515,52 @@ class TransitProvider extends ChangeNotifier {
     }
   }
 
-  void passengerEndTrip({
+  Future<void> passengerEndTrip({
     required String passengerId,
     String? driverId,
     double? finalFare,
-  }) {
+  }) async {
     final dId = driverId ?? _assignedDriverId;
     final fallbackFare =
         _selectedRoute?.baseFare ?? AppConstants.taxiBaseFareBWP;
     final fare = finalFare ?? _estimatedFare ?? fallbackFare;
+    final routeId = _selectedRoute?.id;
+    final serviceType = _selectedRoute?.routeType.toUpperCase() ?? 'TAXI';
 
     _socket.emit('passenger-end-trip', {
       'passengerId': passengerId,
       'driverId': dId,
-      'routeId': _selectedRoute?.id ?? 'taxi-service',
+      'routeId': routeId ?? 'taxi-service',
+      'requestId': _currentRequestId,
       'fare': fare,
+      'serviceType': serviceType,
+      'pickupName': _selectedRoute?.originName ?? 'Pickup Point',
+      'dropoffName': _selectedRoute?.destinationName ?? 'Destination',
+      'pickup': {
+        'lat': _livePassengerLocation?.latitude ?? _currentLocation.latitude,
+        'lng': _livePassengerLocation?.longitude ?? _currentLocation.longitude,
+      },
     });
 
-    // Directly persist to Supabase trips table for immediate user history
     try {
-      Supabase.instance.client.from('trips').insert({
+      await Supabase.instance.client.from('trips').upsert({
+        if (_currentRequestId != null) 'request_id': _currentRequestId,
         'passenger_id': passengerId,
         'driver_id': dId,
-        'route_id': _selectedRoute?.id,
-        'service_type': _selectedRoute?.routeType ?? 'COMBI',
+        'route_id': routeId,
+        'service_type': serviceType == 'STANDARD' || serviceType == 'SPECIAL'
+            ? 'TAXI'
+            : serviceType,
         'status': 'COMPLETED',
         'fare': fare,
+        'passenger_count': 1,
         'completed_at': DateTime.now().toUtc().toIso8601String(),
         'pickup_name': _selectedRoute?.originName ?? 'Pickup Stop',
         'dropoff_name': _selectedRoute?.destinationName ?? 'Destination Stop',
-      });
-    } catch (_) {}
+      }, onConflict: 'request_id');
+    } catch (error) {
+      debugPrint('Could not save passenger trip history: $error');
+    }
 
     _estimatedFare = fare;
     _passengerStatus = PassengerTripStatus.completed;
@@ -671,8 +728,7 @@ class TransitProvider extends ChangeNotifier {
     });
   }
 
-  void completeTrip(HailRequest hail, String driverId) {
-    _passengersCarried++;
+  Future<void> completeTrip(HailRequest hail, String driverId) async {
     _socket.emit('trip-complete', {
       'passengerId': hail.passengerId,
       'driverId': driverId,
@@ -681,29 +737,54 @@ class TransitProvider extends ChangeNotifier {
     });
 
     try {
-      Supabase.instance.client.from('trips').insert({
+      await Supabase.instance.client.from('trips').upsert({
+        'request_id': hail.requestId,
         'passenger_id': hail.passengerId,
         'driver_id': driverId,
-        'route_id': hail.routeId,
-        'service_type': hail.serviceType,
+        'route_id': hail.routeId == 'taxi-service' ? null : hail.routeId,
+        'service_type': _historyServiceType(hail.serviceType),
         'status': 'COMPLETED',
         'fare': hail.fareEstimate,
+        'passenger_count': 1,
         'completed_at': DateTime.now().toUtc().toIso8601String(),
-        'pickup_name': 'Pickup Point',
+        'pickup_name': hail.stopName ?? 'Pickup Point',
         'dropoff_name': 'Destination',
-      });
-    } catch (_) {}
+      }, onConflict: 'request_id');
+      _driverTripsCompleted++;
+    } catch (error) {
+      debugPrint('Could not save driver trip history: $error');
+    }
 
     notifyListeners();
   }
 
-  void endTrip(HailRequest hail, String driverId, double fare) {
+  Future<void> endTrip(HailRequest hail, String driverId, double fare) async {
     _socket.emit('trip-end', {
       'passengerId': hail.passengerId,
       'driverId': driverId,
       'requestId': hail.requestId,
       'revenue': fare,
     });
+
+    try {
+      await Supabase.instance.client.from('trips').upsert({
+        'request_id': hail.requestId,
+        'passenger_id': hail.passengerId,
+        'driver_id': driverId,
+        'route_id': hail.routeId == 'taxi-service' ? null : hail.routeId,
+        'service_type': _historyServiceType(hail.serviceType),
+        'status': 'COMPLETED',
+        'fare': fare,
+        'passenger_count': 1,
+        'completed_at': DateTime.now().toUtc().toIso8601String(),
+        'pickup_name': hail.stopName ?? 'Pickup Point',
+        'dropoff_name': 'Destination',
+      }, onConflict: 'request_id');
+      _driverTripsCompleted++;
+    } catch (error) {
+      debugPrint('Could not save driver trip history: $error');
+    }
+    notifyListeners();
   }
 
   @override

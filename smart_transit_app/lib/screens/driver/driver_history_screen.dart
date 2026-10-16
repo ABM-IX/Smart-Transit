@@ -8,8 +8,9 @@ import '../../providers/auth_provider.dart';
 
 class DriverHistoryScreen extends StatefulWidget {
   final VoidCallback? onBack;
+  final bool isActive;
 
-  const DriverHistoryScreen({super.key, this.onBack});
+  const DriverHistoryScreen({super.key, this.onBack, this.isActive = true});
 
   @override
   State<DriverHistoryScreen> createState() => _DriverHistoryScreenState();
@@ -36,6 +37,12 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
     _loadDriverHistory();
   }
 
+  @override
+  void didUpdateWidget(covariant DriverHistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isActive && widget.isActive) _loadDriverHistory();
+  }
+
   Future<void> _loadDriverHistory() async {
     setState(() => _isLoading = true);
     final auth = Provider.of<AuthProvider>(context, listen: false);
@@ -46,11 +53,13 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
           .from('trips')
           .select()
           .eq('driver_id', auth.userId)
+          .eq('status', 'COMPLETED')
           .order('created_at', ascending: false)
           .timeout(const Duration(seconds: 4));
 
       final List<Map<String, dynamic>> loaded = [];
       int tripsCount = 0;
+      int passengersCount = 0;
       double revenue = 0.0;
 
       for (final row in response) {
@@ -65,6 +74,7 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
         final fare = (row['fare'] as num?)?.toDouble() ?? _fareFallback(row);
         revenue += fare;
         tripsCount++;
+        passengersCount += (row['passenger_count'] as num?)?.toInt() ?? 1;
 
         loaded.add({
           'id': row['id']?.toString() ?? '',
@@ -73,7 +83,7 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
               '${row['pickup_name'] ?? 'Origin'} → ${row['dropoff_name'] ?? 'Dropoff'}',
           'date': dateStr,
           'trips': 1,
-          'passengers': 1,
+          'passengers': (row['passenger_count'] as num?)?.toInt() ?? 1,
           'revenue': fare,
           'vehicle': auth.vehiclePlate,
           'status': row['status'] ?? 'Completed',
@@ -84,7 +94,7 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
         setState(() {
           _shifts = loaded;
           _totalTrips = tripsCount;
-          _totalPax = tripsCount;
+          _totalPax = passengersCount;
           _totalRevenue = revenue;
           _isLoading = false;
         });

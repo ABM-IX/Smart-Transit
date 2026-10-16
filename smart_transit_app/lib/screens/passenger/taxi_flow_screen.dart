@@ -408,7 +408,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
-              onPressed: () => transit.passengerEndTrip(
+              onPressed: () async => transit.passengerEndTrip(
                 passengerId: auth.userId,
                 driverId: transit.assignedDriverId,
                 finalFare:

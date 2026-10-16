@@ -3,7 +3,7 @@
 
 -- Metropolitan Taxi Dispatch corridor for on-demand taxi cabs
 INSERT INTO public.routes (id, name, origin_name, destination_name, route_type, base_fare, is_active)
-VALUES ('taxi-dispatch', 'Metropolitan Taxi Dispatch', 'Gaborone Metro', 'On-Demand Dispatch', 'TAXI', 15.00, true)
+VALUES ('taxi-dispatch', 'Metropolitan Taxi Dispatch', 'Gaborone Metro', 'On-Demand Dispatch', 'TAXI', 10.00, true)
 ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     origin_name = EXCLUDED.origin_name,

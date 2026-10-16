@@ -26,10 +26,22 @@ class DriverHomeScreen extends StatefulWidget {
 
 class _DriverHomeScreenState extends State<DriverHomeScreen> {
   String _occupancy = 'Empty';
-  final int _tripsCompleted = 0;
   final double _shiftRevenue = 0.0;
   String? _displayedHailId;
   bool _showHailAlert = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      Provider.of<TransitProvider>(
+        context,
+        listen: false,
+      ).loadDriverTripCount(auth.userId);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -449,7 +461,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                 ),
               ),
               Text(
-                '$_tripsCompleted Trips • ${transit.passengersCarried} Passengers',
+                '${transit.driverTripsCompleted} Trips • ${transit.passengersCarried} Passengers',
                 style: TextStyle(fontSize: 12, color: AppTheme.midGrey),
               ),
             ],
@@ -461,35 +473,67 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
               level,
             ) {
               final isSelected = _occupancy == level;
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final selectedBackground = Theme.of(context).colorScheme.primary;
+              final selectedForeground =
+                  Theme.of(context).colorScheme.onPrimary;
+              final idleBackground = isDark
+                  ? const Color(0xFF1B2A40)
+                  : const Color(0xFFF0F3F8);
+              final idleForeground = isDark
+                  ? const Color(0xFFF4F7FB)
+                  : const Color(0xFF263445);
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                  child: ChoiceChip(
-                    label: Text(
-                      level,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? AppTheme.onPrimary : AppTheme.black,
+                  child: Material(
+                    color: isSelected ? selectedBackground : idleBackground,
+                    borderRadius: BorderRadius.circular(10),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () {
+                        setState(() => _occupancy = level);
+                        final route = widget.driverRole == UserRole.driverTaxi
+                            ? 'taxi-service'
+                            : widget.routeId;
+                        transit.updateDriverOccupancy(
+                          driverId: auth.userId,
+                          routeId: route,
+                          serviceType: widget.driverRole.serviceType,
+                          vehicleId: auth.vehiclePlate,
+                          occupancyText: level,
+                        );
+                      },
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 38),
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isSelected
+                                ? selectedBackground
+                                : (isDark
+                                      ? const Color(0xFF40516A)
+                                      : const Color(0xFFD4DCE7)),
+                          ),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            level,
+                            maxLines: 1,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected
+                                  ? selectedForeground
+                                  : idleForeground,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    selected: isSelected,
-                    selectedColor: AppTheme.black,
-                    backgroundColor: AppTheme.offWhite,
-                    showCheckmark: false,
-                    onSelected: (_) {
-                      setState(() => _occupancy = level);
-                      final route = widget.driverRole == UserRole.driverTaxi
-                          ? 'taxi-service'
-                          : widget.routeId;
-                      transit.updateDriverOccupancy(
-                        driverId: auth.userId,
-                        routeId: route,
-                        serviceType: widget.driverRole.serviceType,
-                        vehicleId: auth.vehiclePlate,
-                        occupancyText: level,
-                      );
-                    },
                   ),
                 ),
               );

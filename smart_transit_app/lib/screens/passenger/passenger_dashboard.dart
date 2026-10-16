@@ -32,6 +32,7 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
         children: [
           _buildRideFlowTab(),
           PassengerHistoryScreen(
+            isActive: _currentTabIndex == 1,
             onBack: () => setState(() => _currentTabIndex = 0),
           ),
           PassengerProfileScreen(

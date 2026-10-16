@@ -105,6 +105,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
         children: [
           _buildShiftDriveTab(auth, transit),
           DriverHistoryScreen(
+            isActive: _currentTabIndex == 1,
             onBack: () => setState(() => _currentTabIndex = 0),
           ),
           DriverProfileScreen(

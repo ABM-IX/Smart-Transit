@@ -17,7 +17,7 @@ BEGIN
     -- Validate or seed operating route to prevent foreign key errors from breaking auth signup
     IF v_route_id = 'taxi-dispatch' OR v_service_type = 'TAXI' THEN
         INSERT INTO public.routes (id, name, origin_name, destination_name, route_type, base_fare, is_active)
-        VALUES ('taxi-dispatch', 'Metropolitan Taxi Dispatch', 'Gaborone Metro', 'On-Demand Dispatch', 'TAXI', 15.00, true)
+        VALUES ('taxi-dispatch', 'Metropolitan Taxi Dispatch', 'Gaborone Metro', 'On-Demand Dispatch', 'TAXI', 10.00, true)
         ON CONFLICT (id) DO NOTHING;
         v_route_id := 'taxi-dispatch';
     ELSIF v_route_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.routes WHERE id = v_route_id) THEN

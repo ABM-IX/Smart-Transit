@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/route_model.dart';
 import '../../providers/transit_provider.dart';
@@ -230,8 +229,10 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
                 children: [
                   Text(
                     widget.mode == TransportMode.bus
-                        ? 'Fare varies by route'
-                        : 'P${AppConstants.standardFareBWP.toStringAsFixed(2)}',
+                        ? (route.baseFare > 0
+                              ? 'P${route.baseFare.toStringAsFixed(2)}'
+                              : 'Route fare not set')
+                        : 'P${route.baseFare.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,

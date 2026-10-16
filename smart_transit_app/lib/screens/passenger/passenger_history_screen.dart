@@ -8,8 +8,9 @@ import '../../providers/auth_provider.dart';
 
 class PassengerHistoryScreen extends StatefulWidget {
   final VoidCallback? onBack;
+  final bool isActive;
 
-  const PassengerHistoryScreen({super.key, this.onBack});
+  const PassengerHistoryScreen({super.key, this.onBack, this.isActive = true});
 
   @override
   State<PassengerHistoryScreen> createState() => _PassengerHistoryScreenState();
@@ -34,6 +35,12 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
     _loadUserTrips();
   }
 
+  @override
+  void didUpdateWidget(covariant PassengerHistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isActive && widget.isActive) _loadUserTrips();
+  }
+
   Future<void> _loadUserTrips() async {
     setState(() => _isLoading = true);
     final auth = Provider.of<AuthProvider>(context, listen: false);
@@ -44,11 +51,18 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
           .from('trips')
           .select()
           .eq('passenger_id', auth.userId)
+          .eq('status', 'COMPLETED')
           .order('created_at', ascending: false)
           .timeout(const Duration(seconds: 4));
 
       final List<Map<String, dynamic>> loaded = [];
       for (final row in response) {
+        final rawMode = (row['service_type'] as String? ?? 'COMBI').toUpperCase();
+        final mode = rawMode == 'SPECIAL' || rawMode == 'STANDARD'
+            ? 'TAXI'
+            : rawMode;
+        final origin = row['pickup_name'] ?? 'Pickup Point';
+        final destination = row['dropoff_name'] ?? 'Destination';
         DateTime? createdAt;
         if (row['created_at'] != null) {
           createdAt = DateTime.tryParse(row['created_at'].toString());
@@ -59,12 +73,10 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
 
         loaded.add({
           'id': row['id']?.toString() ?? '',
-          'mode': (row['service_type'] as String? ?? 'COMBI').toUpperCase(),
-          'routeName':
-              row['route_id'] ??
-              '${row['pickup_name'] ?? 'Origin'} → ${row['dropoff_name'] ?? 'Destination'}',
-          'origin': row['pickup_name'] ?? 'Pickup Point',
-          'destination': row['dropoff_name'] ?? 'Destination',
+          'mode': mode,
+          'routeName': '$origin to $destination',
+          'origin': origin,
+          'destination': destination,
           'fare': (row['fare'] as num?)?.toDouble() ?? _fareFallback(row),
           'date': dateStr,
           'driver': row['driver_id'] != null

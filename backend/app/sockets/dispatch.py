@@ -145,7 +145,7 @@ async def hail(sid, data):
             service_type = "COMBI"
 
     request_id = f"req-{uuid.uuid4().hex[:8]}"
-    fare_estimate = get_fare(service_type, pickup_loc, destination_loc)
+    fare_estimate = float(data.get("fareEstimate") or get_fare(service_type, pickup_loc, destination_loc))
 
     hail_payload = {
         "requestId": request_id,
@@ -193,6 +193,12 @@ async def hail(sid, data):
     await sio.emit('new-hail', hail_payload, room=f"drivers-{route_id}")
     await sio.emit('new-hail', hail_payload, room='drivers')
     await sio.emit('new-hail', hail_payload, room='dashboard')
+    await sio.emit('hail-queued', {
+        'requestId': request_id,
+        'routeId': route_id,
+        'serviceType': service_type,
+        'fareEstimate': fare_estimate,
+    }, to=sid)
 
     # Also emit directly to individual sockets of matching online drivers
     for d in active_drivers.values():

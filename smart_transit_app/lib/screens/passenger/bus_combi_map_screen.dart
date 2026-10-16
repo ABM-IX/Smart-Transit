@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/route_model.dart';
 import '../../models/driver_model.dart';
@@ -92,8 +91,7 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                 ),
                 if (widget.mode == TransportMode.combi)
                   StatusPill(
-                    label:
-                        'Fare: P${AppConstants.standardFareBWP.toStringAsFixed(2)}',
+                    label: 'Fare: P${widget.route.baseFare.toStringAsFixed(2)}',
                     color: AppTheme.primaryTeal,
                   ),
               ],
@@ -319,13 +317,16 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              if (widget.mode == TransportMode.combi) ...[
+              if (widget.mode == TransportMode.combi ||
+                  widget.mode == TransportMode.bus) ...[
                 Text(
-                  'Standard Fare:',
+                  widget.mode == TransportMode.bus ? 'Route Fare:' : 'Fare:',
                   style: TextStyle(color: AppTheme.midGrey, fontSize: 14),
                 ),
                 Text(
-                  'P${AppConstants.standardFareBWP.toStringAsFixed(2)}',
+                  widget.route.baseFare > 0
+                      ? 'P${widget.route.baseFare.toStringAsFixed(2)}'
+                      : 'Not set',
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 18,
@@ -334,7 +335,7 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                 ),
               ] else
                 Text(
-                  'Bus fares vary by route',
+                  'Bus fare varies by route',
                   style: TextStyle(color: AppTheme.midGrey, fontSize: 14),
                 ),
             ],
@@ -349,8 +350,10 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
             icon: const Icon(Icons.pan_tool_alt_outlined, size: 20),
             label: Text(
               widget.mode == TransportMode.bus
-                  ? 'Hail Approaching Bus'
-                  : 'Hail Combi (P${AppConstants.standardFareBWP.toStringAsFixed(2)})',
+                  ? widget.route.baseFare > 0
+                        ? 'Hail Bus (P${widget.route.baseFare.toStringAsFixed(2)})'
+                        : 'Hail Approaching Bus'
+                  : 'Hail Combi (P${widget.route.baseFare.toStringAsFixed(2)})',
             ),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -877,9 +880,9 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
 
           const SizedBox(height: 10),
           ElevatedButton.icon(
-            onPressed: () {
+            onPressed: () async {
               setState(() => _stopRequested = false);
-              transit.passengerEndTrip(
+              await transit.passengerEndTrip(
                 passengerId: auth.userId,
                 finalFare: widget.route.baseFare,
               );
@@ -949,8 +952,10 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
           const SizedBox(height: 4),
           Text(
             widget.mode == TransportMode.bus
-                ? 'Bus fare varies by route'
-                : 'Standard Fare: P${AppConstants.standardFareBWP.toStringAsFixed(2)}',
+                ? widget.route.baseFare > 0
+                      ? 'Route fare: P${widget.route.baseFare.toStringAsFixed(2)}'
+                      : 'Route fare not set'
+                : 'Fare: P${widget.route.baseFare.toStringAsFixed(2)}',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,

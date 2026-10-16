@@ -23,7 +23,7 @@ class RouteBase(BaseModel):
     origin_name: str
     destination_name: str
     route_type: str = "COMBI"
-    base_fare: float = 9.0
+    base_fare: float
 
 class RouteOut(RouteBase):
     model_config = ConfigDict(from_attributes=True)

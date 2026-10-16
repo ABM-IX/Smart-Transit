@@ -574,12 +574,12 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.accentGreen,
                 ),
-                onPressed: () {
+                onPressed: () async {
                   final fare =
                       _currentHail?.fareEstimate ??
                       AppConstants.taxiBaseFareBWP;
                   if (_currentHail != null) {
-                    transit.endTrip(_currentHail!, auth.userId, fare);
+                    await transit.endTrip(_currentHail!, auth.userId, fare);
                   }
                   setState(() {
                     _shiftEarnings += fare;

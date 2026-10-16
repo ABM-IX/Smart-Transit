@@ -77,6 +77,15 @@ async def init_db():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         print("[DATABASE] Local fallback database initialized successfully.")
+
+    # Remove the placeholder corridor; it was never part of the real network.
+    from app.models.transit import Route
+
+    async with AsyncSessionLocal() as session:
+        route = await session.get(Route, "gopong-habour-combi")
+        if route is not None:
+            await session.delete(route)
+            await session.commit()
     
 
 

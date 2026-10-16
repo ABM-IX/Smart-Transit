@@ -815,10 +815,10 @@ function RoutesView({ routes, stops, routesState, stopsState, selectedMode }) {
               <span>{route.origin_name} to {route.destination_name}</span>
               <small>{(() => {
                 const type = String(route.route_type || '').toUpperCase();
-                if (type === 'BUS') return 'Bus route - Fare varies by route';
+                if (type === 'BUS') return Number(route.base_fare) > 0 ? `Bus route - P${Number(route.base_fare).toFixed(2)}` : 'Bus route - Set route fare';
                 if (type === 'TAXI') return 'Taxi route - P10.00 base fare';
-                if (type === 'COMBI') return 'Combi route - P9.00 fare';
-                return `${route.route_type || 'Unknown'} route - P${Number(route.base_fare || 0).toFixed(2)} base fare`;
+                if (type === 'COMBI') return Number(route.base_fare) > 0 ? `Combi route - P${Number(route.base_fare).toFixed(2)}` : 'Combi route - Fare not set';
+                return Number(route.base_fare) > 0 ? `${route.route_type || 'Unknown'} route - P${Number(route.base_fare).toFixed(2)} base fare` : `${route.route_type || 'Unknown'} route - Fare not set`;
               })()}</small>
             </article>
           ))}

@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS public.routes (
     origin_name VARCHAR(64) NOT NULL,
     destination_name VARCHAR(64) NOT NULL,
     route_type VARCHAR(20) NOT NULL DEFAULT 'COMBI', -- COMBI, TAXI, BUS
-    base_fare NUMERIC(10, 2) NOT NULL DEFAULT 9.00,
+    base_fare NUMERIC(10, 2) NOT NULL,
     waypoints JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
@@ -75,12 +75,19 @@ CREATE TABLE IF NOT EXISTS public.driver_profiles (
 
 -- 8. Trips Table (Completed Journey Records & Analytics)
 CREATE TABLE IF NOT EXISTS public.trips (
-    id VARCHAR(64) PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    request_id TEXT UNIQUE,
+    passenger_id TEXT NOT NULL,
     driver_id VARCHAR(64) NOT NULL REFERENCES public.users(id),
     route_id VARCHAR(64) REFERENCES public.routes(id) ON DELETE SET NULL,
     vehicle_id VARCHAR(64) REFERENCES public.vehicles(id) ON DELETE SET NULL,
     service_type VARCHAR(20) NOT NULL DEFAULT 'COMBI', -- COMBI, TAXI, BUS
     passenger_count INTEGER NOT NULL DEFAULT 1,
+    fare NUMERIC(10, 2) NOT NULL DEFAULT 9.00,
+    pickup_name TEXT,
+    dropoff_name TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    completed_at TIMESTAMPTZ,
     revenue NUMERIC(10, 2) NOT NULL DEFAULT 9.00,
     distance_meters FLOAT NOT NULL DEFAULT 0.0,
     duration_seconds INTEGER NOT NULL DEFAULT 0,
@@ -172,5 +179,5 @@ CREATE POLICY "Allow insert/update for reviews" ON public.reviews FOR ALL USING 
 
 -- Default Metropolitan Taxi Dispatch corridor
 INSERT INTO public.routes (id, name, origin_name, destination_name, route_type, base_fare)
-VALUES ('taxi-dispatch', 'Metropolitan Taxi Dispatch', 'Gaborone Metro', 'On-Demand Dispatch', 'TAXI', 15.00)
+VALUES ('taxi-dispatch', 'Metropolitan Taxi Dispatch', 'Gaborone Metro', 'On-Demand Dispatch', 'TAXI', 10.00)
 ON CONFLICT (id) DO NOTHING;

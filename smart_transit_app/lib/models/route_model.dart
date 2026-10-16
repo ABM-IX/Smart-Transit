@@ -55,7 +55,8 @@ class TransitRoute {
           json['destination_name']?.toString() ?? json['end']?.toString() ?? '',
       routeType: routeType,
       baseFare: switch (routeType) {
-        'COMBI' => AppConstants.standardFareBWP,
+        'COMBI' =>
+          baseFare is num ? baseFare.toDouble() : AppConstants.standardFareBWP,
         'TAXI' => AppConstants.taxiBaseFareBWP,
         'BUS' => baseFare is num ? baseFare.toDouble() : 0.0,
         _ =>

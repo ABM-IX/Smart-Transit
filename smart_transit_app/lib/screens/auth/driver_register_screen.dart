@@ -542,7 +542,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
-                                    '${route.originName} → ${route.destinationName} (${_selectedMode == 'BUS' ? 'Fare varies by route' : 'P${(_selectedMode == 'TAXI' ? AppConstants.taxiBaseFareBWP : AppConstants.standardFareBWP).toStringAsFixed(2)}'})',
+                                    '${route.originName} → ${route.destinationName} (${route.baseFare > 0 ? 'P${route.baseFare.toStringAsFixed(2)}' : 'Set route fare'})',
                                     style: TextStyle(
                                       fontSize: 11,
                                       color: AppTheme.midGrey,
@@ -669,7 +669,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                                   ? 'Taxi Base Fare (BWP)'
                                   : 'Standard Fare (BWP)',
                               hint: _selectedMode == 'BUS'
-                                  ? 'Enter 9 or 15 for this route'
+                                  ? 'Enter the fare for this route'
                                   : (_selectedMode == 'TAXI'
                                             ? AppConstants.taxiBaseFareBWP
                                             : AppConstants.standardFareBWP)
