@@ -160,7 +160,7 @@ A recurring evaluation question raised during academic reviews concerns the arch
   2. **On-Demand First/Last-Mile Taxi Hailing:** Enables commuters in unserviced peripheral suburbs to hail localized special cabs with immediate visual confirmation and live driver approach tracking.
   3. **Coordinated Multi-Modal Journey Planning:** Solves fragmented intercity journeys by computing synchronized multi-leg itineraries combining doorstep taxis, urban combis, and long-distance intercity buses with built-in transfer safety buffers.
   4. **Offline Route & Stop Discovery:** Delivers an offline-cached directory of official DRTS transit stops, walking distances, and corridor maps for zero-data navigation during cellular blackouts.
-  5. **Transparent Upfront Tariff Disclosure:** Enforces statutory fixed combi fares (BWP 8.00) and calculates transparent distance-time charter taxi rates prior to ride commitment.
+  5. **Transparent Upfront Tariff Disclosure:** Enforces statutory fixed combi fares (BWP 9.00) and calculates transparent distance-time charter taxi rates prior to ride commitment.
   6. **Driver Accountability & Service Rating:** Prompts commuters upon trip completion to submit 1-to-5 star ratings and feedback, enforcing service accountability.
 
 ---
@@ -196,7 +196,7 @@ To ensure complete functional coverage across all system layers, the functional 
 - **FR-PAS-04 (Driver En-Route Tracking & Status Updates):** The mobile application shall display the assigned taxi driver's live GPS movement, vehicle plate number, estimated time of arrival, and current dispatch status (`ACCEPTED`, `ARRIVED`, `ON_BOARD`).
 - **FR-PAS-05 (Multi-Modal Backward-Scheduled Journey Planner):** The mobile application shall compute multi-leg transit itineraries combining taxi, combi, and intercity coach modes based on passenger target arrival deadlines, incorporating a 15-minute coach transfer buffer.
 - **FR-PAS-06 (Offline DRTS Route & Stop Directory):** The mobile application shall store verified stop coordinates locally in SQLite, enabling commuters to search routes and locate the nearest boarding bay without active cellular internet connectivity.
-- **FR-PAS-07 (Transparent Upfront Tariff Assurance):** The mobile application shall display statutory fixed combi fares (BWP 8.00) and computed distance-time taxi tariffs prior to trip confirmation.
+- **FR-PAS-07 (Transparent Upfront Tariff Assurance):** The mobile application shall display statutory fixed combi fares (BWP 9.00) and computed distance-time taxi tariffs prior to trip confirmation.
 - **FR-PAS-08 (Post-Trip Review & 5-Star Driver Rating):** The mobile application shall prompt commuters upon trip completion to rate driver performance from 1 to 5 stars and submit optional textual feedback.
 
 #### 2.4.4 Subsystem 4: Central Real-Time Telematics & Dispatch Broker (FR-SYS)
@@ -329,7 +329,7 @@ Within the domestic Botswana market, the **Vaya** mobile application (developed 
 
 #### 3.2.2 Private Ride-Hailing Dynamics: inDrive and Yango in Botswana
 Commercial Transportation Network Companies (TNCs) operating in Gaborone—primarily **inDrive** (peer-to-peer fare negotiation) and **Yango** (algorithmic pricing)—operate in a parallel economic tier:
-- **Socioeconomic Exclusion:** Typical fares range between **BWP 35.00 and BWP 120.00**, serving exclusively the affluent 10–15% of urban travelers while completely excluding the 85% mass-transit population reliant on statutory **BWP 8.00** combi transit.
+- **Socioeconomic Exclusion:** Typical fares range between **BWP 35.00 and BWP 120.00**, serving exclusively the affluent 10–15% of urban travelers while completely excluding the 85% mass-transit population reliant on statutory **BWP 9.00** combi transit.
 - **Absence of Shared Corridor Coordination:** TNC algorithms are optimized exclusively for isolated, point-to-point private vehicle dispatch. They provide no mechanisms for arterial paratransit coordination, route adherence auditing, or public fleet headway optimization.
 
 ### 3.3 Identified Gaps & Proposed System Contribution
@@ -540,8 +540,8 @@ F_{\text{taxi\_standard}}, & \text{if } M = \text{TAXI\_STANDARD} \\
 \end{cases} \tag{Eq. 19}$$
 
 Where parameter definitions configured in `config.py` specify:
-- $F_{\text{combi\_gazetted}} = \text{BWP } 8.00$
-- $F_{\text{taxi\_standard}} = \text{BWP } 8.00$
+- $F_{\text{combi\_gazetted}} = \text{BWP } 9.00$
+- $F_{\text{taxi\_standard}} = \text{BWP } 10.00$
 - $B_{\text{spec}} = \text{BWP } 40.00$ (Base flag-drop fee for special charter taxi)
 - $r_{\text{km}} = \text{BWP } 6.00\text{ per kilometer}$
 - $r_{\text{min}} = \text{BWP } 1.00\text{ per minute}$
@@ -745,7 +745,7 @@ Table 6 outlines the operational and technical risks identified, alongside proac
 | **RSK-02** | Cellular data dropped connections during transit | High | Medium | Dual-layer persistence: immediate in-memory broadcast backed by async SQLite/PostgreSQL sync. |
 | **RSK-03** | Rapid battery depletion on driver smartphones | Medium | High | Event-throttled WebSocket emissions; selective screen wake locks during active navigation only. |
 | **RSK-04** | Low paratransit driver digital literacy and adoption | High | Medium | Automated co-movement geofencing eliminates manual boarding buttons; UI utilizes color-coded icons. |
-| **RSK-05** | Resistance from taxi associations over meter pricing | High | Low | Regulated DRTS fixed fares ($8.00\text{ BWP}$) preserved for combis; charter formula transparently audited. |
+| **RSK-05** | Resistance from taxi associations over meter pricing | High | Low | Regulated DRTS fixed fares ($9.00\text{ BWP}$) preserved for combis; charter formula transparently audited. |
 
 ---
 
@@ -787,7 +787,7 @@ In accordance with the institutional reporting guidelines (Slide 11 template), T
 | **RQ04** | **Congestion-Resilient ETA Prediction:** Commuters require accurate, non-divergent arrival times for approaching minibuses even during peak traffic stops. | Calculates remaining arrival time $\tau = d / v_{\text{eff}}$, enforcing a speed regularizer ($v_{\text{eff}} \ge 18\text{ km/h}$) during stationary passenger dwell times or red traffic signals to prevent asymptotic calculation divergence. | • Arrival updates recomputed every $5\text{ seconds}$;<br>• WebSocket broadcast to waiting passengers;<br>• Non-negative integer output format in seconds;<br>• Easy to read countdown display on mobile UI. |
 | **RQ05** | **Autonomous Co-Movement Geofencing:** Commuters and drivers require hands-free, automated trip start and completion detection without manual ticketing. | Continuously evaluates spatial proximity and velocity vector correlation between passenger and driver devices. Triggers `ON_BOARD` state at $\le 20\text{m}$ ($>2\text{ m/s}$), and triggers `COMPLETED` at $>60\text{m}$ ($>3\text{ m/s}$). | • Hands-free execution eliminating driver distraction;<br>• Dual-condition gating preventing false positives;<br>• Instant event emission to administrative monitor;<br>• Commuter manual override available if required. |
 | **RQ06** | **Multi-Modal Journey Orchestration:** Intercity travelers require coordinated itineraries spanning cabs, combis, and long-haul buses with safe connection buffers. | Constructs a directed multi-modal network graph $G=(V,E)$ in NetworkX. Executes backward scheduling from passenger target arrival time, allocating a 15-min coach buffer, combi feeder leg, and taxi doorstep pickup. | • Path synthesis latency strictly $< 350\text{ ms}$;<br>• Aggregated travel duration, distance, and fare payload;<br>• Clear turn-by-turn multi-modal itinerary visualization;<br>• Graceful fallback to localized combi search. |
-| **RQ07** | **Dual-Rate Paratransit Tariff Engine:** Commuters require guaranteed statutory combi pricing and transparent metered special taxi pricing before trip initiation. | Implements a piecewise tariff calculator: returns gazetted fixed fare ($\text{BWP } 8.00$) for combis, and computes non-linear dual-rate tariff $F = \max(B, B + d \cdot r_d + t \cdot r_t)$ for charter taxis based on estimated distance and duration. | • Transparent upfront cost disclosure;<br>• Standardized currency formatting (BWP);<br>• Protection against arbitrary driver overcharging;<br>• Historical fare transaction audit trail. |
+| **RQ07** | **Dual-Rate Paratransit Tariff Engine:** Commuters require guaranteed statutory combi pricing and transparent metered special taxi pricing before trip initiation. | Implements a piecewise tariff calculator: returns gazetted fixed fare ($\text{BWP } 9.00$) for combis, and computes non-linear dual-rate tariff $F = \max(B, B + d \cdot r_d + t \cdot r_t)$ for charter taxis based on estimated distance and duration. | • Transparent upfront cost disclosure;<br>• Standardized currency formatting (BWP);<br>• Protection against arbitrary driver overcharging;<br>• Historical fare transaction audit trail. |
 | **RQ08** | **Dual-Tier State & Relational Storage:** The system requires low-latency real-time telemetry distribution while ensuring transactional durability. | Maintains live ephemeral operational tables in server memory (`active_drivers`, `active_passengers`) for sub-second socket emission, while asynchronously persisting trips and profiles to PostgreSQL via Async SQLAlchemy. | • Support for $> 1,000$ concurrent WebSocket sessions;<br>• Non-blocking asynchronous database write pool;<br>• Resilient connection retry with exponential backoff;<br>• Relational integrity with foreign key constraints. |
 | **RQ09** | **Administrative Fleet Command Dashboard:** Regulators and dispatchers require real-time geospatial observability of public transit corridors and vehicle operations. | Renders interactive Leaflet/OpenStreetMap geospatial views displaying active vehicle markers, occupancy counts, current speed, route lines, passenger hail clusters, and real-time corridor headway health. | • Smooth map rendering at $\ge 30\text{ FPS}$ on desktop browsers;<br>• Role-based access control (Admin vs Viewer);<br>• Import and export into CSV / JSON formats;<br>• Emergency corridor broadcast facility. |
 | **RQ10** | **Driver Shift & Route Assignment:** Drivers require digital shift initiation, route selection, and status toggling (`ONLINE` / `OFFLINE`). | Ingests driver credentials, vehicle license plate, service mode (Combi/Taxi/Bus), and assigned route. Enrolls the driver socket into appropriate regional and corridor broadcasting rooms. | • Driver authentication via encrypted tokens;<br>• Immediate fleet update emission to dashboard upon shift toggle;<br>• Zero battery draw when status is set to `OFFLINE`;<br>• Simplified 1-tap shift toggle interface. |

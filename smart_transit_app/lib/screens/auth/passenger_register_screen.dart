@@ -106,14 +106,14 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
               children: [
                 Text(
                   'Welcome to SmartTransit, ${_nameController.text.trim()}!',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                     color: AppTheme.black,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Your commuter profile has been successfully registered. You can now sign in to track live combis, buses, and hail cabs across Botswana.',
                   style: TextStyle(
                     fontSize: 13,
@@ -129,7 +129,7 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: AppTheme.lightGrey),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Icon(
                         Icons.info_outline,
@@ -187,7 +187,7 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.black),
+          icon: Icon(Icons.arrow_back, color: AppTheme.black),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -221,7 +221,7 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                const Text(
+                Text(
                   'Commuter Profile',
                   style: TextStyle(
                     fontSize: 28,
@@ -231,7 +231,7 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Create your commuter account for real-time travel and cab booking across Botswana.',
                   style: TextStyle(
                     fontSize: 14,
@@ -365,7 +365,7 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _handleRegister,
                     child: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
@@ -389,7 +389,7 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Already have an account? ',
                       style: TextStyle(color: AppTheme.midGrey),
                     ),
@@ -402,7 +402,7 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
                           ),
                         );
                       },
-                      child: const Text(
+                      child: Text(
                         'Sign in',
                         style: TextStyle(
                           color: AppTheme.black,
@@ -430,22 +430,22 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      hintStyle: const TextStyle(fontSize: 13, color: AppTheme.midGrey),
+      hintStyle: TextStyle(fontSize: 13, color: AppTheme.midGrey),
       prefixIcon: Icon(icon, color: AppTheme.black),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: AppTheme.offWhite,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppTheme.lightGrey),
+        borderSide: BorderSide(color: AppTheme.lightGrey),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppTheme.lightGrey),
+        borderSide: BorderSide(color: AppTheme.lightGrey),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppTheme.black, width: 1.5),
+        borderSide: BorderSide(color: AppTheme.black, width: 1.5),
       ),
     );
   }

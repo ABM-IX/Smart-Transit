@@ -81,13 +81,16 @@ class SpacingAdvisoryWidget extends StatelessWidget {
                     ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.surfaceGrey,
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(color: AppTheme.borderGrey),
                       ),
-                      child: const Text(
+                      child: Text(
                         'ANTI-BUNCHING',
                         style: TextStyle(
                           color: AppTheme.secondaryText,
@@ -101,7 +104,7 @@ class SpacingAdvisoryWidget extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   instructionText,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.secondaryText,
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
@@ -110,7 +113,7 @@ class SpacingAdvisoryWidget extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   'Ahead: ${advisory!.aheadDisplay} • Behind: ${advisory!.behindDisplay}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.brandNavy,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,

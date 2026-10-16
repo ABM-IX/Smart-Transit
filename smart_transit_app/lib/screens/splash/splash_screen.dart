@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rive/rive.dart';
-import '../../core/theme.dart';
 import '../../models/user_role.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/transit_provider.dart';
@@ -27,13 +26,17 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  static const String _assetPath = 'assets/animations/splash.riv';
+  static const String _lightAssetPath = 'assets/animations/splash.riv';
+  static const String _darkAssetPath = 'assets/animations/splash_dark.riv';
   static const String _stateMachineName = 'State Machine 1';
   static const String _inputAppReady = 'appReady';
-  static const Duration _minRevealDuration = Duration(milliseconds: 1100);
+  static const Duration _minRevealDuration = Duration(milliseconds: 2600);
   static const Duration _maxInitTimeout = Duration(milliseconds: 4000);
 
-  late final FileLoader _fileLoader;
+  late FileLoader _fileLoader;
+  final List<FileLoader> _fileLoaders = [];
+  Brightness? _riveBrightness;
+  bool _reduceMotion = false;
   BooleanInput? _appReadyInput;
 
   bool _isInitFinished = false;
@@ -45,23 +48,43 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _fileLoader = FileLoader.fromAsset(
-      _assetPath,
-      riveFactory: Factory.flutter,
-    );
+    _reduceMotion = WidgetsBinding
+        .instance
+        .platformDispatcher
+        .accessibilityFeatures
+        .disableAnimations;
     _startTimersAndInit();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final brightness = Theme.of(context).brightness;
+    if (_riveBrightness != brightness) {
+      _riveBrightness = brightness;
+      _appReadyInput = null;
+      _fileLoader = FileLoader.fromAsset(
+        brightness == Brightness.dark ? _darkAssetPath : _lightAssetPath,
+        riveFactory: Factory.flutter,
+      );
+      _fileLoaders.add(_fileLoader);
+    }
   }
 
   void _startTimersAndInit() {
     // 1. Enforce that reveal states 1-4 complete at least once (~1.1s)
-    _minDurationTimer = Timer(_minRevealDuration, () {
-      if (mounted) {
-        setState(() {
-          _isMinDurationFinished = true;
-        });
-        _checkAndTransition();
-      }
-    });
+    _minDurationTimer = Timer(
+      _reduceMotion ? Duration.zero : _minRevealDuration,
+      () {
+        if (mounted) {
+          setState(() {
+            _isMinDurationFinished = true;
+          });
+          _checkAndTransition();
+        }
+      },
+    );
 
     // 2. Safety timeout: never leave user hanging indefinitely on poor network
     _safetyTimeoutTimer = Timer(_maxInitTimeout, () {
@@ -79,18 +102,11 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _initializeApp() async {
     try {
       final authProvider = context.read<AuthProvider>();
-      // Give async providers a brief microtask cycle to resolve local cache / session
-      await Future<void>.delayed(const Duration(milliseconds: 350));
-      if (!mounted) return;
-
-      // Check auth status
-      if (authProvider.isLoading) {
-        int attempts = 0;
-        while (authProvider.isLoading && attempts < 15 && mounted) {
-          await Future<void>.delayed(const Duration(milliseconds: 100));
-          attempts++;
-        }
+      // Let the logo animate while cached session data loads in the background.
+      while (!authProvider.isSessionReady && mounted) {
+        await Future<void>.delayed(const Duration(milliseconds: 40));
       }
+      if (!mounted) return;
     } catch (_) {
       // Continue gracefully on network or auth errors
     } finally {
@@ -115,7 +131,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void _checkAndTransition() {
     // Only transition when BOTH the minimum reveal animation has finished AND app init is done
     if (_isInitFinished && _isMinDurationFinished && !_hasNavigated) {
-      if (_appReadyInput != null) {
+      if (_appReadyInput != null && !_reduceMotion) {
         _appReadyInput!.value = true;
         // Allow brief exit transition mix time before navigating
         Future<void>.delayed(const Duration(milliseconds: 150), () {
@@ -136,6 +152,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
     _minDurationTimer?.cancel();
     _safetyTimeoutTimer?.cancel();
+    for (final loader in _fileLoaders) {
+      loader.dispose();
+    }
 
     final authProvider = context.read<AuthProvider>();
     final Widget destination;
@@ -147,7 +166,9 @@ class _SplashScreenState extends State<SplashScreen> {
         transit.connectSocket(
           role: 'drivers',
           userId: authProvider.userId,
-          routeId: authProvider.role == UserRole.driverTaxi ? 'taxi-dispatch' : authProvider.assignedRouteId,
+          routeId: authProvider.role == UserRole.driverTaxi
+              ? 'taxi-service'
+              : authProvider.assignedRouteId,
         );
       } else {
         transit.connectSocket(role: 'passengers', userId: authProvider.userId);
@@ -187,15 +208,13 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 460,
-              maxHeight: 560,
-            ),
+            constraints: const BoxConstraints(maxWidth: 460, maxHeight: 560),
             child: RiveWidgetBuilder(
+              key: ValueKey(_riveBrightness),
               fileLoader: _fileLoader,
               stateMachineSelector: const StateMachineNamed(_stateMachineName),
               onLoaded: _onRiveLoaded,
@@ -206,9 +225,11 @@ class _SplashScreenState extends State<SplashScreen> {
                     fit: Fit.contain,
                   );
                 }
-                return const Center(
+                return Center(
                   child: CircularProgressIndicator.adaptive(
-                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                 );
               },

@@ -10,7 +10,7 @@ class Trip(Base):
     vehicle_id = Column(String, ForeignKey("vehicles.id"), nullable=True)
     service_type = Column(String, default="COMBI") # COMBI, TAXI, BUS
     passenger_count = Column(Integer, default=1)
-    revenue = Column(Float, default=8.0)
+    revenue = Column(Float, default=9.0)
     distance_meters = Column(Float, default=0.0)
     duration_seconds = Column(Integer, default=0)
     start_lat = Column(Float, nullable=True)
@@ -32,7 +32,7 @@ class TaxiBooking(Base):
     dropoff_lat = Column(Float, nullable=True)
     dropoff_lng = Column(Float, nullable=True)
     service_type = Column(String, default="STANDARD") # STANDARD, SPECIAL
-    estimated_fare = Column(Float, default=8.0)
+    estimated_fare = Column(Float, default=10.0)
     final_fare = Column(Float, nullable=True)
     status = Column(String, default="PENDING") # PENDING, ACCEPTED, ON_TRIP, COMPLETED, CANCELLED
     created_at = Column(DateTime, default=func.now())

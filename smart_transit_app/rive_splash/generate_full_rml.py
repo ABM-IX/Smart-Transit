@@ -1,9 +1,12 @@
 import math
+from pathlib import Path
 import subprocess
 import numpy as np
 from PIL import Image
 
-im = Image.open(r'c:\Users\araba\Desktop\SmartTransit\smart_transit_app\rive_splash\logo_true_alpha.png')
+PROJECT_DIR = Path(__file__).resolve().parent
+APP_DIR = PROJECT_DIR.parent
+im = Image.open(PROJECT_DIR / 'logo_true_alpha.png')
 arr = np.array(im)
 
 SCALE = 0.38
@@ -96,7 +99,7 @@ navy_rml_block = '\n'.join(navy_shapes_rml)
 # Landmarks
 node3_x, node3_y = tx(516.5), ty(468.5)
 node2_x, node2_y = tx(544.5), ty(315.0)
-node1_x, node1_y = tx(446.5), ty(75.0)
+node1_x, node1_y = tx(446.5), ty(114.0)
 pin_head_x, pin_head_y = tx(627.5), ty(52.0)
 
 # Speed lines
@@ -111,7 +114,7 @@ spd3_x, spd3_y = tx(197.5), ty(371.5)
 # 4. Through Node 2: (node2_x, node2_y)
 # 5. Diagonal spine: (tx(245), ty(190))
 # 6. Top left turn: (tx(190), ty(145))
-# 7. Through Node 1: (node1_x, node1_y)
+# 7. Through Node 1 on the upper S turn: (node1_x, node1_y)
 # 8. Connect to Pin: (pin_head_x - 4, pin_head_y + 12)
 
 p_start_x, p_start_y = tx(200), ty(516)
@@ -459,11 +462,15 @@ rml_content = f'''<Rive version="1" kind="fragment">
     </Artboard>
 </Rive>'''
 
-with open(r'c:\Users\araba\Desktop\SmartTransit\smart_transit_app\rive_splash\scene.rml', 'w', encoding='utf-8') as f:
+with open(PROJECT_DIR / 'scene.rml', 'w', encoding='utf-8') as f:
     f.write(rml_content)
 
 print('Wrote updated scene.rml with aligned landmarks')
 
-res = subprocess.run([r'C:\Users\araba\.rive\bin\rive.exe', r'c:\Users\araba\Desktop\SmartTransit\smart_transit_app\rive_splash', '--once'], capture_output=True, text=True)
+subprocess.run(['node', str(PROJECT_DIR / 'apply_storyboard.js')], check=True)
+rive = Path.home() / '.rive' / 'bin' / 'rive.exe'
+res = subprocess.run([str(rive), str(PROJECT_DIR), '--once'], capture_output=True, text=True)
 print('STDERR:', res.stderr)
 print('Exit Code:', res.returncode)
+if res.returncode:
+    raise SystemExit(res.returncode)

@@ -15,31 +15,40 @@ class AuthProvider extends ChangeNotifier {
 
   UserRole _role = UserRole.passenger;
   UserProfile? _profile;
-  final String _localUserId = 'user-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+  final String _localUserId =
+      'user-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
   String _userName = 'Commuter';
   String _serviceType = 'COMBI';
   String _assignedRouteId = '';
   String _vehiclePlate = '';
   bool _isLoading = false;
+  bool _isSessionReady = false;
 
   AuthProvider() {
     _initAuth();
   }
 
   bool get isLoading => _isLoading;
+  bool get isSessionReady => _isSessionReady;
   UserProfile? get profile => _profile;
-  bool get isAuthenticated => _profile != null || _authService.currentUser != null;
+  bool get isAuthenticated =>
+      _profile != null || _authService.currentUser != null;
 
   UserRole get role => _role;
-  String get userId => _profile?.id.isNotEmpty == true 
-      ? _profile!.id 
+  String get userId => _profile?.id.isNotEmpty == true
+      ? _profile!.id
       : (_authService.currentUser?.id ?? _localUserId);
-  String get userName => _profile?.fullName.isNotEmpty == true ? _profile!.fullName : _userName;
-  String get userEmail => _profile?.email.isNotEmpty == true 
-      ? _profile!.email 
+  String get userName =>
+      _profile?.fullName.isNotEmpty == true ? _profile!.fullName : _userName;
+  String get userEmail => _profile?.email.isNotEmpty == true
+      ? _profile!.email
       : (_authService.currentUser?.email ?? 'commuter@smarttransit.bw');
-  String get phoneNumber => _profile?.phoneNumber.isNotEmpty == true ? _profile!.phoneNumber : '+267 71 234 567';
-  String get serviceType => _profile?.serviceType.isNotEmpty == true ? _profile!.serviceType : _serviceType;
+  String get phoneNumber => _profile?.phoneNumber.isNotEmpty == true
+      ? _profile!.phoneNumber
+      : '+267 71 234 567';
+  String get serviceType => _profile?.serviceType.isNotEmpty == true
+      ? _profile!.serviceType
+      : _serviceType;
   String get assignedRouteId => _profile?.assignedRouteId ?? _assignedRouteId;
   String get vehiclePlate => _profile?.vehiclePlate ?? _vehiclePlate;
   bool get isDriver => _role != UserRole.passenger;
@@ -64,7 +73,12 @@ class AuthProvider extends ChangeNotifier {
         _role = UserRole.fromDatabase(p.role, p.serviceType);
         notifyListeners();
       }
-    } catch (_) {}
+    } catch (_) {
+      // Continue into the signed-out flow if local session data is unavailable.
+    } finally {
+      _isSessionReady = true;
+      notifyListeners();
+    }
   }
 
   Future<void> _saveSession(UserProfile p) async {
@@ -84,7 +98,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void _initAuth() {
-    loadSavedSession();
+    unawaited(loadSavedSession());
 
     final current = _authService.currentUser;
     if (current != null) {
@@ -134,7 +148,8 @@ class AuthProvider extends ChangeNotifier {
   void setRole(UserRole newRole) {
     _role = newRole;
     if (_role != UserRole.passenger) {
-      _userName = '${newRole.displayName} ${userId.substring(userId.length > 4 ? userId.length - 4 : 0)}';
+      _userName =
+          '${newRole.displayName} ${userId.substring(userId.length > 4 ? userId.length - 4 : 0)}';
       _serviceType = newRole.serviceType;
     } else {
       _userName = 'Commuter';

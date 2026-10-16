@@ -9,7 +9,7 @@
 ## 1. Executive Summary & Market Landscape
 
 In Botswana's urban mobility landscape—especially within Greater Gaborone—over **85% of motorized daily trips** are carried out by informal paratransit:
-1. **Combis (14–16 Seater Minibuses):** Licensed by the Department of Road Transport and Safety (DRTS) on arterial routes (e.g., Broadhurst, Mogoditshane, Tlokweng, G-West), charging a statutory gazetted fare of **BWP 8.00**.
+1. **Combis (14–16 Seater Minibuses):** Licensed by the Department of Road Transport and Safety (DRTS) on arterial routes (e.g., Broadhurst, Mogoditshane, Tlokweng, G-West), charging a statutory gazetted fare of **BWP 9.00**.
 2. **Special Cabs (Sedans / Blue-Plate Taxis):** Providing first/last-mile point-to-point charter services, predominantly negotiated ad-hoc (typically BWP 30.00 – 60.00).
 3. **Intercity Express Coaches:** Long-distance buses operating out of Gaborone Central Bus Rank to hubs like Lobatse, Palapye, Francistown, and Maun.
 
@@ -59,7 +59,7 @@ Despite several attempts to digitize this sector, the market remains characteriz
 - **Target Market:** Affluent private commuters, night-time travelers, and corporate workers.
 - **Why They Do Not Solve Gaborone's Transit Crisis:**
   1. **Completely Exclude Mass Transit:** Neither app supports combis or shared public transit. They operate strictly with private sedan vehicles.
-  2. **Prohibitive Pricing:** Fares range from **BWP 35.00 to BWP 120.00+** per trip. Everyday Batswana commuters paying **BWP 8.00** cannot use inDrive or Yango for daily commuting to work or school.
+  2. **Prohibitive Pricing:** Fares range from **BWP 35.00 to BWP 120.00+** per trip. Everyday Batswana commuters paying **BWP 9.00** cannot use inDrive or Yango for daily commuting to work or school.
   3. **Zero Headway Regulation:** Point-to-point dispatch algorithms have no concept of shared corridor spacing or public transport schedules.
   4. **High Commission Extraction:** International TNCs extract 10% to 25% of driver revenues out of the local economy.
 
@@ -96,7 +96,7 @@ This matrix provides a comprehensive, rigorous academic and operational comparis
 | **5. Multi-Modal Graph Routing** | ❌ Commuter plans mentally | ❌ None | ❌ Single-mode only | **✅ Backward-Scheduled Graph Routing (NetworkX)** |
 | **6. Boarding State Transition** | ❌ Manual cash exchange | ❌ Driver taps button | ❌ Claims manual seat counts | **✅ Autonomous Co-Movement Proximity Geofencing** |
 | **7. Regulatory Oversight Plane** | ❌ Roadside traffic police | ❌ Private proprietary silos | ❌ No web dashboard | **✅ Desktop Web Dashboard for DRTS & Associations** |
-| **8. Tariff Transparency** | ⚠️ Opaque taxi pricing | ⚠️ Dynamic surge / bidding | ⚠️ Cashless payment focus | **✅ Enforces Gazetted P8.00 Combi + Metered Cabs** |
+| **8. Tariff Transparency** | ⚠️ Opaque taxi pricing | ⚠️ Dynamic surge / bidding | ⚠️ Cashless payment focus | **✅ Enforces Gazetted P9.00 Combi + Metered Cabs** |
 | **9. ETA Stability & Resilience** | ❌ Guesswork | ⚠️ Stalls in heavy traffic | ⚠️ Diverges when stopped ($v\to 0$) | **✅ Speed-Floored ETA Regularizer ($v_{\text{floor}} = 18\text{ km/h}$)** |
 | **10. Offline Resilience** | ✅ Fully offline (Physical) | ❌ Fails without data | ❌ Fails without data | **✅ Offline SQLite Stop Catalog + Reconnection Backoff** |
 

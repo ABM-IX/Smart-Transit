@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/route_model.dart';
 import '../../models/user_role.dart';
@@ -38,7 +39,9 @@ class _DriverDashboardState extends State<DriverDashboard> {
 
   TransitRoute _resolveDriverRoute(AuthProvider auth, TransitProvider transit) {
     if (auth.assignedRouteId.isNotEmpty) {
-      final match = transit.routes.where((r) => r.id == auth.assignedRouteId).toList();
+      final match = transit.routes
+          .where((r) => r.id == auth.assignedRouteId)
+          .toList();
       if (match.isNotEmpty) return match.first;
       if (_customRoute != null && _customRoute!.id == auth.assignedRouteId) {
         return _customRoute!;
@@ -60,14 +63,20 @@ class _DriverDashboardState extends State<DriverDashboard> {
         originName: 'Terminal A',
         destinationName: 'Terminal B',
         routeType: widget.initialRole == UserRole.driverBus ? 'BUS' : 'COMBI',
-        baseFare: widget.initialRole == UserRole.driverBus ? 35.0 : 8.0,
+        baseFare: widget.initialRole == UserRole.driverBus
+            ? 0.0
+            : AppConstants.standardFareBWP,
       );
     }
 
     if (transit.routes.isNotEmpty) {
-      final typeMatch = transit.routes.where(
-        (r) => r.routeType.toUpperCase() == (widget.initialRole == UserRole.driverBus ? 'BUS' : 'COMBI'),
-      ).toList();
+      final typeMatch = transit.routes
+          .where(
+            (r) =>
+                r.routeType.toUpperCase() ==
+                (widget.initialRole == UserRole.driverBus ? 'BUS' : 'COMBI'),
+          )
+          .toList();
       if (typeMatch.isNotEmpty) return typeMatch.first;
       return transit.routes.first;
     }
@@ -78,7 +87,9 @@ class _DriverDashboardState extends State<DriverDashboard> {
       originName: 'Terminal A',
       destinationName: 'Terminal B',
       routeType: widget.initialRole == UserRole.driverBus ? 'BUS' : 'COMBI',
-      baseFare: 8.0,
+      baseFare: widget.initialRole == UserRole.driverBus
+          ? 0.0
+          : AppConstants.standardFareBWP,
     );
   }
 

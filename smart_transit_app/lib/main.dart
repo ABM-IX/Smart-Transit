@@ -5,6 +5,7 @@ import 'core/constants.dart';
 import 'core/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/transit_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/splash/splash_screen.dart';
 
 void main() async {
@@ -15,12 +16,14 @@ void main() async {
   );
 
   final authProvider = AuthProvider();
-  await authProvider.loadSavedSession();
+  final themeProvider = AppThemeProvider();
+  await themeProvider.loadPreference();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: authProvider),
+        ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider(create: (_) => TransitProvider()),
       ],
       child: const SmartTransitApp(),
@@ -33,11 +36,15 @@ class SmartTransitApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'SmartTransit',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: const SplashScreen(),
+    return Consumer<AppThemeProvider>(
+      builder: (context, appTheme, _) => MaterialApp(
+        title: 'SmartTransit',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: appTheme.themeMode,
+        home: const SplashScreen(),
+      ),
     );
   }
 }

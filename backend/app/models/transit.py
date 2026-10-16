@@ -16,7 +16,7 @@ class Route(Base):
     origin_name = Column(String, nullable=False)
     destination_name = Column(String, nullable=False)
     route_type = Column(String, default=RouteType.COMBI.value)
-    base_fare = Column(Float, default=8.0)
+    base_fare = Column(Float, default=9.0)
     waypoints = Column(JSON, nullable=True, default=list)
     created_at = Column(DateTime, default=func.now())
 

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
+import '../../core/constants.dart';
 import '../../providers/auth_provider.dart';
 
 class PassengerHistoryScreen extends StatefulWidget {
@@ -12,6 +13,14 @@ class PassengerHistoryScreen extends StatefulWidget {
 
   @override
   State<PassengerHistoryScreen> createState() => _PassengerHistoryScreenState();
+}
+
+double _fareFallback(Map<String, dynamic> row) {
+  final type = (row['service_type'] as String? ?? 'COMBI').toUpperCase();
+  if (type.contains('TAXI') || type == 'SPECIAL' || type == 'STANDARD') {
+    return AppConstants.taxiBaseFareBWP;
+  }
+  return type == 'BUS' ? 0 : AppConstants.standardFareBWP;
 }
 
 class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
@@ -56,7 +65,7 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
               '${row['pickup_name'] ?? 'Origin'} → ${row['dropoff_name'] ?? 'Destination'}',
           'origin': row['pickup_name'] ?? 'Pickup Point',
           'destination': row['dropoff_name'] ?? 'Destination',
-          'fare': (row['fare'] as num?)?.toDouble() ?? 8.0,
+          'fare': (row['fare'] as num?)?.toDouble() ?? _fareFallback(row),
           'date': dateStr,
           'driver': row['driver_id'] != null
               ? 'Driver: ${row['driver_id']}'
@@ -96,13 +105,13 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
         ),
         leading: widget.onBack != null
             ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: AppTheme.black),
+                icon: Icon(Icons.arrow_back, color: AppTheme.black),
                 onPressed: widget.onBack,
               )
             : null,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppTheme.black),
+            icon: Icon(Icons.refresh, color: AppTheme.black),
             onPressed: _loadUserTrips,
             tooltip: 'Refresh Trips',
           ),
@@ -133,7 +142,7 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
           // History List
           Expanded(
             child: _isLoading
-                ? const Center(
+                ? Center(
                     child: CircularProgressIndicator(color: AppTheme.black),
                   )
                 : RefreshIndicator(
@@ -149,13 +158,13 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.directions_transit_outlined,
                                     size: 56,
                                     color: AppTheme.lightGrey,
                                   ),
                                   const SizedBox(height: 16),
-                                  const Text(
+                                  Text(
                                     'No Trip History Yet',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w900,
@@ -164,7 +173,7 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  const Text(
+                                  Text(
                                     'Your completed combi rides, bus trips, and taxi bookings will appear here automatically.',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
@@ -203,9 +212,7 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  side: const BorderSide(
-                                    color: AppTheme.borderGrey,
-                                  ),
+                                  side: BorderSide(color: AppTheme.borderGrey),
                                 ),
                                 color: AppTheme.cardSurface,
                                 child: Padding(
@@ -249,7 +256,7 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
                                           ),
                                           Text(
                                             'P${(item['fare'] as double).toStringAsFixed(2)}',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.w900,
                                               fontSize: 17,
                                               color: AppTheme.black,
@@ -268,7 +275,7 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
                                       const SizedBox(height: 4),
                                       Row(
                                         children: [
-                                          const Icon(
+                                          Icon(
                                             Icons.my_location,
                                             size: 14,
                                             color: AppTheme.midGrey,
@@ -277,7 +284,7 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
                                           Expanded(
                                             child: Text(
                                               '${item['origin']} → ${item['destination']}',
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 12,
                                                 color: AppTheme.midGrey,
                                               ),
@@ -286,7 +293,7 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
                                           ),
                                         ],
                                       ),
-                                      const Divider(
+                                      Divider(
                                         height: 20,
                                         color: AppTheme.lightGrey,
                                       ),
@@ -296,14 +303,14 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
                                         children: [
                                           Text(
                                             item['driver'] as String,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 11,
                                               color: AppTheme.midGrey,
                                             ),
                                           ),
                                           Text(
                                             item['date'] as String,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 11,
                                               color: AppTheme.midGrey,
                                             ),
@@ -328,10 +335,17 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
-      selectedColor: AppTheme.black,
-      backgroundColor: AppTheme.white,
+      selectedColor: Theme.of(context).colorScheme.primary,
+      backgroundColor: AppTheme.surfaceContainer,
+      side: BorderSide(
+        color: isSelected
+            ? Theme.of(context).colorScheme.primary
+            : AppTheme.outline,
+      ),
       labelStyle: TextStyle(
-        color: isSelected ? AppTheme.white : AppTheme.black,
+        color: isSelected
+            ? Theme.of(context).colorScheme.onPrimary
+            : Theme.of(context).colorScheme.onSurface,
         fontWeight: FontWeight.bold,
         fontSize: 12,
       ),

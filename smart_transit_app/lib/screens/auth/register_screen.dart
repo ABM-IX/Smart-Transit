@@ -28,7 +28,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Create Account',
                 style: TextStyle(
                   fontSize: 28,
@@ -37,7 +37,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Join SmartTransit as a commuter or driver operator.',
                 style: TextStyle(fontSize: 14, color: AppTheme.midGrey),
               ),
@@ -47,12 +47,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: _nameController,
                 decoration: InputDecoration(
                   labelText: 'Full Name',
-                  prefixIcon: const Icon(Icons.person_outline, color: AppTheme.black),
+                  prefixIcon: Icon(Icons.person_outline, color: AppTheme.black),
                   filled: true,
                   fillColor: AppTheme.offWhite,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppTheme.lightGrey),
+                    borderSide: BorderSide(color: AppTheme.lightGrey),
                   ),
                 ),
               ),
@@ -63,12 +63,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 keyboardType: TextInputType.phone,
                 decoration: InputDecoration(
                   labelText: 'Phone Number',
-                  prefixIcon: const Icon(Icons.phone_outlined, color: AppTheme.black),
+                  prefixIcon: Icon(Icons.phone_outlined, color: AppTheme.black),
                   filled: true,
                   fillColor: AppTheme.offWhite,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppTheme.lightGrey),
+                    borderSide: BorderSide(color: AppTheme.lightGrey),
                   ),
                 ),
               ),
@@ -79,12 +79,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: 'Email Address',
-                  prefixIcon: const Icon(Icons.email_outlined, color: AppTheme.black),
+                  prefixIcon: Icon(Icons.email_outlined, color: AppTheme.black),
                   filled: true,
                   fillColor: AppTheme.offWhite,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppTheme.lightGrey),
+                    borderSide: BorderSide(color: AppTheme.lightGrey),
                   ),
                 ),
               ),
@@ -95,20 +95,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: 'Password',
-                  prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.black),
+                  prefixIcon: Icon(Icons.lock_outline, color: AppTheme.black),
                   filled: true,
                   fillColor: AppTheme.offWhite,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppTheme.lightGrey),
+                    borderSide: BorderSide(color: AppTheme.lightGrey),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
 
-              const Text(
+              Text(
                 'Account Role',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.black),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: AppTheme.black,
+                ),
               ),
               const SizedBox(height: 8),
 
@@ -129,7 +133,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: ElevatedButton(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Account created! Please sign in.')),
+                      const SnackBar(
+                        content: Text('Account created! Please sign in.'),
+                      ),
                     );
                     Navigator.pushReplacement(
                       context,
@@ -154,7 +160,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       selectedColor: AppTheme.black,
       backgroundColor: AppTheme.white,
       labelStyle: TextStyle(
-        color: isSelected ? AppTheme.white : AppTheme.black,
+        color: isSelected ? AppTheme.onPrimary : AppTheme.black,
         fontWeight: FontWeight.w600,
         fontSize: 12,
       ),

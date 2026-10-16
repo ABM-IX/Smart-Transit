@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/transit_provider.dart';
@@ -11,9 +12,9 @@ import '../../widgets/custom_map_view.dart';
 import '../../widgets/status_pill.dart';
 
 class TaxiFlowScreen extends StatefulWidget {
-  final VoidCallback onBack;
+  final VoidCallback? onExitToMain;
 
-  const TaxiFlowScreen({super.key, required this.onBack});
+  const TaxiFlowScreen({super.key, this.onExitToMain});
 
   @override
   State<TaxiFlowScreen> createState() => _TaxiFlowScreenState();
@@ -67,13 +68,14 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
     return Scaffold(
       backgroundColor: AppTheme.white,
       appBar: AppBar(
+        leading: IconButton(
+          tooltip: 'Back to main screen',
+          icon: const Icon(Icons.arrow_back),
+          onPressed: widget.onExitToMain ?? () => Navigator.maybePop(context),
+        ),
         title: const Text(
           'Taxi Service',
           style: TextStyle(fontWeight: FontWeight.w900),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.black),
-          onPressed: widget.onBack,
         ),
       ),
       body: _buildTaxiMapTab(),
@@ -140,7 +142,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
     if (transit.passengerStatus == PassengerTripStatus.searchingTaxi) {
       return Container(
         padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppTheme.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           border: Border(top: BorderSide(color: AppTheme.lightGrey, width: 1)),
@@ -148,12 +150,9 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(
-              color: AppTheme.black,
-              strokeWidth: 2,
-            ),
+            CircularProgressIndicator(color: AppTheme.black, strokeWidth: 2),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Finding Closest Available Cab...',
               style: TextStyle(
                 fontWeight: FontWeight.w900,
@@ -162,7 +161,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Dispatching request to drivers nearby.',
               style: TextStyle(color: AppTheme.midGrey, fontSize: 13),
             ),
@@ -203,7 +202,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
 
       return Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppTheme.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           border: Border(top: BorderSide(color: AppTheme.borderGrey, width: 1)),
@@ -233,7 +232,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                     children: [
                       Text(
                         'Taxi Assigned (${transit.assignedDriverId ?? "Driver En Route"})',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                           color: AppTheme.brandNavy,
@@ -243,9 +242,9 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                         isWithinProximity
                             ? 'Cab arrived at pickup point!'
                             : (distMeters != null
-                                  ? 'Cab is en route (${distMeters < 1000 ? "${distMeters.toStringAsFixed(0)}m" : "${(distMeters / 1000).toStringAsFixed(1)}km"} away) • P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}'
-                                  : 'Driver is en route to pickup point • P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}'),
-                        style: const TextStyle(
+                                  ? 'Cab is en route (${distMeters < 1000 ? "${distMeters.toStringAsFixed(0)}m" : "${(distMeters / 1000).toStringAsFixed(1)}km"} away) • P${(transit.estimatedFare ?? AppConstants.taxiBaseFareBWP).toStringAsFixed(2)}'
+                                  : 'Driver is en route to pickup point • P${(transit.estimatedFare ?? AppConstants.taxiBaseFareBWP).toStringAsFixed(2)}'),
+                        style: TextStyle(
                           color: AppTheme.secondaryText,
                           fontSize: 13,
                         ),
@@ -284,7 +283,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
       final vehicleStationary = transit.vehicleSpeedKmh < 5.0;
       return Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppTheme.cardSurface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           border: Border(top: BorderSide(color: AppTheme.borderGrey, width: 1)),
@@ -312,7 +311,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Trip in Progress',
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
@@ -322,7 +321,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                       ),
                       Text(
                         'Cruising with ${transit.assignedDriverId ?? "Driver"} • Enjoy your ride!',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppTheme.secondaryText,
                           fontSize: 13,
                         ),
@@ -389,7 +388,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Trip Fare:',
                     style: TextStyle(
                       color: AppTheme.secondaryText,
@@ -397,8 +396,8 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                     ),
                   ),
                   Text(
-                    'P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}',
-                    style: const TextStyle(
+                    'P${(transit.estimatedFare ?? AppConstants.taxiBaseFareBWP).toStringAsFixed(2)}',
+                    style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
                       color: AppTheme.brandNavy,
@@ -412,7 +411,8 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               onPressed: () => transit.passengerEndTrip(
                 passengerId: auth.userId,
                 driverId: transit.assignedDriverId,
-                finalFare: transit.estimatedFare ?? 25.0,
+                finalFare:
+                    transit.estimatedFare ?? AppConstants.taxiBaseFareBWP,
               ),
               icon: const Icon(Icons.pin_drop, size: 18),
               label: const Text(
@@ -436,7 +436,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
     if (transit.passengerStatus == PassengerTripStatus.completed) {
       return Container(
         padding: const EdgeInsets.all(22),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppTheme.cardSurface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           border: Border(top: BorderSide(color: AppTheme.borderGrey, width: 1)),
@@ -458,7 +458,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Trip Completed!',
               style: TextStyle(
                 fontWeight: FontWeight.w900,
@@ -469,8 +469,8 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Fare: P${(transit.estimatedFare ?? 25.0).toStringAsFixed(2)}',
-              style: const TextStyle(
+              'Fare: P${(transit.estimatedFare ?? AppConstants.taxiBaseFareBWP).toStringAsFixed(2)}',
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.secondaryText,
@@ -478,7 +478,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Rate your Driver',
               style: TextStyle(
                 fontWeight: FontWeight.w700,
@@ -532,7 +532,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
 
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         border: Border(top: BorderSide(color: AppTheme.lightGrey, width: 1)),
@@ -545,14 +545,21 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
           Row(
             children: [
               ChoiceChip(
-                label: const Text('Standard (P8.00)'),
+                label: Text(
+                  'Standard (P${AppConstants.taxiBaseFareBWP.toStringAsFixed(2)})',
+                ),
                 selected: _serviceType == 'STANDARD',
-                selectedColor: AppTheme.black,
-                backgroundColor: AppTheme.white,
+                selectedColor: Theme.of(context).colorScheme.primary,
+                backgroundColor: AppTheme.surfaceContainer,
+                side: BorderSide(
+                  color: _serviceType == 'STANDARD'
+                      ? Theme.of(context).colorScheme.primary
+                      : AppTheme.outline,
+                ),
                 labelStyle: TextStyle(
                   color: _serviceType == 'STANDARD'
-                      ? AppTheme.white
-                      : AppTheme.black,
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -562,12 +569,17 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               ChoiceChip(
                 label: const Text('Special / Direct (Metered)'),
                 selected: _serviceType == 'SPECIAL',
-                selectedColor: AppTheme.black,
-                backgroundColor: AppTheme.white,
+                selectedColor: Theme.of(context).colorScheme.primary,
+                backgroundColor: AppTheme.surfaceContainer,
+                side: BorderSide(
+                  color: _serviceType == 'SPECIAL'
+                      ? Theme.of(context).colorScheme.primary
+                      : AppTheme.outline,
+                ),
                 labelStyle: TextStyle(
                   color: _serviceType == 'SPECIAL'
-                      ? AppTheme.white
-                      : AppTheme.black,
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -583,12 +595,12 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             onChanged: _searchAddress,
             decoration: InputDecoration(
               hintText: 'Where to? (e.g. Main Mall, Game City)',
-              prefixIcon: const Icon(
+              prefixIcon: Icon(
                 Icons.location_on_outlined,
                 color: AppTheme.black,
               ),
               suffixIcon: _isSearching
-                  ? const Padding(
+                  ? Padding(
                       padding: EdgeInsets.all(12),
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
@@ -600,7 +612,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               fillColor: AppTheme.offWhite,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: AppTheme.lightGrey),
+                borderSide: BorderSide(color: AppTheme.lightGrey),
               ),
             ),
           ),
@@ -619,7 +631,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 shrinkWrap: true,
                 itemCount: _suggestions.length,
                 separatorBuilder: (ctx, idx2) =>
-                    const Divider(height: 1, color: AppTheme.lightGrey),
+                    Divider(height: 1, color: AppTheme.lightGrey),
                 itemBuilder: (context, idx) {
                   final s = _suggestions[idx];
                   return ListTile(
@@ -628,10 +640,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                       s['name'] ?? '',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppTheme.black,
-                      ),
+                      style: TextStyle(fontSize: 13, color: AppTheme.black),
                     ),
                     onTap: () {
                       _destController.text = s['name'] ?? '';

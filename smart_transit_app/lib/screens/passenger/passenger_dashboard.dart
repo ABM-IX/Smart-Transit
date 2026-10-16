@@ -70,7 +70,10 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
         backgroundColor: AppTheme.white,
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: const Text('SmartTransit', style: TextStyle(fontWeight: FontWeight.w900)),
+          title: const Text(
+            'SmartTransit',
+            style: TextStyle(fontWeight: FontWeight.w900),
+          ),
           actions: [
             IconButton(
               icon: const Icon(Icons.auto_awesome, color: AppTheme.accentBlue),
@@ -82,16 +85,6 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
                 );
               },
             ),
-            IconButton(
-              icon: const Icon(Icons.history_outlined, color: AppTheme.black),
-              tooltip: 'Trip History',
-              onPressed: () => setState(() => _currentTabIndex = 1),
-            ),
-            IconButton(
-              icon: const Icon(Icons.person_outline, color: AppTheme.black),
-              tooltip: 'Passenger Profile',
-              onPressed: () => setState(() => _currentTabIndex = 2),
-            ),
           ],
         ),
         body: ModeSelectionScreen(
@@ -101,7 +94,9 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
     }
 
     if (_selectedMode == TransportMode.taxi) {
-      return TaxiFlowScreen(onBack: () => setState(() => _selectedMode = null));
+      return TaxiFlowScreen(
+        onExitToMain: () => setState(() => _selectedMode = null),
+      );
     }
 
     // Bus or Combi Flow
@@ -110,25 +105,15 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
         backgroundColor: AppTheme.white,
         appBar: AppBar(
           title: Text(
-            _selectedMode == TransportMode.bus ? 'Select Bus Route' : 'Select Combi Route',
+            _selectedMode == TransportMode.bus
+                ? 'Select Bus Route'
+                : 'Select Combi Route',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppTheme.black),
+            icon: Icon(Icons.arrow_back, color: AppTheme.black),
             onPressed: () => setState(() => _selectedMode = null),
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.history_outlined, color: AppTheme.black),
-              tooltip: 'Trip History',
-              onPressed: () => setState(() => _currentTabIndex = 1),
-            ),
-            IconButton(
-              icon: const Icon(Icons.person_outline, color: AppTheme.black),
-              tooltip: 'Passenger Profile',
-              onPressed: () => setState(() => _currentTabIndex = 2),
-            ),
-          ],
         ),
         body: DestinationsBrowserScreen(
           mode: _selectedMode!,
@@ -141,23 +126,14 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
     return Scaffold(
       backgroundColor: AppTheme.white,
       appBar: AppBar(
-        title: Text(_selectedRoute!.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          _selectedRoute!.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.black),
+          icon: Icon(Icons.arrow_back, color: AppTheme.black),
           onPressed: () => setState(() => _selectedRoute = null),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history_outlined, color: AppTheme.black),
-            tooltip: 'Trip History',
-            onPressed: () => setState(() => _currentTabIndex = 1),
-          ),
-          IconButton(
-            icon: const Icon(Icons.person_outline, color: AppTheme.black),
-            tooltip: 'Passenger Profile',
-            onPressed: () => setState(() => _currentTabIndex = 2),
-          ),
-        ],
       ),
       body: BusCombiMapScreen(
         mode: _selectedMode!,

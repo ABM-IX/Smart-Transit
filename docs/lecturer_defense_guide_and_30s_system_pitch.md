@@ -119,7 +119,7 @@ Use this table to prove that the separation of concerns was a deliberate softwar
 
 #### Q6: "Why include cab hailing when inDrive and Yango already operate in Gaborone?"
 - **Your Answer:**  
-  > *"inDrive and Yango are private car-hire platforms charging P40 to P120 per trip, completely excluding the 85% mass-transit population who rely on P8.00 combis. SmartTransit integrates local blue-plate cabs as **affordable first-mile feeders** to the combi network, allowing suburban commuters to book a complete journey from their doorstep to an arterial combi rank with transparent metered rates."*
+  > *"inDrive and Yango are private car-hire platforms charging P40 to P120 per trip, completely excluding the 85% mass-transit population who rely on P9.00 combis. SmartTransit integrates local blue-plate cabs as **affordable first-mile feeders** to the combi network, allowing suburban commuters to book a complete journey from their doorstep to an arterial combi rank with transparent metered rates."*
 
 ---
 

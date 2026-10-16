@@ -32,7 +32,7 @@ class StatusPill extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: color == AppTheme.cardSurface ? AppTheme.brandNavy : color,
+              color: color == AppTheme.onPrimary ? AppTheme.brandNavy : color,
               fontSize: 12,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.2,

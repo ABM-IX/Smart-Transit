@@ -285,7 +285,7 @@ Canonical definitions of paratransit and intercity transit corridors.
 | `origin_name` | `VARCHAR(64)` | `NOT NULL` | Terminus origin name |
 | `destination_name`| `VARCHAR(64)` | `NOT NULL` | Terminus destination name |
 | `route_type` | `VARCHAR(20)` | `DEFAULT 'COMBI'` | Transit modality |
-| `base_fare` | `DECIMAL(10,2)` | `DEFAULT 8.00` | Statutory gazetted tariff (e.g., P8.00) |
+| `base_fare` | `DECIMAL(10,2)` | `DEFAULT 9.00` | Statutory gazetted tariff (e.g., P9.00) |
 | `waypoints` | `JSONB` | `DEFAULT '[]'` | Ordered coordinates representing route polyline geometry |
 | `created_at` | `TIMESTAMP` | `DEFAULT NOW()` | Route creation date |
 
@@ -320,7 +320,7 @@ Historical transit journey records for fleet analytics and revenue tracking.
 | `vehicle_id` | `VARCHAR(64)` | `NULLABLE` | Vehicle used |
 | `service_type` | `VARCHAR(20)` | `DEFAULT 'COMBI'` | Modality |
 | `passenger_count`| `INTEGER` | `DEFAULT 1` | Passengers served |
-| `revenue` | `DECIMAL(10,2)` | `DEFAULT 8.00` | Total collected fare in BWP (Pula) |
+| `revenue` | `DECIMAL(10,2)` | `DEFAULT 9.00` | Total collected fare in BWP (Pula) |
 | `distance_meters`| `FLOAT` | `DEFAULT 0.0` | Odometer distance calculated from GPS trace |
 | `duration_seconds`| `INTEGER` | `DEFAULT 0` | Elapsed duration |
 | `start_lat`, `start_lng` | `DOUBLE PRECISION` | `NULLABLE` | Origin coordinates |
@@ -339,7 +339,7 @@ Real-time transactional state machine for on-demand special cab hailing.
 | `pickup_lat`, `pickup_lng` | `DOUBLE PRECISION` | `NOT NULL` | Exact passenger GPS pickup pin |
 | `dropoff_lat`, `dropoff_lng` | `DOUBLE PRECISION` | `NULLABLE` | Destination coordinates |
 | `service_type` | `VARCHAR(20)` | `DEFAULT 'STANDARD'`| `STANDARD` (Shared cab) or `SPECIAL` (Private direct) |
-| `estimated_fare` | `DECIMAL(10,2)` | `DEFAULT 8.00` | Algorithmic fare estimate |
+| `estimated_fare` | `DECIMAL(10,2)` | `DEFAULT 10.00` | Algorithmic taxi fare estimate |
 | `final_fare` | `DECIMAL(10,2)` | `NULLABLE` | Final metered fare billed |
 | `status` | `VARCHAR(20)` | `DEFAULT 'PENDING'` | `PENDING` -> `ACCEPTED` -> `ON_TRIP` -> `COMPLETED` |
 | `created_at` | `TIMESTAMP` | `DEFAULT NOW()` | Hail broadcast timestamp |

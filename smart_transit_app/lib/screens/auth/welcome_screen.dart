@@ -13,15 +13,20 @@ class WelcomeScreen extends StatefulWidget {
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
   void _showServerSettingsDialog() {
-    final textController = TextEditingController(text: AppConstants.defaultServerUrl);
+    final textController = TextEditingController(
+      text: AppConstants.defaultServerUrl,
+    );
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
             Icon(Icons.cloud_sync, color: AppTheme.black),
             SizedBox(width: 8),
-            Text('Server & Cloud Config', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text(
+              'Server & Cloud Config',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
           ],
         ),
         content: SingleChildScrollView(
@@ -29,7 +34,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Supabase Cloud Database & Storage is active globally. Enter your live backend/tunnel URL for real-time dispatch:',
                 style: TextStyle(fontSize: 13, color: AppTheme.darkGrey),
               ),
@@ -49,16 +54,28 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 runSpacing: 6,
                 children: [
                   ActionChip(
-                    label: const Text('Cloud (Render)', style: TextStyle(fontSize: 11)),
-                    onPressed: () => textController.text = AppConstants.cloudServerUrl,
+                    label: const Text(
+                      'Cloud (Render)',
+                      style: TextStyle(fontSize: 11),
+                    ),
+                    onPressed: () =>
+                        textController.text = AppConstants.cloudServerUrl,
                   ),
                   ActionChip(
-                    label: const Text('Local LAN', style: TextStyle(fontSize: 11)),
-                    onPressed: () => textController.text = AppConstants.lanServerUrl,
+                    label: const Text(
+                      'Local LAN',
+                      style: TextStyle(fontSize: 11),
+                    ),
+                    onPressed: () =>
+                        textController.text = AppConstants.lanServerUrl,
                   ),
                   ActionChip(
-                    label: const Text('Localhost', style: TextStyle(fontSize: 11)),
-                    onPressed: () => textController.text = AppConstants.localhostUrl,
+                    label: const Text(
+                      'Localhost',
+                      style: TextStyle(fontSize: 11),
+                    ),
+                    onPressed: () =>
+                        textController.text = AppConstants.localhostUrl,
                   ),
                 ],
               ),
@@ -78,7 +95,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Server endpoint set to: ${AppConstants.defaultServerUrl}'),
+                  content: Text(
+                    'Server endpoint set to: ${AppConstants.defaultServerUrl}',
+                  ),
                   backgroundColor: AppTheme.black,
                 ),
               );
@@ -99,7 +118,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_ethernet, color: AppTheme.darkGrey),
+            icon: Icon(Icons.settings_ethernet, color: AppTheme.darkGrey),
             tooltip: 'Server & Cloud Config',
             onPressed: _showServerSettingsDialog,
           ),
@@ -110,10 +129,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
+              ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight - 32 > 0 ? constraints.maxHeight - 32 : 0,
+                  minHeight: constraints.maxHeight - 32 > 0
+                      ? constraints.maxHeight - 32
+                      : 0,
                 ),
                 child: IntrinsicHeight(
                   child: Column(
@@ -129,7 +153,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           shape: BoxShape.circle,
                           border: Border.all(color: AppTheme.black, width: 2),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
                             'ST',
                             style: TextStyle(
@@ -143,7 +167,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      const Text(
+                      Text(
                         'SmartTransit',
                         style: TextStyle(
                           fontSize: 32,
@@ -154,7 +178,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       ),
                       const SizedBox(height: 8),
 
-                      const Text(
+                      Text(
                         'GABORONE, BOTSWANA',
                         style: TextStyle(
                           fontSize: 12,
@@ -178,7 +202,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       ),
 
                       const SizedBox(height: 32),
-                      const Divider(color: AppTheme.lightGrey, thickness: 1),
+                      Divider(color: AppTheme.lightGrey, thickness: 1),
                       const SizedBox(height: 32),
 
                       // Get Started Button
@@ -189,7 +213,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const LoginScreen()),
+                              MaterialPageRoute(
+                                builder: (_) => const LoginScreen(),
+                              ),
                             );
                           },
                           child: const Row(
@@ -212,7 +238,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
+                              MaterialPageRoute(
+                                builder: (_) => const RoleSelectionScreen(),
+                              ),
                             );
                           },
                           child: const Text('Create Account'),
@@ -224,11 +252,18 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.cloud_done, size: 14, color: AppTheme.midGrey),
+                          Icon(
+                            Icons.cloud_done,
+                            size: 14,
+                            color: AppTheme.midGrey,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             'Supabase Cloud Active • ${AppConstants.defaultServerUrl.contains("10.") ? "LAN Mode" : "Cloud Mode"}',
-                            style: const TextStyle(fontSize: 11, color: AppTheme.midGrey),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.midGrey,
+                            ),
                           ),
                         ],
                       ),
@@ -253,7 +288,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
           color: AppTheme.black,
@@ -262,4 +297,3 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 }
-

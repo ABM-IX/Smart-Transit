@@ -30,5 +30,7 @@ def get_fare(service_type: str, pickup: Optional[Dict[str, float]] = None, dropo
         return estimate_special_taxi_fare(pickup or {}, dropoff or {})
     elif st == "TAXI" or st == "STANDARD":
         return settings.TAXI_STANDARD_FARE
+    elif st == "BUS":
+        return 0.0
     else:
         return settings.BUS_COMBI_FARE

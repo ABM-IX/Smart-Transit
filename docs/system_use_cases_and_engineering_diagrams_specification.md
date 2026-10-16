@@ -309,7 +309,7 @@ flowchart TB
         UC2_3[Observe Moving Combi Marker]
         UC2_4[Receive Speed-Floored ETA Countdown]
         UC2_5[Request Special Cab Charter]
-        UC2_6[Confirm Statutory Gazetted Fare BWP 8.00 / Metered]
+        UC2_6[Confirm Statutory Gazetted Fare BWP 9.00 / Metered]
         UC2_7[Trigger Emergency SOS / Contact Driver]
     end
 
@@ -587,7 +587,7 @@ flowchart TD
     CombiPath --> CombiETA[Render Speed-Floored Countdown ETA]
     CombiETA --> BoardCombi[Walk to Roadside Stop & Board]
     BoardCombi --> AutoDetect[Autonomous Co-Movement Detects Trip Start]
-    AutoDetect --> PayGazetted[Pay Statutory BWP 8.00 Gazetted Fare]
+    AutoDetect --> PayGazetted[Pay Statutory BWP 9.00 Gazetted Fare]
     PayGazetted --> EndCombi([Trip Concluded at Drop-off])
 
     ModeDecision -->|On-Demand Special Cab| CabPath[Display Upfront Metered Fare Estimate]
@@ -857,7 +857,7 @@ erDiagram
         text origin_name "e.g. Gaborone Station"
         text destination_name "e.g. BBS Mall"
         text route_type "COMBI | TAXI | BUS"
-        numeric base_fare "Statutory Gazetted BWP 8.00"
+        numeric base_fare "Statutory Gazetted BWP 9.00"
         jsonb waypoints "Polyline Coordinates"
         boolean is_active "Operational Flag"
     }

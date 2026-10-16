@@ -140,7 +140,7 @@ class AITransitOrchestrator:
                 arrival_time=combi_arrival_time.strftime("%H:%M"),
                 duration_minutes=combi_duration_mins,
                 distance_meters=round(combi_dist),
-                fare_bwp=8.0,
+                fare_bwp=9.0,
                 instruction=f"Board approaching Combi (Route U1) at {nearest_combi_stop['name']} towards {bus_rank['name']}.",
                 auto_hail_ready=True
             ))
@@ -232,7 +232,7 @@ class AITransitOrchestrator:
                 arrival_time=t2.strftime("%H:%M"),
                 duration_minutes=int((t2 - t1).total_seconds() / 60),
                 distance_meters=round(combi_dist),
-                fare_bwp=8.0,
+                fare_bwp=9.0,
                 instruction=f"Board Combi to {dropoff_stop['name']}.",
                 auto_hail_ready=True
             ))

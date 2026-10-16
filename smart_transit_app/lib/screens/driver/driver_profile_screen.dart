@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/route_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/transit_provider.dart';
+import '../../widgets/theme_preference_tile.dart';
 import '../auth/login_screen.dart';
 
 class DriverProfileScreen extends StatefulWidget {
@@ -83,7 +85,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           originName: 'Terminal A',
           destinationName: 'Terminal B',
           routeType: auth.serviceType,
-          baseFare: 8.0,
+          baseFare: auth.serviceType.toUpperCase() == 'BUS'
+              ? 0.0
+              : AppConstants.standardFareBWP,
         ),
       );
     } catch (_) {}
@@ -95,7 +99,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: const Row(
+          title: Row(
             children: [
               Icon(Icons.edit_note, color: AppTheme.black),
               SizedBox(width: 8),
@@ -171,10 +175,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: AppTheme.midGrey),
-              ),
+              child: Text('Cancel', style: TextStyle(color: AppTheme.midGrey)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -190,7 +191,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 if (context.mounted) {
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
+                    SnackBar(
                       content: Text('Vehicle and route updated in Supabase.'),
                       backgroundColor: AppTheme.black,
                     ),
@@ -219,13 +220,13 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         ),
         leading: widget.onBack != null
             ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: AppTheme.black),
+                icon: Icon(Icons.arrow_back, color: AppTheme.black),
                 onPressed: widget.onBack,
               )
             : null,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit, color: AppTheme.black),
+            icon: Icon(Icons.edit, color: AppTheme.black),
             tooltip: 'Update Vehicle & Route',
             onPressed: () =>
                 _showEditVehicleRouteDialog(context, auth, transit),
@@ -254,17 +255,17 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       auth.userName.isNotEmpty
                           ? auth.userName[0].toUpperCase()
                           : 'D',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.white,
+                        color: AppTheme.onPrimary,
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     auth.userName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 20,
                       color: AppTheme.black,
@@ -273,7 +274,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   const SizedBox(height: 2),
                   Text(
                     '${auth.serviceType} Operator • Plate: ${auth.vehiclePlate}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.darkGrey,
@@ -282,10 +283,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   const SizedBox(height: 2),
                   Text(
                     'ID: ${auth.userId.length > 12 ? "${auth.userId.substring(0, 12)}..." : auth.userId}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppTheme.midGrey,
-                    ),
+                    style: TextStyle(fontSize: 11, color: AppTheme.midGrey),
                   ),
                   const SizedBox(height: 10),
                   Container(
@@ -357,21 +355,22 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
             ),
             const SizedBox(height: 24),
 
+            _buildSectionHeader('Preferences'),
+            const Card(elevation: 0, child: ThemePreferenceTile()),
+            const SizedBox(height: 20),
+
             // Vehicle & License Information
             _buildSectionHeader('Vehicle & Permit Details'),
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: AppTheme.lightGrey),
+                side: BorderSide(color: AppTheme.lightGrey),
               ),
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(
-                      Icons.directions_car,
-                      color: AppTheme.black,
-                    ),
+                    leading: Icon(Icons.directions_car, color: AppTheme.black),
                     title: const Text(
                       'Registered Vehicle',
                       style: TextStyle(
@@ -383,7 +382,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       '${auth.vehiclePlate} (${auth.serviceType} Service)',
                     ),
                     trailing: IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.edit_outlined,
                         size: 18,
                         color: AppTheme.midGrey,
@@ -392,7 +391,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                           _showEditVehicleRouteDialog(context, auth, transit),
                     ),
                   ),
-                  const Divider(height: 1, color: AppTheme.lightGrey),
+                  Divider(height: 1, color: AppTheme.lightGrey),
                   ListTile(
                     leading: const Icon(
                       Icons.alt_route,
@@ -412,12 +411,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       size: 20,
                     ),
                   ),
-                  const Divider(height: 1, color: AppTheme.lightGrey),
+                  Divider(height: 1, color: AppTheme.lightGrey),
                   ListTile(
-                    leading: const Icon(
-                      Icons.phone_android,
-                      color: AppTheme.black,
-                    ),
+                    leading: Icon(Icons.phone_android, color: AppTheme.black),
                     title: const Text(
                       'Driver Phone Number',
                       style: TextStyle(
@@ -427,12 +423,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                     ),
                     subtitle: Text(auth.phoneNumber),
                   ),
-                  const Divider(height: 1, color: AppTheme.lightGrey),
+                  Divider(height: 1, color: AppTheme.lightGrey),
                   ListTile(
-                    leading: const Icon(
-                      Icons.email_outlined,
-                      color: AppTheme.black,
-                    ),
+                    leading: Icon(Icons.email_outlined, color: AppTheme.black),
                     title: const Text(
                       'Email Address',
                       style: TextStyle(
@@ -491,7 +484,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         alignment: Alignment.centerLeft,
         child: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
             color: AppTheme.midGrey,
@@ -515,7 +508,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
           const SizedBox(height: 6),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w900,
               fontSize: 14,
               color: AppTheme.black,
@@ -523,10 +516,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 11, color: AppTheme.midGrey),
-          ),
+          Text(label, style: TextStyle(fontSize: 11, color: AppTheme.midGrey)),
         ],
       ),
     );

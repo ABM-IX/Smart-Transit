@@ -17,24 +17,33 @@ class DriverRouteSelectScreen extends StatefulWidget {
   });
 
   @override
-  State<DriverRouteSelectScreen> createState() => _DriverRouteSelectScreenState();
+  State<DriverRouteSelectScreen> createState() =>
+      _DriverRouteSelectScreenState();
 }
 
 class _DriverRouteSelectScreenState extends State<DriverRouteSelectScreen> {
   TransitRoute? _chosenRoute;
-  final TextEditingController _plateController = TextEditingController(text: 'B-789-BW');
+  final TextEditingController _plateController = TextEditingController(
+    text: 'B-789-BW',
+  );
 
   @override
   Widget build(BuildContext context) {
     final transit = Provider.of<TransitProvider>(context);
-    final targetType = widget.driverRole == UserRole.driverBus ? 'BUS' : 'COMBI';
-    final availableRoutes = transit.routes.where((r) => r.routeType.toUpperCase() == targetType).toList();
+    final targetType = widget.driverRole == UserRole.driverBus
+        ? 'BUS'
+        : 'COMBI';
+    final availableRoutes = transit.routes
+        .where((r) => r.routeType.toUpperCase() == targetType)
+        .toList();
 
     return Scaffold(
       backgroundColor: AppTheme.white,
       appBar: AppBar(
         title: Text(
-          widget.driverRole == UserRole.driverBus ? 'Select Bus Route' : 'Select Combi Route',
+          widget.driverRole == UserRole.driverBus
+              ? 'Select Bus Route'
+              : 'Select Combi Route',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
@@ -44,10 +53,14 @@ class _DriverRouteSelectScreenState extends State<DriverRouteSelectScreen> {
           children: [
             Text(
               'Shift Setup: ${widget.driverRole.displayName}',
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppTheme.black),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: AppTheme.black,
+              ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Choose the route corridor you will operate during this shift.',
               style: TextStyle(color: AppTheme.midGrey, fontSize: 14),
             ),
@@ -59,20 +72,24 @@ class _DriverRouteSelectScreenState extends State<DriverRouteSelectScreen> {
               textCapitalization: TextCapitalization.characters,
               decoration: InputDecoration(
                 labelText: 'Vehicle License Plate',
-                prefixIcon: const Icon(Icons.pin, color: AppTheme.black),
+                prefixIcon: Icon(Icons.pin, color: AppTheme.black),
                 filled: true,
                 fillColor: AppTheme.offWhite,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppTheme.lightGrey),
+                  borderSide: BorderSide(color: AppTheme.lightGrey),
                 ),
               ),
             ),
             const SizedBox(height: 20),
 
-            const Text(
+            Text(
               'Select Operating Route',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.black),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: AppTheme.black,
+              ),
             ),
             const SizedBox(height: 10),
 
@@ -90,8 +107,12 @@ class _DriverRouteSelectScreenState extends State<DriverRouteSelectScreen> {
                       child: Row(
                         children: [
                           Icon(
-                            widget.driverRole == UserRole.driverBus ? Icons.directions_bus : Icons.airport_shuttle,
-                            color: isSelected ? AppTheme.white : AppTheme.black,
+                            widget.driverRole == UserRole.driverBus
+                                ? Icons.directions_bus
+                                : Icons.airport_shuttle,
+                            color: isSelected
+                                ? AppTheme.onPrimary
+                                : AppTheme.black,
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -103,21 +124,28 @@ class _DriverRouteSelectScreenState extends State<DriverRouteSelectScreen> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
-                                    color: isSelected ? AppTheme.white : AppTheme.black,
+                                    color: isSelected
+                                        ? AppTheme.onPrimary
+                                        : AppTheme.black,
                                   ),
                                 ),
                                 Text(
                                   '${r.originName} → ${r.destinationName}',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: isSelected ? AppTheme.lightGrey : AppTheme.midGrey,
+                                    color: isSelected
+                                        ? AppTheme.lightGrey
+                                        : AppTheme.midGrey,
                                   ),
                                 ),
                               ],
                             ),
                           ),
                           if (isSelected)
-                            const Icon(Icons.check_circle, color: AppTheme.accentGreen),
+                            const Icon(
+                              Icons.check_circle,
+                              color: AppTheme.accentGreen,
+                            ),
                         ],
                       ),
                     ),
@@ -134,11 +162,16 @@ class _DriverRouteSelectScreenState extends State<DriverRouteSelectScreen> {
                 onPressed: _chosenRoute == null
                     ? null
                     : () {
-                        final auth = Provider.of<AuthProvider>(context, listen: false);
+                        final auth = Provider.of<AuthProvider>(
+                          context,
+                          listen: false,
+                        );
                         auth.updateDriverConfig(
                           serviceType: widget.driverRole.serviceType,
                           routeId: _chosenRoute!.id,
-                          vehiclePlate: _plateController.text.trim().toUpperCase(),
+                          vehiclePlate: _plateController.text
+                              .trim()
+                              .toUpperCase(),
                         );
                         widget.onRouteConfirmed(_chosenRoute!);
                       },

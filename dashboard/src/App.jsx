@@ -813,7 +813,13 @@ function RoutesView({ routes, stops, routesState, stopsState, selectedMode }) {
             <article key={route.id} className="route-row">
               <strong>{route.name}</strong>
               <span>{route.origin_name} to {route.destination_name}</span>
-              <small>{route.route_type || 'Unknown'} route - P{Number(route.base_fare || 0).toFixed(2)} base fare</small>
+              <small>{(() => {
+                const type = String(route.route_type || '').toUpperCase();
+                if (type === 'BUS') return 'Bus route - Fare varies by route';
+                if (type === 'TAXI') return 'Taxi route - P10.00 base fare';
+                if (type === 'COMBI') return 'Combi route - P9.00 fare';
+                return `${route.route_type || 'Unknown'} route - P${Number(route.base_fare || 0).toFixed(2)} base fare`;
+              })()}</small>
             </article>
           ))}
         </div>
@@ -1032,7 +1038,7 @@ function ModeHailQueue({ hails = [], mode = 'COMBI' }) {
               const pId = hail.passengerId || hail.passenger_id || 'unknown';
               const routeId = hail.routeId || hail.route_id || 'Corridor';
               const reqId = hail.requestId || `hail-${index}`;
-              const fare = hail.fareEstimate ? `P${Number(hail.fareEstimate).toFixed(2)}` : (mode === 'BUS' ? 'Bus Fare' : 'P8.00 Standard');
+              const fare = hail.fareEstimate ? `P${Number(hail.fareEstimate).toFixed(2)}` : (mode === 'BUS' ? 'Fare varies by route' : mode === 'TAXI' ? 'P10.00 base' : 'P9.00 Standard');
 
               return (
                 <article

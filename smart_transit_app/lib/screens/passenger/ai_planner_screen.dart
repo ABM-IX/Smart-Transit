@@ -15,9 +15,15 @@ class AiPlannerScreen extends StatefulWidget {
 
 class _AiPlannerScreenState extends State<AiPlannerScreen> {
   final ApiService _api = ApiService();
-  final TextEditingController _originController = TextEditingController(text: 'Home (Block 8)');
-  final TextEditingController _destController = TextEditingController(text: 'Francistown Central Terminal');
-  final TextEditingController _timeController = TextEditingController(text: '14:00');
+  final TextEditingController _originController = TextEditingController(
+    text: 'Home (Block 8)',
+  );
+  final TextEditingController _destController = TextEditingController(
+    text: 'Francistown Central Terminal',
+  );
+  final TextEditingController _timeController = TextEditingController(
+    text: '14:00',
+  );
 
   bool _isLoading = false;
   ItineraryModel? _itinerary;
@@ -45,8 +51,10 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
 
     if (result == null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No active multi-modal itinerary found for these endpoints yet.'),
+        SnackBar(
+          content: Text(
+            'No active multi-modal itinerary found for these endpoints yet.',
+          ),
           backgroundColor: AppTheme.black,
         ),
       );
@@ -58,7 +66,10 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
     return Scaffold(
       backgroundColor: AppTheme.white,
       appBar: AppBar(
-        title: const Text('AI Multi-Modal Facilitator', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'AI Multi-Modal Facilitator',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
@@ -73,7 +84,7 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppTheme.black),
               ),
-              child: const Row(
+              child: Row(
                 children: [
                   Icon(Icons.auto_awesome, color: AppTheme.black, size: 28),
                   SizedBox(width: 14),
@@ -92,7 +103,10 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
                         SizedBox(height: 2),
                         Text(
                           'Coordinates Taxi + Combi + Bus into one seamless schedule.',
-                          style: TextStyle(fontSize: 12, color: AppTheme.midGrey),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.midGrey,
+                          ),
                         ),
                       ],
                     ),
@@ -127,16 +141,21 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.route),
-              label: Text(_isLoading ? 'Orchestrating Route...' : 'Generate Multi-Modal Plan'),
+              label: Text(
+                _isLoading
+                    ? 'Orchestrating Route...'
+                    : 'Generate Multi-Modal Plan',
+              ),
             ),
             const SizedBox(height: 24),
 
-            if (_itinerary != null) ...[
-              _buildItineraryCard(_itinerary!),
-            ],
+            if (_itinerary != null) ...[_buildItineraryCard(_itinerary!)],
           ],
         ),
       ),
@@ -153,12 +172,12 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
       decoration: InputDecoration(
         prefixIcon: Icon(icon, color: AppTheme.black, size: 20),
         labelText: label,
-        labelStyle: const TextStyle(color: AppTheme.midGrey),
+        labelStyle: TextStyle(color: AppTheme.midGrey),
         filled: true,
         fillColor: AppTheme.offWhite,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppTheme.lightGrey),
+          borderSide: BorderSide(color: AppTheme.lightGrey),
         ),
       ),
     );
@@ -171,9 +190,13 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Planned Itinerary',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.black),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: AppTheme.black,
+              ),
             ),
             Text(
               'Est. Total: P${plan.totalFareBWP.toStringAsFixed(2)}',
@@ -214,7 +237,7 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppTheme.offWhite,
                     shape: BoxShape.circle,
                   ),
@@ -227,7 +250,7 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
                     children: [
                       Text(
                         'Leg ${leg.legNumber}: ${leg.mode}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: AppTheme.black,
                           fontSize: 13,
@@ -235,7 +258,10 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
                       ),
                       Text(
                         '${leg.fromName} → ${leg.toName}',
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
@@ -244,24 +270,32 @@ class _AiPlannerScreenState extends State<AiPlannerScreen> {
                 ),
                 Text(
                   '${leg.departureTime} - ${leg.arrivalTime}',
-                  style: const TextStyle(color: AppTheme.midGrey, fontSize: 12),
+                  style: TextStyle(color: AppTheme.midGrey, fontSize: 12),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            Text(leg.instruction, style: const TextStyle(color: AppTheme.midGrey, fontSize: 13)),
+            Text(
+              leg.instruction,
+              style: TextStyle(color: AppTheme.midGrey, fontSize: 13),
+            ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   '${leg.durationMinutes} mins • ${(leg.distanceMeters / 1000).toStringAsFixed(1)} km',
-                  style: const TextStyle(color: AppTheme.midGrey, fontSize: 12),
+                  style: TextStyle(color: AppTheme.midGrey, fontSize: 12),
                 ),
                 Text(
-                  leg.fareBWP > 0 ? 'P${leg.fareBWP.toStringAsFixed(2)}' : 'Free',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  leg.fareBWP > 0
+                      ? 'P${leg.fareBWP.toStringAsFixed(2)}'
+                      : 'Free',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),

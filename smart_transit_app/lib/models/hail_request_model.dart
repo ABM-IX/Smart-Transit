@@ -1,3 +1,5 @@
+import '../core/constants.dart';
+
 class HailRequest {
   final String requestId;
   final String passengerId;
@@ -26,19 +28,38 @@ class HailRequest {
   });
 
   factory HailRequest.fromJson(Map<String, dynamic> json) {
-    final pickup = json['pickupLoc'] as Map<String, dynamic>? ?? json['pickup'] as Map<String, dynamic>?;
-    final dest = json['destinationLoc'] as Map<String, dynamic>? ?? json['dropoff'] as Map<String, dynamic>?;
+    final pickup =
+        json['pickupLoc'] as Map<String, dynamic>? ??
+        json['pickup'] as Map<String, dynamic>?;
+    final dest =
+        json['destinationLoc'] as Map<String, dynamic>? ??
+        json['dropoff'] as Map<String, dynamic>?;
+    final routeId = json['routeId']?.toString() ?? 'default-route';
+    final serviceType = json['serviceType']?.toString() ?? 'STANDARD';
+    final defaultFare =
+        routeId == 'taxi-service' ||
+            serviceType.toUpperCase() == 'TAXI' ||
+            serviceType.toUpperCase() == 'STANDARD' ||
+            serviceType.toUpperCase() == 'SPECIAL'
+        ? AppConstants.taxiBaseFareBWP
+        : serviceType.toUpperCase() == 'BUS'
+        ? 0.0
+        : AppConstants.standardFareBWP;
 
     return HailRequest(
       requestId: json['requestId']?.toString() ?? '',
       passengerId: json['passengerId']?.toString() ?? '',
-      routeId: json['routeId']?.toString() ?? 'default-route',
+      routeId: routeId,
       pickupLat: (pickup?['lat'] ?? pickup?['latitude'] ?? 0.0).toDouble(),
       pickupLng: (pickup?['lng'] ?? pickup?['longitude'] ?? 0.0).toDouble(),
-      destinationLat: dest != null ? (dest['lat'] ?? dest['latitude'] ?? 0.0).toDouble() : null,
-      destinationLng: dest != null ? (dest['lng'] ?? dest['longitude'] ?? 0.0).toDouble() : null,
-      serviceType: json['serviceType']?.toString() ?? 'STANDARD',
-      fareEstimate: (json['fareEstimate'] ?? 8.0).toDouble(),
+      destinationLat: dest != null
+          ? (dest['lat'] ?? dest['latitude'] ?? 0.0).toDouble()
+          : null,
+      destinationLng: dest != null
+          ? (dest['lng'] ?? dest['longitude'] ?? 0.0).toDouble()
+          : null,
+      serviceType: serviceType,
+      fareEstimate: (json['fareEstimate'] as num?)?.toDouble() ?? defaultFare,
       stopName: json['stopName']?.toString(),
       message: json['message']?.toString(),
     );

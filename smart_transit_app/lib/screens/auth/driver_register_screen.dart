@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/route_model.dart';
 import '../../models/user_role.dart';
@@ -35,7 +36,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
   final TextEditingController _originController = TextEditingController();
   final TextEditingController _destController = TextEditingController();
   final TextEditingController _fareController = TextEditingController(
-    text: '8.00',
+    text: AppConstants.standardFareBWP.toStringAsFixed(2),
   );
 
   final TextEditingController _plateController = TextEditingController();
@@ -85,7 +86,9 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
 
     setState(() {
       _isLoadingRoutes = true;
-      _fareController.text = mode == 'BUS' ? '35.00' : '8.00';
+      _fareController.text = mode == 'BUS'
+          ? ''
+          : AppConstants.standardFareBWP.toStringAsFixed(2);
     });
 
     try {
@@ -151,7 +154,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
       } else if (_createNewRoute || _selectedRoute == null) {
         final fare =
             double.tryParse(_fareController.text.trim()) ??
-            (_selectedMode == 'BUS' ? 35.0 : 8.0);
+            (_selectedMode == 'BUS' ? 0.0 : AppConstants.standardFareBWP);
         routeId = await authService.createOrGetRoute(
           name: _routeNameController.text.trim(),
           originName: _originController.text.trim(),
@@ -207,7 +210,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
         transitProvider.connectSocket(
           role: 'drivers',
           userId: response.user!.id,
-          routeId: routeId,
+          routeId: _selectedMode == 'TAXI' ? 'taxi-service' : routeId,
         );
 
         Navigator.pushAndRemoveUntil(
@@ -247,7 +250,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
               children: [
                 Text(
                   'Welcome, ${_nameController.text.trim()}!',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                     color: AppTheme.black,
@@ -256,7 +259,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Your transit operator profile for vehicle $plate ($_selectedMode) has been saved.',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     color: AppTheme.darkGrey,
                     height: 1.4,
@@ -266,7 +269,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                   const SizedBox(height: 6),
                   Text(
                     'Assigned Corridor: ${_createNewRoute ? _routeNameController.text.trim() : (_selectedRoute?.name ?? routeId)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.black,
@@ -281,7 +284,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: AppTheme.lightGrey),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Icon(
                         Icons.info_outline,
@@ -339,7 +342,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.black),
+          icon: Icon(Icons.arrow_back, color: AppTheme.black),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -373,7 +376,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                const Text(
+                Text(
                   'Driver Onboarding',
                   style: TextStyle(
                     fontSize: 28,
@@ -383,7 +386,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Register your vehicle and route. Once registered, your corridor is instantly active and visible to commuters.',
                   style: TextStyle(
                     fontSize: 14,
@@ -429,7 +432,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
 
                 if (_selectedMode != 'TAXI') ...[
                   if (_isLoadingRoutes)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.symmetric(vertical: 8.0),
                       child: Row(
                         children: [
@@ -463,7 +466,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                             backgroundColor: AppTheme.offWhite,
                             labelStyle: TextStyle(
                               color: !_createNewRoute
-                                  ? AppTheme.white
+                                  ? AppTheme.onPrimary
                                   : AppTheme.black,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
@@ -483,7 +486,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                             backgroundColor: AppTheme.offWhite,
                             labelStyle: TextStyle(
                               color: _createNewRoute
-                                  ? AppTheme.white
+                                  ? AppTheme.onPrimary
                                   : AppTheme.black,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
@@ -498,7 +501,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                   ],
 
                   if (!_createNewRoute && _availableRoutes.isNotEmpty) ...[
-                    const Text(
+                    Text(
                       'Select Existing Corridor',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -530,7 +533,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                                 children: [
                                   Text(
                                     route.name,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
                                       color: AppTheme.black,
@@ -539,8 +542,8 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
-                                    '${route.originName} → ${route.destinationName} (P${route.baseFare.toStringAsFixed(2)})',
-                                    style: const TextStyle(
+                                    '${route.originName} → ${route.destinationName} (${_selectedMode == 'BUS' ? 'Fare varies by route' : 'P${(_selectedMode == 'TAXI' ? AppConstants.taxiBaseFareBWP : AppConstants.standardFareBWP).toStringAsFixed(2)}'})',
+                                    style: TextStyle(
                                       fontSize: 11,
                                       color: AppTheme.midGrey,
                                     ),
@@ -660,8 +663,17 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                               decimal: true,
                             ),
                             decoration: _buildInputDecoration(
-                              label: 'Standard Fare (BWP)',
-                              hint: '8.00',
+                              label: _selectedMode == 'BUS'
+                                  ? 'Route Fare (BWP)'
+                                  : _selectedMode == 'TAXI'
+                                  ? 'Taxi Base Fare (BWP)'
+                                  : 'Standard Fare (BWP)',
+                              hint: _selectedMode == 'BUS'
+                                  ? 'Enter 9 or 15 for this route'
+                                  : (_selectedMode == 'TAXI'
+                                            ? AppConstants.taxiBaseFareBWP
+                                            : AppConstants.standardFareBWP)
+                                        .toStringAsFixed(2),
                               icon: Icons.payments_outlined,
                             ),
                             validator: (val) {
@@ -687,7 +699,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: AppTheme.lightGrey),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(
                           Icons.near_me,
@@ -853,7 +865,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                   child: ElevatedButton(
                     onPressed: _isSubmitting ? null : _handleDriverRegister,
                     child: _isSubmitting
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
@@ -877,7 +889,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Already registered? ',
                       style: TextStyle(color: AppTheme.midGrey),
                     ),
@@ -890,7 +902,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                           ),
                         );
                       },
-                      child: const Text(
+                      child: Text(
                         'Sign in',
                         style: TextStyle(
                           color: AppTheme.black,
@@ -915,7 +927,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
       padding: const EdgeInsets.only(bottom: 10.0),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w900,
           fontSize: 14,
           color: AppTheme.black,
@@ -947,7 +959,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
           children: [
             Icon(
               icon,
-              color: isSelected ? AppTheme.white : AppTheme.black,
+              color: isSelected ? AppTheme.onPrimary : AppTheme.black,
               size: 26,
             ),
             const SizedBox(height: 6),
@@ -956,7 +968,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
-                color: isSelected ? AppTheme.white : AppTheme.black,
+                color: isSelected ? AppTheme.onPrimary : AppTheme.black,
               ),
             ),
           ],
@@ -974,22 +986,22 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      hintStyle: const TextStyle(fontSize: 13, color: AppTheme.midGrey),
+      hintStyle: TextStyle(fontSize: 13, color: AppTheme.midGrey),
       prefixIcon: Icon(icon, color: AppTheme.black),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: AppTheme.offWhite,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppTheme.lightGrey),
+        borderSide: BorderSide(color: AppTheme.lightGrey),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppTheme.lightGrey),
+        borderSide: BorderSide(color: AppTheme.lightGrey),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppTheme.black, width: 1.5),
+        borderSide: BorderSide(color: AppTheme.black, width: 1.5),
       ),
     );
   }

@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS public.routes (
     origin_name VARCHAR(64) NOT NULL,
     destination_name VARCHAR(64) NOT NULL,
     route_type VARCHAR(20) NOT NULL DEFAULT 'COMBI', -- COMBI, TAXI, BUS
-    base_fare NUMERIC(10, 2) NOT NULL DEFAULT 8.00,
+    base_fare NUMERIC(10, 2) NOT NULL DEFAULT 9.00,
     waypoints JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS public.trips (
     vehicle_id VARCHAR(64) REFERENCES public.vehicles(id) ON DELETE SET NULL,
     service_type VARCHAR(20) NOT NULL DEFAULT 'COMBI', -- COMBI, TAXI, BUS
     passenger_count INTEGER NOT NULL DEFAULT 1,
-    revenue NUMERIC(10, 2) NOT NULL DEFAULT 8.00,
+    revenue NUMERIC(10, 2) NOT NULL DEFAULT 9.00,
     distance_meters FLOAT NOT NULL DEFAULT 0.0,
     duration_seconds INTEGER NOT NULL DEFAULT 0,
     start_lat DOUBLE PRECISION,
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS public.taxi_bookings (
     dropoff_lat DOUBLE PRECISION,
     dropoff_lng DOUBLE PRECISION,
     service_type VARCHAR(20) NOT NULL DEFAULT 'STANDARD', -- STANDARD, SPECIAL
-    estimated_fare NUMERIC(10, 2) NOT NULL DEFAULT 8.00,
+    estimated_fare NUMERIC(10, 2) NOT NULL DEFAULT 10.00,
     final_fare NUMERIC(10, 2),
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING', -- PENDING, ACCEPTED, ON_TRIP, COMPLETED, CANCELLED
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),

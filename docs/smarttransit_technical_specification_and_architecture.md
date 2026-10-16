@@ -59,7 +59,7 @@
 
 ### 1.1 Context: Urban Mobility in Greater Gaborone, Botswana
 In Botswana's urban centers—predominantly Greater Gaborone (encompassing Gaborone, Tlokweng, Mogoditshane, Broadhurst, Phakalane, and G-West) and secondary transit hubs (Francistown, Lobatse, Palapye, Maun)—public transit does not follow fixed Western timetables. Over **85% of motorized daily commuter trips** rely on informal and semi-formal paratransit:
-1. **Minibus Combis (14–16 seaters):** Licensed by the Department of Road Transport and Safety (DRTS) along arterial corridors charging a gazetted statutory flat fare of **BWP 8.00**.
+1. **Minibus Combis (14–16 seaters):** Licensed by the Department of Road Transport and Safety (DRTS) along arterial corridors charging a gazetted statutory flat fare of **BWP 9.00**.
 2. **Special Cabs (Sedans / Blue-Plate Taxis):** Point-to-point charters providing vital first- and last-mile connectivity where combi lines do not reach (BWP 30.00 – 60.00).
 3. **Intercity Express Coaches:** Long-distance buses operating out of the Gaborone Central Bus Rank to national destinations.
 
@@ -107,7 +107,7 @@ SmartTransit/
 │   │   │   └── trip.py                  # TaxiRequestIn, TaxiRequestOut, DriverRatingIn
 │   │   ├── services/                    # Core mathematical, spatial & transit algorithms
 │   │   │   ├── ai_orchestrator.py       # NetworkX multi-modal graph builder & backward scheduler
-│   │   │   ├── fare.py                  # Statutory gazetted fare calculator (BWP 8.00 base + cab rates)
+│   │   │   ├── fare.py                  # Statutory gazetted fare calculator (BWP 9.00 base + cab rates)
 │   │   │   ├── geo.py                   # Haversine distance, speed-floored ETA regularizer, stop matcher
 │   │   │   ├── headway.py               # Newell–Daganzo anti-bunching headway spacing algorithm
 │   │   │   └── supabase_service.py      # Supabase cloud REST client integration
@@ -426,7 +426,7 @@ erDiagram
 | `origin_name` | `VARCHAR(64)` | `NOT NULL` | Origin terminus label |
 | `destination_name`| `VARCHAR(64)` | `NOT NULL` | Destination terminus label |
 | `route_type` | `VARCHAR(20)` | `NOT NULL, DEFAULT 'COMBI'` | Modality: `COMBI`, `TAXI`, or `BUS` |
-| `base_fare` | `NUMERIC(10,2)`| `NOT NULL, DEFAULT 8.00` | Statutory gazetted tariff (BWP 8.00) |
+| `base_fare` | `NUMERIC(10,2)`| `NOT NULL, DEFAULT 9.00` | Statutory gazetted tariff (BWP 9.00) |
 | `waypoints` | `JSONB` | `DEFAULT '[]'::jsonb` | Ordered array of `{lat, lng}` coordinates for polyline rendering |
 | `created_at` | `TIMESTAMPTZ` | `DEFAULT timezone('utc', now())` | Route definition timestamp |
 
@@ -461,7 +461,7 @@ erDiagram
 | `vehicle_id` | `VARCHAR(64)` | `NULLABLE, FK -> vehicles(id)`| Vehicle used |
 | `service_type` | `VARCHAR(20)` | `NOT NULL, DEFAULT 'COMBI'` | Modality |
 | `passenger_count`| `INTEGER` | `NOT NULL, DEFAULT 1` | Total passengers carried |
-| `revenue` | `NUMERIC(10,2)`| `NOT NULL, DEFAULT 8.00` | Total fare collected in BWP |
+| `revenue` | `NUMERIC(10,2)`| `NOT NULL, DEFAULT 9.00` | Total fare collected in BWP |
 | `distance_meters`| `FLOAT` | `NOT NULL, DEFAULT 0.0` | Total odometer distance from GPS trace |
 | `duration_seconds`| `INTEGER` | `NOT NULL, DEFAULT 0` | Elapsed operational duration |
 | `status` | `VARCHAR(20)` | `NOT NULL, DEFAULT 'COMPLETED'` | `IN_PROGRESS`, `COMPLETED`, `CANCELLED` |
@@ -477,7 +477,7 @@ erDiagram
 | `pickup_lat`, `pickup_lng` | `DOUBLE PRECISION`| `NOT NULL` | Passenger GPS pickup coordinate |
 | `dropoff_lat`, `dropoff_lng`| `DOUBLE PRECISION`| `NULLABLE` | Passenger destination coordinate |
 | `service_type` | `VARCHAR(20)` | `NOT NULL, DEFAULT 'STANDARD'` | `STANDARD` (shared) or `SPECIAL` (charter) |
-| `estimated_fare`| `NUMERIC(10,2)`| `NOT NULL, DEFAULT 8.00` | Algorithmic upfront fare quote |
+| `estimated_fare`| `NUMERIC(10,2)`| `NOT NULL, DEFAULT 10.00` | Algorithmic upfront taxi fare quote |
 | `final_fare` | `NUMERIC(10,2)`| `NULLABLE` | Final metered fare billed upon arrival |
 | `status` | `VARCHAR(20)` | `NOT NULL, DEFAULT 'PENDING'` | `PENDING`, `ACCEPTED`, `ON_TRIP`, `COMPLETED`, `CANCELLED` |
 | `created_at` | `TIMESTAMPTZ` | `DEFAULT timezone('utc', now())` | Hail initiation timestamp |
@@ -508,7 +508,7 @@ The backend is built with **FastAPI** running on an asynchronous ASGI event loop
 - `app/database.py`: Manages the database engine. Establishes asynchronous connection pooling via SQLAlchemy 2.0. If PostgreSQL is unreachable, it automatically initializes and runs migrations against `smarttransit.db` via `aiosqlite`.
 - `app/services/geo.py`: Spatial mathematical library implementing spherical Haversine formulas and the speed-floored ETA regularizer.
 - `app/services/headway.py`: Real-time Newell–Daganzo headway spacing engine for corridor combis.
-- `app/services/fare.py`: Computes statutory fares (BWP 8.00 gazetted flat fare) and distance/time-metered special cab tariffs.
+- `app/services/fare.py`: Computes statutory fares (BWP 9.00 gazetted flat fare) and distance/time-metered special cab tariffs.
 - `app/services/ai_orchestrator.py`: Multi-modal directed graph builder and backward-scheduling trip orchestrator powered by `networkx`.
 
 ---
@@ -555,7 +555,7 @@ Fetches registered transit corridors from the database, with optional filtering 
     "origin_name": "string",
     "destination_name": "string",
     "route_type": "COMBI",
-    "base_fare": 8.00,
+    "base_fare": 9.00,
     "waypoints": [
       {"lat": 0.0, "lng": 0.0}
     ]
@@ -708,7 +708,7 @@ Coordinates a multi-leg journey combining Doorstep Special Cabs, Arterial Minibu
       "scheduled_departure": "09:30",
       "scheduled_arrival": "09:50",
       "duration_mins": 20,
-      "fare_bwp": 8.00,
+      "fare_bwp": 9.00,
       "instructions": "Board Route Combi to Central Station."
     },
     {
@@ -839,7 +839,7 @@ For regional or long-distance travel, the system models the multi-modal transit 
 - **Vertices ($V$):** Doorstep geocodes, neighborhood combi stops, central bus ranks, and intercity coach terminals.
 - **Edges ($E$):** 
   - On-demand taxi links ($v \approx 40\text{ km/h}$, metered fare).
-  - Fixed combi corridors ($v \approx 25\text{ km/h}$, statutory BWP 8.00 fare).
+  - Fixed combi corridors ($v \approx 25\text{ km/h}$, statutory BWP 9.00 fare).
   - Intercity express coach corridors ($v \approx 80\text{ km/h}$, distance-tiered fare).
 - **Backward Scheduling:** Given a target arrival time at an intercity destination (e.g., Francistown at 14:30), the algorithm traverses $G$ backward from destination to origin:
   1. Intercity leg requires $255\text{ min} \implies$ Coach departs Gaborone at 10:15.
@@ -909,7 +909,7 @@ The dashboard includes an automated reporting engine (`reportGenerator.js`) that
 1. **RPT-01 (Headway Regularity & Bunching Audit):** Quantifies variance from the 5-minute target headway per corridor; flags operators responsible for severe platooning.
 2. **RPT-02 (Fleet Operational Telemetry & Speed Violations):** Audits vehicle speeds against gazetted limits in school zones, roundabouts, and mall terminals.
 3. **RPT-03 (Commuter Demand & Hail Spatial Distribution):** Documents unfulfilled taxi hails and passenger wait times by neighborhood, providing empirical data for DRTS permit allocation.
-4. **RPT-04 (Revenue & Tariff Reconciliation):** Audits fare collection compliance against the statutory BWP 8.00 rate.
+4. **RPT-04 (Revenue & Tariff Reconciliation):** Audits fare collection compliance against the statutory BWP 9.00 rate.
 5. **RPT-05 (Driver Safety & Quality Rating Audit):** Ranks drivers by passenger ratings and incident reports.
 
 ---

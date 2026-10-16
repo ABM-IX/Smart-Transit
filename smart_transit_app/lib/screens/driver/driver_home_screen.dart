@@ -37,11 +37,16 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
     final auth = Provider.of<AuthProvider>(context);
 
     // Filter incoming hails to only those matching this driver's route
-    final targetRoute = widget.driverRole == UserRole.driverTaxi ? 'taxi-service' : widget.routeId;
-    final relevantHails = transit.incomingHails.where((h) => h.routeId == targetRoute).toList();
+    final targetRoute = widget.driverRole == UserRole.driverTaxi
+        ? 'taxi-service'
+        : widget.routeId;
+    final relevantHails = transit.incomingHails
+        .where((h) => h.routeId == targetRoute)
+        .toList();
 
     // Trigger non-intrusive 5s auto-dismissing hail toast on new hail
-    if (relevantHails.isNotEmpty && relevantHails.first.requestId != _displayedHailId) {
+    if (relevantHails.isNotEmpty &&
+        relevantHails.first.requestId != _displayedHailId) {
       _displayedHailId = relevantHails.first.requestId;
       _showHailAlert = true;
       Future.delayed(const Duration(seconds: 5), () {
@@ -51,7 +56,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
       });
     }
 
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Scaffold(
       backgroundColor: AppTheme.white,
@@ -62,13 +68,18 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
             userLocation: transit.currentLocation,
             stops: transit.stops,
             activeHails: relevantHails,
-            drivers: transit.activeDrivers.where((d) => d.driverId != auth.userId).toList(),
+            drivers: transit.activeDrivers
+                .where((d) => d.driverId != auth.userId)
+                .toList(),
           ),
 
           // Top Header & Responsive Notification Stack
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 6.0,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -77,7 +88,10 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                       // Route & Vehicle Info
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: AppTheme.white,
                             borderRadius: BorderRadius.circular(30),
@@ -89,7 +103,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                             children: [
                               Text(
                                 '${widget.routeName} • ${auth.vehiclePlate}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
                                   color: AppTheme.black,
@@ -98,7 +112,10 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                               ),
                               Text(
                                 '${widget.driverRole.displayName} Shift',
-                                style: const TextStyle(fontSize: 11, color: AppTheme.midGrey),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.midGrey,
+                                ),
                               ),
                             ],
                           ),
@@ -117,13 +134,23 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: transit.isDriverOnline ? AppTheme.accentRed : AppTheme.accentGreen,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          backgroundColor: transit.isDriverOnline
+                              ? AppTheme.accentRed
+                              : AppTheme.accentGreen,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
                         child: Text(
                           transit.isDriverOnline ? 'GO OFFLINE' : 'GO ONLINE',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -136,16 +163,24 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                     runSpacing: 4,
                     children: [
                       StatusPill(
-                        label: transit.isDriverOnline ? 'ONLINE • GPS Active' : 'OFFLINE',
-                        color: transit.isDriverOnline ? AppTheme.accentGreen : AppTheme.midGrey,
-                        icon: transit.isDriverOnline ? Icons.sensors : Icons.sensors_off,
+                        label: transit.isDriverOnline
+                            ? 'ONLINE • GPS Active'
+                            : 'OFFLINE',
+                        color: transit.isDriverOnline
+                            ? AppTheme.accentGreen
+                            : AppTheme.midGrey,
+                        icon: transit.isDriverOnline
+                            ? Icons.sensors
+                            : Icons.sensors_off,
                       ),
                       if (transit.isDriverOnline)
                         StatusPill(
                           label: transit.vehicleSpeedKmh > 1.0
                               ? '${transit.vehicleSpeedKmh.toStringAsFixed(0)} km/h'
                               : '0 km/h (Stationary)',
-                          color: transit.vehicleSpeedKmh > 1.0 ? AppTheme.accentBlue : AppTheme.darkGrey,
+                          color: transit.vehicleSpeedKmh > 1.0
+                              ? AppTheme.accentBlue
+                              : AppTheme.darkGrey,
                           icon: Icons.speed,
                         ),
                       if (relevantHails.isNotEmpty)
@@ -155,7 +190,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                           icon: Icons.pan_tool_alt_outlined,
                         ),
                       StatusPill(
-                        label: 'Shift Rev: P${_shiftRevenue.toStringAsFixed(2)}',
+                        label:
+                            'Shift Rev: P${_shiftRevenue.toStringAsFixed(2)}',
                         color: AppTheme.black,
                         icon: Icons.account_balance_wallet_outlined,
                       ),
@@ -163,7 +199,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                   ),
 
                   // Spacing Advisory Banner (Flows naturally in column)
-                  if (transit.isDriverOnline && widget.driverRole != UserRole.driverTaxi && transit.spacingAdvisory != null) ...[
+                  if (transit.isDriverOnline &&
+                      widget.driverRole != UserRole.driverTaxi &&
+                      transit.spacingAdvisory != null) ...[
                     const SizedBox(height: 6),
                     SpacingAdvisoryWidget(advisory: transit.spacingAdvisory),
                   ],
@@ -172,17 +210,28 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                   if (transit.lastStopRequest != null) ...[
                     const SizedBox(height: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.amber.shade700,
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 3)),
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
                         ],
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.notifications_active, color: Colors.white, size: 20),
+                          const Icon(
+                            Icons.notifications_active,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                           const SizedBox(width: 10),
                           const Expanded(
                             child: Column(
@@ -191,11 +240,19 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                               children: [
                                 Text(
                                   'STOP REQUESTED!',
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 13,
+                                  ),
                                 ),
                                 Text(
                                   'Passenger signaling to get off ahead 🛑',
-                                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ],
                             ),
@@ -204,10 +261,22 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                             onPressed: () => transit.dismissStopRequest(),
                             style: TextButton.styleFrom(
                               backgroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
-                            child: const Text('OK', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11)),
+                            child: const Text(
+                              'OK',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -218,17 +287,28 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                   if (_showHailAlert && relevantHails.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.black,
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 10, offset: const Offset(0, 3)),
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
                         ],
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.pan_tool_alt, color: AppTheme.hailColor, size: 20),
+                          const Icon(
+                            Icons.pan_tool_alt,
+                            color: AppTheme.hailColor,
+                            size: 20,
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
@@ -237,26 +317,46 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                               children: [
                                 const Text(
                                   'Passenger Hail on Route!',
-                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 12,
+                                  ),
                                 ),
                                 Text(
                                   relevantHails.first.stopName != null
                                       ? 'Waiting at ${relevantHails.first.stopName} (P${relevantHails.first.fareEstimate.toStringAsFixed(2)})'
                                       : 'Waiting along corridor (P${relevantHails.first.fareEstimate.toStringAsFixed(2)})',
-                                  style: const TextStyle(color: AppTheme.borderGrey, fontSize: 11),
+                                  style: TextStyle(
+                                    color: AppTheme.borderGrey,
+                                    fontSize: 11,
+                                  ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
                           ),
                           TextButton(
-                            onPressed: () => setState(() => _showHailAlert = false),
+                            onPressed: () =>
+                                setState(() => _showHailAlert = false),
                             style: TextButton.styleFrom(
                               backgroundColor: AppTheme.primaryTeal,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
-                            child: const Text('OK', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
+                            child: const Text(
+                              'OK',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 11,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -299,7 +399,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
   ) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         border: Border(top: BorderSide(color: AppTheme.lightGrey, width: 1)),
@@ -318,11 +418,19 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.pan_tool_alt_outlined, size: 16, color: AppTheme.hailColor),
+                  const Icon(
+                    Icons.pan_tool_alt_outlined,
+                    size: 16,
+                    color: AppTheme.hailColor,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     '${relevantHails.length} passenger(s) waiting along this route',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.black),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.black,
+                    ),
                   ),
                 ],
               ),
@@ -332,33 +440,48 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Vehicle Occupancy',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.black),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: AppTheme.black,
+                ),
               ),
               Text(
                 '$_tripsCompleted Trips • ${transit.passengersCarried} Passengers',
-                style: const TextStyle(fontSize: 12, color: AppTheme.midGrey),
+                style: TextStyle(fontSize: 12, color: AppTheme.midGrey),
               ),
             ],
           ),
           const SizedBox(height: 8),
 
           Row(
-            children: ['Empty', 'Half Full', 'Almost Full', 'Full'].map((level) {
+            children: ['Empty', 'Half Full', 'Almost Full', 'Full'].map((
+              level,
+            ) {
               final isSelected = _occupancy == level;
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 2.0),
                   child: ChoiceChip(
-                    label: Text(level, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isSelected ? AppTheme.white : AppTheme.black)),
+                    label: Text(
+                      level,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: isSelected ? AppTheme.onPrimary : AppTheme.black,
+                      ),
+                    ),
                     selected: isSelected,
                     selectedColor: AppTheme.black,
                     backgroundColor: AppTheme.offWhite,
                     showCheckmark: false,
                     onSelected: (_) {
                       setState(() => _occupancy = level);
-                      final route = widget.driverRole == UserRole.driverTaxi ? 'taxi-service' : widget.routeId;
+                      final route = widget.driverRole == UserRole.driverTaxi
+                          ? 'taxi-service'
+                          : widget.routeId;
                       transit.updateDriverOccupancy(
                         driverId: auth.userId,
                         routeId: route,

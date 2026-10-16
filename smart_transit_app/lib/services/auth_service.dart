@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/constants.dart';
 
 class UserProfile {
   final String id;
@@ -36,7 +37,8 @@ class UserProfile {
       fullName: json['full_name'] as String? ?? '',
       phoneNumber: json['phone_number'] as String? ?? '',
       role: (json['role'] as String? ?? 'PASSENGER').toUpperCase(),
-      serviceType: (json['service_type'] as String? ?? 'PASSENGER').toUpperCase(),
+      serviceType: (json['service_type'] as String? ?? 'PASSENGER')
+          .toUpperCase(),
       vehiclePlate: json['vehicle_plate'] as String?,
       assignedRouteId: json['assigned_route_id'] as String?,
       rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
@@ -136,7 +138,7 @@ class AuthService {
         'origin_name': 'Gaborone Metro',
         'destination_name': 'On-Demand Dispatch',
         'route_type': 'TAXI',
-        'base_fare': 15.00,
+        'base_fare': AppConstants.taxiBaseFareBWP,
         'is_active': true,
       });
     } catch (_) {}
@@ -190,10 +192,15 @@ class AuthService {
     required String originName,
     required String destinationName,
     required String routeType,
-    double baseFare = 8.00,
+    double baseFare = AppConstants.standardFareBWP,
   }) async {
-    final cleanId = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-').replaceAll(RegExp(r'^-|-$'), '');
-    final routeId = cleanId.isNotEmpty ? cleanId : 'route-${DateTime.now().millisecondsSinceEpoch}';
+    final cleanId = name
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-|-$'), '');
+    final routeId = cleanId.isNotEmpty
+        ? cleanId
+        : 'route-${DateTime.now().millisecondsSinceEpoch}';
 
     try {
       await _supabase.from('routes').upsert({
@@ -332,7 +339,8 @@ class AuthService {
         fullName: (meta['full_name'] as String?) ?? 'SmartTransit User',
         phoneNumber: (meta['phone_number'] as String?) ?? '',
         role: ((meta['role'] as String?) ?? 'PASSENGER').toUpperCase(),
-        serviceType: ((meta['service_type'] as String?) ?? 'PASSENGER').toUpperCase(),
+        serviceType: ((meta['service_type'] as String?) ?? 'PASSENGER')
+            .toUpperCase(),
         vehiclePlate: meta['vehicle_plate'] as String?,
         assignedRouteId: meta['assigned_route_id'] as String?,
       );

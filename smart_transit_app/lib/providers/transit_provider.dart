@@ -9,7 +9,14 @@ import '../services/api_service.dart';
 import '../services/socket_service.dart';
 import '../services/location_service.dart';
 
-enum PassengerTripStatus { idle, searchingTaxi, hailPending, driverAccepted, onBoard, completed }
+enum PassengerTripStatus {
+  idle,
+  searchingTaxi,
+  hailPending,
+  driverAccepted,
+  onBoard,
+  completed,
+}
 
 class TransitProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
@@ -21,8 +28,11 @@ class TransitProvider extends ChangeNotifier {
   List<TransitStop> _stops = [];
   TransitRoute? _selectedRoute;
   final Map<String, LiveDriver> _activeDrivers = {};
-  
-  LatLng _currentLocation = const LatLng(AppConstants.defaultLatitude, AppConstants.defaultLongitude);
+
+  LatLng _currentLocation = const LatLng(
+    AppConstants.defaultLatitude,
+    AppConstants.defaultLongitude,
+  );
   bool _isConnected = false;
 
   // Passenger State
@@ -30,6 +40,7 @@ class TransitProvider extends ChangeNotifier {
   String? _assignedDriverId;
   double? _estimatedFare;
   String? _currentRequestId;
+  LatLng? _livePassengerLocation;
   int? _etaSeconds;
   double? _etaDistanceMeters;
 
@@ -55,6 +66,7 @@ class TransitProvider extends ChangeNotifier {
   String? get assignedDriverId => _assignedDriverId;
   double? get estimatedFare => _estimatedFare;
   String? get currentRequestId => _currentRequestId;
+  LatLng? get livePassengerLocation => _livePassengerLocation;
   int? get etaSeconds => _etaSeconds;
   double? get etaDistanceMeters => _etaDistanceMeters;
   String get etaDisplay {
@@ -63,6 +75,7 @@ class TransitProvider extends ChangeNotifier {
     if (mins <= 1) return '1 min (Arriving)';
     return '$mins mins';
   }
+
   bool get isDriverOnline => _isDriverOnline;
   SpacingAdvisory? get spacingAdvisory => _spacingAdvisory;
   List<HailRequest> get incomingHails => _incomingHails;
@@ -111,7 +124,10 @@ class TransitProvider extends ChangeNotifier {
       if (role == 'passengers') {
         _socket.emit('passenger-location', {
           'routeId': route.id,
-          'coords': {'lat': _currentLocation.latitude, 'lng': _currentLocation.longitude}
+          'coords': {
+            'lat': _currentLocation.latitude,
+            'lng': _currentLocation.longitude,
+          },
         });
       }
     }
@@ -119,7 +135,11 @@ class TransitProvider extends ChangeNotifier {
   }
 
   // --- WEBSOCKET INITIALIZATION ---
-  void connectSocket({required String role, required String userId, String? routeId}) {
+  void connectSocket({
+    required String role,
+    required String userId,
+    String? routeId,
+  }) {
     _socket.connect(
       onConnect: (_) {
         _isConnected = true;
@@ -129,13 +149,19 @@ class TransitProvider extends ChangeNotifier {
           'driverId': userId,
           'passengerId': userId,
           'routeId': routeId ?? _selectedRoute?.id ?? '',
-          'coords': {'lat': _currentLocation.latitude, 'lng': _currentLocation.longitude}
+          'coords': {
+            'lat': _currentLocation.latitude,
+            'lng': _currentLocation.longitude,
+          },
         });
         if (role == 'passengers') {
           _socket.emit('passenger-location', {
             'passengerId': userId,
             'routeId': routeId ?? _selectedRoute?.id ?? '',
-            'coords': {'lat': _currentLocation.latitude, 'lng': _currentLocation.longitude}
+            'coords': {
+              'lat': _currentLocation.latitude,
+              'lng': _currentLocation.longitude,
+            },
           });
         }
         notifyListeners();
@@ -191,7 +217,11 @@ class TransitProvider extends ChangeNotifier {
         'new-hail': (data) {
           if (data is Map<String, dynamic>) {
             final hail = HailRequest.fromJson(data);
-            _incomingHails.removeWhere((h) => h.requestId == hail.requestId || h.passengerId == hail.passengerId);
+            _incomingHails.removeWhere(
+              (h) =>
+                  h.requestId == hail.requestId ||
+                  h.passengerId == hail.passengerId,
+            );
             _incomingHails.add(hail);
             _latestHailAlert = hail;
             notifyListeners();
@@ -200,10 +230,27 @@ class TransitProvider extends ChangeNotifier {
         'new-taxi-request': (data) {
           if (data is Map<String, dynamic>) {
             final hail = HailRequest.fromJson(data);
-            _incomingHails.removeWhere((h) => h.requestId == hail.requestId || h.passengerId == hail.passengerId);
+            _incomingHails.removeWhere(
+              (h) =>
+                  h.requestId == hail.requestId ||
+                  h.passengerId == hail.passengerId,
+            );
             _incomingHails.add(hail);
             _latestHailAlert = hail;
             notifyListeners();
+          }
+        },
+        'passenger-location': (data) {
+          if (data is Map<String, dynamic>) {
+            final coords = data['coords'];
+            if (coords is Map<String, dynamic>) {
+              final lat = (coords['lat'] ?? coords['latitude']) as num?;
+              final lng = (coords['lng'] ?? coords['longitude']) as num?;
+              if (lat != null && lng != null) {
+                _livePassengerLocation = LatLng(lat.toDouble(), lng.toDouble());
+                notifyListeners();
+              }
+            }
           }
         },
         'stop-requested': (data) {
@@ -246,7 +293,11 @@ class TransitProvider extends ChangeNotifier {
         'hail-accepted': (data) {
           if (data is Map<String, dynamic>) {
             _assignedDriverId = data['driverId'];
-            _estimatedFare = (data['fareEstimate'] as num?)?.toDouble() ?? 8.0;
+            _estimatedFare =
+                (data['fareEstimate'] as num?)?.toDouble() ??
+                (_passengerStatus == PassengerTripStatus.searchingTaxi
+                    ? AppConstants.taxiBaseFareBWP
+                    : _selectedRoute?.baseFare ?? AppConstants.standardFareBWP);
             _passengerStatus = PassengerTripStatus.driverAccepted;
             notifyListeners();
           }
@@ -275,14 +326,16 @@ class TransitProvider extends ChangeNotifier {
         },
         'trip-completed': (data) {
           if (data is Map<String, dynamic>) {
-            _estimatedFare = (data['fare'] as num?)?.toDouble() ?? _estimatedFare;
+            _estimatedFare =
+                (data['fare'] as num?)?.toDouble() ?? _estimatedFare;
           }
           _passengerStatus = PassengerTripStatus.completed;
           notifyListeners();
         },
         'taxi-trip-ended': (data) {
           if (data is Map<String, dynamic>) {
-            _estimatedFare = (data['fare'] as num?)?.toDouble() ?? _estimatedFare;
+            _estimatedFare =
+                (data['fare'] as num?)?.toDouble() ?? _estimatedFare;
           }
           _passengerStatus = PassengerTripStatus.completed;
           notifyListeners();
@@ -294,16 +347,21 @@ class TransitProvider extends ChangeNotifier {
   // --- PASSENGER ACTIONS ---
   void requestCombiHail(String passengerId, {String? serviceType}) {
     if (_selectedRoute == null) return;
-    final resolvedType = serviceType ??
-        (_selectedRoute!.routeType.toUpperCase() == 'BUS' || _selectedRoute!.id.startsWith('bus-')
+    final resolvedType =
+        serviceType ??
+        (_selectedRoute!.routeType.toUpperCase() == 'BUS' ||
+                _selectedRoute!.id.startsWith('bus-')
             ? 'BUS'
             : 'COMBI');
     _passengerStatus = PassengerTripStatus.hailPending;
     _socket.emit('hail', {
       'passengerId': passengerId,
       'routeId': _selectedRoute!.id,
-      'pickupLoc': {'lat': _currentLocation.latitude, 'lng': _currentLocation.longitude},
-      'serviceType': resolvedType
+      'pickupLoc': {
+        'lat': _currentLocation.latitude,
+        'lng': _currentLocation.longitude,
+      },
+      'serviceType': resolvedType,
     });
     notifyListeners();
   }
@@ -314,20 +372,37 @@ class TransitProvider extends ChangeNotifier {
     required LatLng pickup,
     LatLng? dropoff,
   }) {
+    _selectedRoute = null;
+    _estimatedFare = AppConstants.taxiBaseFareBWP;
+    _livePassengerLocation = pickup;
     _passengerStatus = PassengerTripStatus.searchingTaxi;
     _socket.emit('passenger-request-taxi', {
       'passengerId': passengerId,
       'pickup': {'lat': pickup.latitude, 'lng': pickup.longitude},
-      if (dropoff != null) 'dropoff': {'lat': dropoff.latitude, 'lng': dropoff.longitude},
+      if (dropoff != null)
+        'dropoff': {'lat': dropoff.latitude, 'lng': dropoff.longitude},
       'serviceType': serviceType,
+    });
+    _location.startLocationTracking((pos, _, __) {
+      _currentLocation = pos;
+      _livePassengerLocation = pos;
+      _socket.emit('passenger-location', {
+        'passengerId': passengerId,
+        'routeId': 'taxi-service',
+        'coords': {'lat': pos.latitude, 'lng': pos.longitude},
+      });
+      notifyListeners();
     });
     notifyListeners();
   }
 
   void confirmBoarding(String passengerId) {
-    final driverId = _assignedDriverId ??
+    final driverId =
+        _assignedDriverId ??
         (_activeDrivers.isNotEmpty ? _activeDrivers.keys.first : 'driver-1');
-    final routeId = _selectedRoute?.id ?? (_routes.isNotEmpty ? _routes.first.id : 'transit-line');
+    final routeId =
+        _selectedRoute?.id ??
+        (_routes.isNotEmpty ? _routes.first.id : 'transit-line');
 
     _socket.emit('boarding', {
       'driverId': driverId,
@@ -360,7 +435,10 @@ class TransitProvider extends ChangeNotifier {
       'serviceType': serviceType,
       'routeId': routeId,
       'vehicleId': vehicleId,
-      'coords': {'lat': _currentLocation.latitude, 'lng': _currentLocation.longitude},
+      'coords': {
+        'lat': _currentLocation.latitude,
+        'lng': _currentLocation.longitude,
+      },
       'speed': 35.0,
       'heading': 0.0,
       'occupancy': paxCount,
@@ -395,9 +473,15 @@ class TransitProvider extends ChangeNotifier {
     }
   }
 
-  void passengerEndTrip({required String passengerId, String? driverId, double? finalFare}) {
+  void passengerEndTrip({
+    required String passengerId,
+    String? driverId,
+    double? finalFare,
+  }) {
     final dId = driverId ?? _assignedDriverId;
-    final fare = finalFare ?? _estimatedFare ?? 8.0;
+    final fallbackFare =
+        _selectedRoute?.baseFare ?? AppConstants.taxiBaseFareBWP;
+    final fare = finalFare ?? _estimatedFare ?? fallbackFare;
 
     _socket.emit('passenger-end-trip', {
       'passengerId': passengerId,
@@ -423,6 +507,7 @@ class TransitProvider extends ChangeNotifier {
 
     _estimatedFare = fare;
     _passengerStatus = PassengerTripStatus.completed;
+    _location.stopLocationTracking();
     notifyListeners();
   }
 
@@ -441,6 +526,7 @@ class TransitProvider extends ChangeNotifier {
       'passengerId': passengerId,
       'routeId': routeId,
     });
+    _location.stopLocationTracking();
     _passengerStatus = PassengerTripStatus.idle;
     _assignedDriverId = null;
     _currentRequestId = null;
@@ -453,6 +539,7 @@ class TransitProvider extends ChangeNotifier {
     } else {
       _passengerStatus = PassengerTripStatus.idle;
       _assignedDriverId = null;
+      _livePassengerLocation = null;
       _currentRequestId = null;
       notifyListeners();
     }

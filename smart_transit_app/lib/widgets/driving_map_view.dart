@@ -7,6 +7,7 @@ import '../core/theme.dart';
 import '../models/driver_model.dart';
 import '../models/hail_request_model.dart';
 import '../models/route_model.dart';
+import 'map_tile_theme.dart';
 
 class DrivingMapView extends StatefulWidget {
   final LatLng userLocation;
@@ -44,7 +45,8 @@ class DrivingMapView extends StatefulWidget {
   State<DrivingMapView> createState() => _DrivingMapViewState();
 }
 
-class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStateMixin {
+class _DrivingMapViewState extends State<DrivingMapView>
+    with TickerProviderStateMixin {
   final MapController _mapController = MapController();
 
   // Animation controllers for smooth gliding and pulsing
@@ -148,7 +150,8 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
     const double earthRadius = 6371000;
     final dLat = (p2.latitude - p1.latitude) * (math.pi / 180.0);
     final dLon = (p2.longitude - p1.longitude) * (math.pi / 180.0);
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(p1.latitude * (math.pi / 180.0)) *
             math.cos(p2.latitude * (math.pi / 180.0)) *
             math.sin(dLon / 2) *
@@ -175,7 +178,8 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     final topOffset = widget.topPadding ?? (isLandscape ? 6.0 : 8.0);
     final bottomOffset = widget.bottomPadding ?? (isLandscape ? 70.0 : 120.0);
 
@@ -196,7 +200,8 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
     if (widget.stops.isNotEmpty) {
       nextStopTitle = widget.stops.first.name;
     } else if (widget.activeHails.isNotEmpty) {
-      nextStopTitle = 'Hailer on Route (${widget.activeHails.first.stopName ?? "Waiting passenger"})';
+      nextStopTitle =
+          'Hailer on Route (${widget.activeHails.first.stopName ?? "Waiting passenger"})';
       estimatedDistanceM = 180;
     }
 
@@ -221,6 +226,9 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.smarttransit.app',
+              tileBuilder: Theme.of(context).brightness == Brightness.dark
+                  ? smartTransitDarkTileBuilder
+                  : null,
             ),
 
             // Map Markers Layer
@@ -228,16 +236,18 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
               markers: [
                 // 1. Other Vehicles / Drivers (Mode-Specific Semantic Markers)
                 ...widget.otherDrivers.map((d) {
-                  final Color markerColor = d.serviceType.toLowerCase() == 'taxi'
+                  final Color markerColor =
+                      d.serviceType.toLowerCase() == 'taxi'
                       ? AppTheme.taxiColor
                       : d.serviceType.toLowerCase() == 'bus'
-                          ? AppTheme.busColor
-                          : AppTheme.combiColor;
-                  final IconData markerIcon = d.serviceType.toLowerCase() == 'taxi'
+                      ? AppTheme.busColor
+                      : AppTheme.combiColor;
+                  final IconData markerIcon =
+                      d.serviceType.toLowerCase() == 'taxi'
                       ? Icons.local_taxi
                       : d.serviceType.toLowerCase() == 'bus'
-                          ? Icons.directions_bus
-                          : Icons.airport_shuttle;
+                      ? Icons.directions_bus
+                      : Icons.airport_shuttle;
                   return Marker(
                     point: LatLng(d.latitude, d.longitude),
                     width: 44,
@@ -246,14 +256,21 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: AppTheme.brandNavy,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             d.vehicleId ?? d.serviceType,
-                            style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -278,13 +295,18 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 3,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppTheme.hailColor,
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppTheme.hailColor.withValues(alpha: 0.5),
+                                      color: AppTheme.hailColor.withValues(
+                                        alpha: 0.5,
+                                      ),
                                       blurRadius: 8,
                                       spreadRadius: 2,
                                     ),
@@ -293,7 +315,11 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.pan_tool_alt, color: Colors.white, size: 12),
+                                    Icon(
+                                      Icons.pan_tool_alt,
+                                      color: Colors.white,
+                                      size: 12,
+                                    ),
                                     SizedBox(width: 3),
                                     Text(
                                       'WAITING',
@@ -313,10 +339,17 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: AppTheme.hailColor, width: 2.5),
+                                  border: Border.all(
+                                    color: AppTheme.hailColor,
+                                    width: 2.5,
+                                  ),
                                 ),
-                                child: const Center(
-                                  child: Icon(Icons.person, color: AppTheme.brandNavy, size: 16),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.person,
+                                    color: AppTheme.brandNavy,
+                                    size: 16,
+                                  ),
                                 ),
                               ),
                             ],
@@ -370,7 +403,9 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                             border: Border.all(color: Colors.white, width: 3),
                             boxShadow: [
                               BoxShadow(
-                                color: AppTheme.brandNavy.withValues(alpha: 0.35),
+                                color: AppTheme.brandNavy.withValues(
+                                  alpha: 0.35,
+                                ),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -455,7 +490,10 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                                 ),
                                 const Spacer(),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(10),
@@ -493,9 +531,14 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                 if (nearestVehicle != null && vehicleDistance != null) ...[
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: vehicleDistance < 150 ? AppTheme.statusWarning : Colors.white,
+                      color: vehicleDistance < 150
+                          ? AppTheme.statusWarning
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: AppTheme.borderGrey),
                       boxShadow: [
@@ -512,7 +555,9 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                         Icon(
                           Icons.directions_car,
                           size: 18,
-                          color: vehicleDistance < 150 ? Colors.black : AppTheme.statusWarning,
+                          color: vehicleDistance < 150
+                              ? Colors.black
+                              : AppTheme.statusWarning,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -520,7 +565,9 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: vehicleDistance < 150 ? Colors.black : AppTheme.brandNavy,
+                            color: vehicleDistance < 150
+                                ? Colors.black
+                                : AppTheme.brandNavy,
                           ),
                         ),
                       ],
@@ -541,15 +588,28 @@ class _DrivingMapViewState extends State<DrivingMapView> with TickerProviderStat
             child: Center(
               child: ElevatedButton.icon(
                 onPressed: _recenterCamera,
-                icon: const Icon(Icons.navigation, color: Colors.white, size: 18),
+                icon: const Icon(
+                  Icons.navigation,
+                  color: Colors.white,
+                  size: 18,
+                ),
                 label: Text(
                   'Re-center (${_countdownSeconds}s)',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
                   elevation: 6,
                 ),
               ),

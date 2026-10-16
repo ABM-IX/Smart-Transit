@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/route_model.dart';
 import '../../providers/transit_provider.dart';
@@ -48,16 +49,16 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
             onChanged: (val) => setState(() => _searchQuery = val),
             decoration: InputDecoration(
               hintText: 'Search destinations or route numbers...',
-              prefixIcon: const Icon(Icons.search, color: AppTheme.black),
+              prefixIcon: Icon(Icons.search, color: AppTheme.black),
               filled: true,
               fillColor: AppTheme.offWhite,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: AppTheme.lightGrey),
+                borderSide: BorderSide(color: AppTheme.lightGrey),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: AppTheme.lightGrey),
+                borderSide: BorderSide(color: AppTheme.lightGrey),
               ),
             ),
           ),
@@ -67,7 +68,7 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
             widget.mode == TransportMode.bus
                 ? 'Intercity & Regional Routes'
                 : 'Urban Combi Routes',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: AppTheme.black,
@@ -98,7 +99,7 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
                             _searchQuery.isNotEmpty
                                 ? 'No corridors matching "$_searchQuery"'
                                 : 'No Active ${widget.mode == TransportMode.bus ? "Bus" : "Combi"} Corridors',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                               color: AppTheme.black,
@@ -110,7 +111,7 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
                                 ? 'Try searching for a different destination or route number.'
                                 : 'Corridors only appear once an operator registers on them. Check back soon or hail a direct cab!',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               color: AppTheme.midGrey,
                               height: 1.4,
@@ -170,7 +171,7 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
                   children: [
                     Text(
                       route.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.black,
@@ -179,10 +180,7 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
                     const SizedBox(height: 2),
                     Text(
                       '${route.originName} → ${route.destinationName}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppTheme.midGrey,
-                      ),
+                      style: TextStyle(fontSize: 13, color: AppTheme.midGrey),
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (hasLiveDriver) ...[
@@ -231,19 +229,17 @@ class _DestinationsBrowserScreenState extends State<DestinationsBrowserScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    'P${route.baseFare.toStringAsFixed(2)}',
-                    style: const TextStyle(
+                    widget.mode == TransportMode.bus
+                        ? 'Fare varies by route'
+                        : 'P${AppConstants.standardFareBWP.toStringAsFixed(2)}',
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                       color: AppTheme.black,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: AppTheme.midGrey,
-                    size: 18,
-                  ),
+                  Icon(Icons.chevron_right, color: AppTheme.midGrey, size: 18),
                 ],
               ),
             ],

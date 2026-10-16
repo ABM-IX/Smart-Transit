@@ -15,7 +15,7 @@ class RoleSelectionScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.black),
+          icon: Icon(Icons.arrow_back, color: AppTheme.black),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -42,16 +42,15 @@ class RoleSelectionScreen extends StatelessWidget {
                         'assets/icon/app_icon_transparent.png',
                         height: 54,
                         fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                              Icons.directions_transit,
-                              size: 40,
-                              color: AppTheme.black,
-                            ),
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.directions_transit,
+                          size: 40,
+                          color: AppTheme.black,
+                        ),
                       ),
                       const SizedBox(height: 16),
 
-                      const Text(
+                      Text(
                         'Join SmartTransit',
                         style: TextStyle(
                           fontSize: 28,
@@ -61,7 +60,7 @@ class RoleSelectionScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Select how you would like to use SmartTransit across Botswana.',
                         style: TextStyle(
                           fontSize: 14,
@@ -128,7 +127,7 @@ class RoleSelectionScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             'Already have an account? ',
                             style: TextStyle(
                               color: AppTheme.darkGrey,
@@ -144,7 +143,7 @@ class RoleSelectionScreen extends StatelessWidget {
                                 ),
                               );
                             },
-                            child: const Text(
+                            child: Text(
                               'Sign In',
                               style: TextStyle(
                                 color: AppTheme.black,
@@ -237,7 +236,7 @@ class RoleSelectionScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w900,
                           color: AppTheme.black,
@@ -246,7 +245,7 @@ class RoleSelectionScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.arrow_forward_ios,
                   size: 16,
                   color: AppTheme.midGrey,
@@ -256,7 +255,7 @@ class RoleSelectionScreen extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               description,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 color: AppTheme.darkGrey,
                 height: 1.4,
@@ -278,7 +277,7 @@ class RoleSelectionScreen extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       feat,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.midGrey,

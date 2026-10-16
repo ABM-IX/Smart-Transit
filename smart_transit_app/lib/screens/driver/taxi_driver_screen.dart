@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/hail_request_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/transit_provider.dart';
 import '../../widgets/custom_map_view.dart';
 import '../../widgets/status_pill.dart';
-import '../auth/login_screen.dart';
 
 enum TaxiDriverTripPhase {
   searching,
@@ -70,34 +70,6 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                 children: [
                   Row(
                     children: [
-                      CircleAvatar(
-                        backgroundColor: AppTheme.white,
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back,
-                            color: AppTheme.black,
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            if (transit.isDriverOnline) {
-                              transit.toggleDriverOnline(
-                                driverId: auth.userId,
-                                serviceType: 'TAXI',
-                                routeId: 'taxi-service',
-                                vehicleId: auth.vehiclePlate,
-                              );
-                            }
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const LoginScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
                       // Taxi Badge
                       Expanded(
                         child: Container(
@@ -112,7 +84,7 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.local_taxi,
                                 size: 18,
                                 color: AppTheme.black,
@@ -121,7 +93,7 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                               Expanded(
                                 child: Text(
                                   'Cab Shift • ${auth.vehiclePlate}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                     color: AppTheme.black,
@@ -238,7 +210,7 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
     if (!transit.isDriverOnline) {
       return Container(
         padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppTheme.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           border: Border(top: BorderSide(color: AppTheme.lightGrey, width: 1)),
@@ -246,13 +218,9 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.nightlight_round,
-              size: 36,
-              color: AppTheme.midGrey,
-            ),
+            Icon(Icons.nightlight_round, size: 36, color: AppTheme.midGrey),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'You are Currently Offline',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
@@ -261,7 +229,7 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Tap "GO ONLINE" above to start receiving ride requests in Gaborone.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: AppTheme.midGrey),
@@ -276,7 +244,7 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
     if (_phase == TaxiDriverTripPhase.searching) {
       return Container(
         padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppTheme.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           border: Border(top: BorderSide(color: AppTheme.lightGrey, width: 1)),
@@ -284,7 +252,7 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(
+            SizedBox(
               height: 28,
               width: 28,
               child: CircularProgressIndicator(
@@ -293,7 +261,7 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
               ),
             ),
             const SizedBox(height: 14),
-            const Text(
+            Text(
               'Searching for Nearby Ride Requests...',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
@@ -304,7 +272,7 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
             const SizedBox(height: 4),
             Text(
               '$_tripsCompleted trips completed today • Active in Gaborone',
-              style: const TextStyle(fontSize: 13, color: AppTheme.midGrey),
+              style: TextStyle(fontSize: 13, color: AppTheme.midGrey),
             ),
           ],
         ),
@@ -315,7 +283,7 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
     if (_phase == TaxiDriverTripPhase.requestReceived && _currentHail != null) {
       final fare = _currentHail!.fareEstimate > 0
           ? _currentHail!.fareEstimate
-          : 25.0;
+          : AppConstants.taxiBaseFareBWP;
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -341,11 +309,11 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppTheme.offWhite,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.person,
                         color: AppTheme.black,
                         size: 22,
@@ -357,13 +325,13 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                       children: [
                         Text(
                           'Rider ${_currentHail!.passengerId.length > 8 ? _currentHail!.passengerId.substring(0, 8) : _currentHail!.passengerId}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 16,
                             color: AppTheme.black,
                           ),
                         ),
-                        const Row(
+                        Row(
                           children: [
                             Icon(
                               Icons.verified,
@@ -426,7 +394,7 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Pickup: ${_currentHail!.pickupLat.toStringAsFixed(4)}, ${_currentHail!.pickupLng.toStringAsFixed(4)}',
+                          'Pickup: ${(transit.livePassengerLocation?.latitude ?? _currentHail!.pickupLat).toStringAsFixed(5)}, ${(transit.livePassengerLocation?.longitude ?? _currentHail!.pickupLng).toStringAsFixed(5)}',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -444,10 +412,13 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                         color: AppTheme.accentRed,
                       ),
                       const SizedBox(width: 10),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Destination: Direct Point-to-Point Trip',
-                          style: TextStyle(
+                          _currentHail!.destinationLat != null &&
+                                  _currentHail!.destinationLng != null
+                              ? 'Destination: ${_currentHail!.destinationLat!.toStringAsFixed(5)}, ${_currentHail!.destinationLng!.toStringAsFixed(5)}'
+                              : 'Destination not provided',
+                          style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -474,12 +445,12 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                     },
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: const BorderSide(color: AppTheme.lightGrey),
+                      side: BorderSide(color: AppTheme.lightGrey),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Decline',
                       style: TextStyle(
                         color: AppTheme.midGrey,
@@ -524,7 +495,7 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
     // Phase 3 & 4: Active Trip Stepper (En Route -> Arrived -> On Board -> Complete)
     return Container(
       padding: const EdgeInsets.all(22),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -541,7 +512,7 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                     : (_phase == TaxiDriverTripPhase.arrivedAtPickup
                           ? 'Waiting for Passenger'
                           : 'Trip in Progress'),
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 17,
                   color: AppTheme.black,
@@ -598,13 +569,15 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.check_circle),
                 label: Text(
-                  'COMPLETE TRIP & COLLECT P${(_currentHail?.fareEstimate ?? 25.0).toStringAsFixed(2)}',
+                  'COMPLETE TRIP & COLLECT P${(_currentHail?.fareEstimate ?? AppConstants.taxiBaseFareBWP).toStringAsFixed(2)}',
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.accentGreen,
                 ),
                 onPressed: () {
-                  final fare = _currentHail?.fareEstimate ?? 25.0;
+                  final fare =
+                      _currentHail?.fareEstimate ??
+                      AppConstants.taxiBaseFareBWP;
                   if (_currentHail != null) {
                     transit.endTrip(_currentHail!, auth.userId, fare);
                   }

@@ -16,7 +16,10 @@ class IncomingHailDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isTaxi = hail.serviceType == 'TAXI' || hail.serviceType == 'SPECIAL' || hail.serviceType == 'STANDARD';
+    final isTaxi =
+        hail.serviceType == 'TAXI' ||
+        hail.serviceType == 'SPECIAL' ||
+        hail.serviceType == 'STANDARD';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -40,7 +43,7 @@ class IncomingHailDialog extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppTheme.offWhite,
                   shape: BoxShape.circle,
                 ),
@@ -56,28 +59,32 @@ class IncomingHailDialog extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isTaxi ? 'Incoming Taxi Request' : 'Passenger Hail Request',
-                      style: const TextStyle(
+                      isTaxi
+                          ? 'Incoming Taxi Request'
+                          : 'Passenger Hail Request',
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                         color: AppTheme.black,
                       ),
                     ),
                     Text(
-                      hail.stopName != null ? 'At ${hail.stopName}' : 'Pickup along route corridor',
-                      style: const TextStyle(color: AppTheme.midGrey, fontSize: 12),
+                      hail.stopName != null
+                          ? 'At ${hail.stopName}'
+                          : 'Pickup along route corridor',
+                      style: TextStyle(color: AppTheme.midGrey, fontSize: 12),
                     ),
                   ],
                 ),
               ),
-                Text(
-                  'P${hail.fareEstimate.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: AppTheme.primaryTeal,
-                  ),
+              Text(
+                'P${hail.fareEstimate.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: AppTheme.primaryTeal,
                 ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -92,7 +99,9 @@ class IncomingHailDialog extends StatelessWidget {
                     foregroundColor: AppTheme.accentRed,
                     side: const BorderSide(color: AppTheme.accentRed),
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   child: const Text('Decline'),
                 ),
@@ -104,7 +113,9 @@ class IncomingHailDialog extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.black,
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   child: const Text('Accept Ride'),
                 ),

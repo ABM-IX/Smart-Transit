@@ -1,3 +1,5 @@
+import '../core/constants.dart';
+
 class TransitStop {
   final String id;
   final String name;
@@ -42,13 +44,23 @@ class TransitRoute {
   });
 
   factory TransitRoute.fromJson(Map<String, dynamic> json) {
+    final routeType = (json['route_type']?.toString() ?? 'COMBI').toUpperCase();
+    final baseFare = json['base_fare'];
     return TransitRoute(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? 'Unnamed Route',
-      originName: json['origin_name']?.toString() ?? json['start']?.toString() ?? '',
-      destinationName: json['destination_name']?.toString() ?? json['end']?.toString() ?? '',
-      routeType: json['route_type']?.toString() ?? 'COMBI',
-      baseFare: (json['base_fare'] ?? 8.0).toDouble(),
+      originName:
+          json['origin_name']?.toString() ?? json['start']?.toString() ?? '',
+      destinationName:
+          json['destination_name']?.toString() ?? json['end']?.toString() ?? '',
+      routeType: routeType,
+      baseFare: switch (routeType) {
+        'COMBI' => AppConstants.standardFareBWP,
+        'TAXI' => AppConstants.taxiBaseFareBWP,
+        'BUS' => baseFare is num ? baseFare.toDouble() : 0.0,
+        _ =>
+          baseFare is num ? baseFare.toDouble() : AppConstants.standardFareBWP,
+      },
     );
   }
 }

@@ -1,0 +1,4 @@
+name: rive_splash_dark
+logs:
+  file: build/rive.log
+  problems: build/problems.log

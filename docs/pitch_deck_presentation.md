@@ -14,7 +14,7 @@ This pitch deck is architected using the world-class **Sequoia Capital / Y-Combi
 ### The 10-Slide Winning Arc:
 1. **Slide 1 — Title & The Grand Vision:** Transforming African paratransit through open, intelligent telematics.
 2. **Slide 2 — The Problem:** The everyday agony of 45-minute roadside blackouts, combi bunching, and opaque fares.
-3. **Slide 3 — The Local Reality (Market Size):** 85% paratransit reliance in Greater Gaborone and the P8.00 statutory economy.
+3. **Slide 3 — The Local Reality (Market Size):** 85% paratransit reliance in Greater Gaborone and the P9.00 statutory economy.
 4. **Slide 4 — The Solution (SmartTransit Ecosystem):** Tripartite platform — Passenger Mobile, Driver In-Cab, and Regulatory Command Center.
 5. **Slide 5 — Core Innovation (Headway Anti-Bunching):** Active Newell-Daganzo headway pacing vs. passive map dots.
 6. **Slide 6 — Unified Multi-Modal Journey Planning:** Graph-based coordination linking Neighborhood Cabs $\to$ Arterial Combis $\to$ Intercity Coaches.
@@ -72,13 +72,13 @@ SLIDE 3: The Local Reality & Market Opportunity
 ### Visual Elements:
 - **Stat Cards (Big Bold Numbers):**
   - **85%+** of daily motorized trips in Greater Gaborone depend on informal paratransit.
-  - **BWP 8.00** gazetted combi statutory fare — affordable mass transit that private apps ignore.
+  - **BWP 9.00** gazetted combi statutory fare — affordable mass transit that private apps ignore.
   - **3,500+** registered minibus combis & blue-plate taxis across Gaborone, Mogoditshane, and Tlokweng.
   - **0** open digital GTFS transit datasets currently exist for the Republic of Botswana.
 - **Key Takeaway:** International ride-hailing apps (inDrive, Yango) serve only the affluent 10% with BWP 40+ fares. SmartTransit serves the 90% mass commuting majority.
 
 ### 🎙️ Spoken Voiceover (3-Minute Timing: 0:38 – 0:58 | 5-Minute Timing: 1:00 – 1:30)
-> *"Look at the numbers: over 85% of all daily trips in Gaborone rely on P8.00 combis and blue-plate special cabs. While foreign apps like inDrive and Yango fight over the affluent 10% who can afford P50 private car rides, the remaining 90% of our population—students, nurses, civil servants, and informal traders—have been left in the dark ages of transport.*  
+> *"Look at the numbers: over 85% of all daily trips in Gaborone rely on P9.00 combis and blue-plate special cabs starting at P10.00. While foreign apps like inDrive and Yango fight over the affluent 10% who can afford P50 private car rides, the remaining 90% of our population—students, nurses, civil servants, and informal traders—have been left in the dark ages of transport.*
 > *Worse yet, Botswana currently has exactly zero open-source public transit feeds. There is no digitized route dataset that researchers, app developers, or municipal planners can use."*
 
 ---
@@ -184,7 +184,7 @@ SLIDE 9: Competitive Differentiation Matrix
 
 | Feature | Status Quo | inDrive / Yango | Vaya App | SmartTransit 🇧🇼 |
 | :--- | :---: | :---: | :---: | :---: |
-| **P8.00 Mass Transit Combis** | ❌ None | ❌ Excluded | ⚠️ Passive tracking only | **✅ Full Active Management** |
+| **P9.00 Mass Transit Combis** | ❌ None | ❌ Excluded | ⚠️ Passive tracking only | **✅ Full Active Management** |
 | **Anti-Bunching Headway Pacing** | ❌ None | ❌ None | ❌ None (Drivers race) | **✅ Newell-Daganzo Algorithm** |
 | **Tri-Modal Graph Transfers** | ❌ None | ❌ None | ❌ Combi only | **✅ Cab + Combi + Intercity** |
 | **Stable Speed-Floored ETA** | ❌ Guesswork | ⚠️ Stalls in traffic | ❌ Diverges when stopped | **✅ Stable $v_{\text{floor}}$ Regularizer** |

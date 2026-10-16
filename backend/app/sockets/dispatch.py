@@ -112,7 +112,7 @@ async def taxi_accept(sid, data):
             "driverId": driver_id,
             "routeId": route_id,
             "requestId": request_id,
-            "fareEstimate": req.get("fareEstimate") if req else 8.0
+            "fareEstimate": req.get("fareEstimate") if req else get_fare("TAXI")
         }, to=passenger["socket_id"])
 
     await sio.emit('hail-accepted', {
@@ -230,7 +230,9 @@ async def accept_hail(sid, data):
     passenger = active_passengers.get(passenger_id)
     req = active_taxi_requests.get(request_id) if request_id else None
     driver = active_drivers.get(driver_id, {})
-    fare_est = (req.get("fareEstimate") if req else None) or 25.0
+    service_type = req.get("serviceType") if req else ("TAXI" if route_id == "taxi-service" else "COMBI")
+    default_fare = get_fare(service_type)
+    fare_est = (req.get("fareEstimate") if req else None) or default_fare
 
     taxi_assignments[passenger_id] = {
         "driver_id": driver_id,
@@ -238,7 +240,7 @@ async def accept_hail(sid, data):
         "started_at": time.time(),
         "request_id": request_id,
         "fareEstimate": fare_est,
-        "serviceType": req.get("serviceType") if req else "STANDARD"
+        "serviceType": service_type
     }
 
     payload = {
@@ -248,7 +250,7 @@ async def accept_hail(sid, data):
         "requestId": request_id,
         "driverPlate": driver.get("vehiclePlate") or "B-BW",
         "fareEstimate": fare_est,
-        "serviceType": req.get("serviceType") if req else "STANDARD",
+        "serviceType": service_type,
         "coords": driver.get("coords")
     }
 
@@ -381,7 +383,7 @@ async def trip_end(sid, data):
     trip_id = data.get("tripId") or f"trip-{uuid.uuid4().hex[:8]}"
     driver_id = data.get("driverId") or data.get("driver_id")
     passenger_id = data.get("passengerId") or data.get("passenger_id")
-    revenue = float(data.get("revenue") or data.get("fare") or 25.0)
+    revenue = float(data.get("revenue") or data.get("fare") or get_fare("TAXI"))
 
     if not passenger_id:
         for p_id, assign in list(taxi_assignments.items()):
@@ -418,7 +420,7 @@ async def passenger_end_trip(sid, data):
     passenger_id = data.get("passengerId") or data.get("passenger_id")
     driver_id = data.get("driverId") or data.get("driver_id")
     route_id = data.get("routeId", "taxi-service")
-    fare = float(data.get("fare") or data.get("fareEstimate") or 8.0)
+    fare = float(data.get("fare") or data.get("fareEstimate") or get_fare("TAXI"))
 
     if not passenger_id:
         return

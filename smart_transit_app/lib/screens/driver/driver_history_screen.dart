@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
+import '../../core/constants.dart';
 import '../../providers/auth_provider.dart';
 
 class DriverHistoryScreen extends StatefulWidget {
@@ -12,6 +13,14 @@ class DriverHistoryScreen extends StatefulWidget {
 
   @override
   State<DriverHistoryScreen> createState() => _DriverHistoryScreenState();
+}
+
+double _fareFallback(Map<String, dynamic> row) {
+  final type = (row['service_type'] as String? ?? 'COMBI').toUpperCase();
+  if (type.contains('TAXI') || type == 'SPECIAL' || type == 'STANDARD') {
+    return AppConstants.taxiBaseFareBWP;
+  }
+  return type == 'BUS' ? 0 : AppConstants.standardFareBWP;
 }
 
 class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
@@ -53,7 +62,7 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
             ? DateFormat('dd MMM yyyy, HH:mm').format(createdAt.toLocal())
             : 'Recent Shift';
 
-        final fare = (row['fare'] as num?)?.toDouble() ?? 8.0;
+        final fare = (row['fare'] as num?)?.toDouble() ?? _fareFallback(row);
         revenue += fare;
         tripsCount++;
 
@@ -104,13 +113,13 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
         ),
         leading: widget.onBack != null
             ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: AppTheme.black),
+                icon: Icon(Icons.arrow_back, color: AppTheme.black),
                 onPressed: widget.onBack,
               )
             : null,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppTheme.black),
+            icon: Icon(Icons.refresh, color: AppTheme.black),
             onPressed: _loadDriverHistory,
             tooltip: 'Refresh Shift History',
           ),
@@ -140,7 +149,7 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
           // Shift History List or Clean Empty State
           Expanded(
             child: _isLoading
-                ? const Center(
+                ? Center(
                     child: CircularProgressIndicator(color: AppTheme.black),
                   )
                 : _shifts.isEmpty
@@ -161,14 +170,14 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
                               shape: BoxShape.circle,
                               border: Border.all(color: AppTheme.lightGrey),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.history_toggle_off,
                               size: 32,
                               color: AppTheme.midGrey,
                             ),
                           ),
                           const SizedBox(height: 14),
-                          const Text(
+                          Text(
                             'No Completed Trips Yet',
                             style: TextStyle(
                               fontSize: 18,
@@ -177,7 +186,7 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
+                          Text(
                             'You have not completed any passenger rides yet on this account. Start your shift on the map and complete rides with commuters to record trip logs and revenue here.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
@@ -266,14 +275,14 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
                                   children: [
                                     Text(
                                       '${shift['trips']} Trips • ${shift['passengers']} Passengers',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13,
                                         color: AppTheme.midGrey,
                                       ),
                                     ),
                                     Text(
                                       'P${(shift['revenue'] as double).toStringAsFixed(2)}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w900,
                                         fontSize: 16,
                                         color: AppTheme.black,
@@ -281,24 +290,21 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
                                     ),
                                   ],
                                 ),
-                                const Divider(
-                                  height: 20,
-                                  color: AppTheme.lightGrey,
-                                ),
+                                Divider(height: 20, color: AppTheme.lightGrey),
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       'Vehicle: ${shift['vehicle']}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 11,
                                         color: AppTheme.midGrey,
                                       ),
                                     ),
                                     Text(
                                       shift['date'] as String,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 11,
                                         color: AppTheme.midGrey,
                                       ),
@@ -323,17 +329,14 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w900,
             fontSize: 16,
             color: AppTheme.black,
           ),
         ),
         const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: AppTheme.midGrey),
-        ),
+        Text(label, style: TextStyle(fontSize: 11, color: AppTheme.midGrey)),
       ],
     );
   }

@@ -12,7 +12,7 @@
 **SmartTransit** is an intelligent, multi-modal public transit coordination, telematics, and fleet dispatch platform engineered specifically for the paratransit ecosystem of **Botswana and Southern Africa** (focusing initially on Greater Gaborone and key regional corridors including Molepolole, Francistown, Lobatse, and Kanye).
 
 Unlike traditional Western transit systems governed by rigid timetables, African urban transit is informal, dynamic, and paratransit-dominant. Over **85% of motorized daily trips** in Greater Gaborone rely on:
-1. **Minibus Combis (14–16 seaters):** Licensed by the Department of Road Transport and Safety (DRTS) along arterial corridors charging a gazetted statutory fare of **BWP 8.00**.
+1. **Minibus Combis (14–16 seaters):** Licensed by the Department of Road Transport and Safety (DRTS) along arterial corridors charging a gazetted statutory fare of **BWP 9.00**.
 2. **Special Cabs (Sedans / Blue-Plate Taxis):** Point-to-point charters providing first- and last-mile connectivity (BWP 30.00 – 60.00).
 3. **Intercity Express Coaches:** Long-distance buses operating out of the Gaborone Central Bus Rank.
 
@@ -140,7 +140,7 @@ Matches the top $k=5$ idle drivers within a $5.0\text{ km}$ geofence and dispatc
   * Route U4: Gaborone Bus Rank $\leftrightarrow$ Gaborone West (G-West)
   * Regional Corridors: Gaborone $\leftrightarrow$ Molepolole, Lobatse, Francistown
 * **Fare Structures (Botswana Pula - BWP):**
-  * Combi Fare: Standard statutory gazetted fare of **BWP 8.00** per one-way trip.
+  * Combi Fare: Standard statutory gazetted fare of **BWP 9.00** per one-way trip.
   * Special Cab (Charter): Base fare BWP 30.00 + incremental distance/time surcharges.
   * Intercity Coach: Corridor-distance tiered fares (e.g., Gabs–Francistown ~ BWP 110–140).
 

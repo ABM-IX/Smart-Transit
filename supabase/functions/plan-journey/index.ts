@@ -50,7 +50,7 @@ serve(async (req) => {
     const { data: stops } = await supabase.from('stops').select('*')
 
     const legs = []
-    let totalFare = 8.0
+    let totalFare: number | null = 9.0
     let totalDurationMins = Math.max(10, Math.round(directDistKm * 2.2))
 
     // Direct taxi option or combi + bus transfer
@@ -63,10 +63,10 @@ serve(async (req) => {
         origin_name: origName,
         destination_name: destName,
         duration_minutes: totalDurationMins,
-        fare: 35.0,
+        fare: null,
         instructions: `Board direct coach from ${origName} towards ${destName}.`
       })
-      totalFare = 35.0
+      totalFare = null
     } else {
       // Urban / Combi Route
       legs.push({
@@ -76,10 +76,10 @@ serve(async (req) => {
         origin_name: origName,
         destination_name: destName,
         duration_minutes: totalDurationMins,
-        fare: 8.0,
+        fare: 9.0,
         instructions: `Take local Combi from ${origName} directly to ${destName}.`
       })
-      totalFare = 8.0
+      totalFare = 9.0
     }
 
     const itinerary = {

@@ -6,6 +6,7 @@ import '../core/theme.dart';
 import '../models/driver_model.dart';
 import '../models/hail_request_model.dart';
 import '../models/route_model.dart';
+import 'map_tile_theme.dart';
 
 class CustomMapView extends StatefulWidget {
   final LatLng userLocation;
@@ -39,7 +40,7 @@ class _CustomMapViewState extends State<CustomMapView> {
     // When real GPS coordinates arrive from device (different from default mock), center map
     if (!_hasCenteredOnUser &&
         (widget.userLocation.latitude != AppConstants.defaultLatitude ||
-         widget.userLocation.longitude != AppConstants.defaultLongitude)) {
+            widget.userLocation.longitude != AppConstants.defaultLongitude)) {
       _hasCenteredOnUser = true;
       _mapController.move(widget.userLocation, AppConstants.defaultZoom);
     }
@@ -60,6 +61,9 @@ class _CustomMapViewState extends State<CustomMapView> {
         TileLayer(
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           userAgentPackageName: 'com.smarttransit.app',
+          tileBuilder: Theme.of(context).brightness == Brightness.dark
+              ? smartTransitDarkTileBuilder
+              : null,
         ),
 
         // Markers Layer
@@ -117,7 +121,7 @@ class _CustomMapViewState extends State<CustomMapView> {
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.place,
                       color: AppTheme.brandNavy,
                       size: 16,
@@ -146,10 +150,10 @@ class _CustomMapViewState extends State<CustomMapView> {
                       ),
                     ],
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       Icons.pan_tool_alt,
-                      color: AppTheme.cardSurface,
+                      color: AppTheme.onPrimary,
                       size: 22,
                     ),
                   ),
@@ -160,25 +164,27 @@ class _CustomMapViewState extends State<CustomMapView> {
             // Live Driver Markers: Distinct by color + icon + shape
             ...widget.drivers.map((driver) {
               final isTaxi = driver.serviceType == 'TAXI';
-              final isBus = driver.serviceType == 'BUS' || (driver.routeId?.startsWith('bus-') ?? false);
-              
+              final isBus =
+                  driver.serviceType == 'BUS' ||
+                  (driver.routeId?.startsWith('bus-') ?? false);
+
               final Color modeColor = isTaxi
                   ? AppTheme.taxiColor
                   : isBus
-                      ? AppTheme.busColor
-                      : AppTheme.combiColor;
+                  ? AppTheme.busColor
+                  : AppTheme.combiColor;
 
               final IconData modeIcon = isTaxi
                   ? Icons.local_taxi
                   : isBus
-                      ? Icons.directions_bus
-                      : Icons.airport_shuttle;
+                  ? Icons.directions_bus
+                  : Icons.airport_shuttle;
 
               final BorderRadius borderRadius = isBus
                   ? BorderRadius.circular(8) // Squircle for Bus
                   : isTaxi
-                      ? BorderRadius.circular(100) // Circular for Taxi
-                      : BorderRadius.circular(12); // Rounded rectangle for Combi
+                  ? BorderRadius.circular(100) // Circular for Taxi
+                  : BorderRadius.circular(12); // Rounded rectangle for Combi
 
               return Marker(
                 point: LatLng(driver.latitude, driver.longitude),
@@ -190,7 +196,10 @@ class _CustomMapViewState extends State<CustomMapView> {
                     decoration: BoxDecoration(
                       color: modeColor,
                       borderRadius: borderRadius,
-                      border: Border.all(color: AppTheme.cardSurface, width: 2.5),
+                      border: Border.all(
+                        color: AppTheme.cardSurface,
+                        width: 2.5,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: modeColor.withValues(alpha: 0.35),
@@ -199,11 +208,7 @@ class _CustomMapViewState extends State<CustomMapView> {
                         ),
                       ],
                     ),
-                    child: Icon(
-                      modeIcon,
-                      color: AppTheme.cardSurface,
-                      size: 20,
-                    ),
+                    child: Icon(modeIcon, color: AppTheme.onPrimary, size: 20),
                   ),
                 ),
               );

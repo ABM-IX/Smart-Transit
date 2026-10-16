@@ -25,27 +25,27 @@
                     <StraightVertex x="0" y="22" radius="1"/>
                     <CubicDetachedVertex x="-13.5" y="-2" inRotation="1.34" inDistance="6.5" outRotation="-1.5708" outDistance="6.5"/>
                 </PointsPath>
-                <Fill name="Fill"><SolidColor colorValue="FF0A66C2" name="Cerulean"/></Fill>
+                <Fill name="Fill"><SolidColor colorValue="FF0A66C2" name="PinBlue" id="0:253"/></Fill>
             </Shape>
         </Node>
 
         <!-- 2. Network Nodes (Draw on top of Circuit Line) -->
         <!-- Network Node 1 (Top) -->
-        <Shape x="292.94" y="142.8" name="Node1" id="0:240">
+        <Shape x="292.94" y="157.62" name="Node1" id="0:240">
             <Ellipse originX="0.5" originY="0.5" width="12" height="12"/>
-            <Fill name="Fill"><SolidColor colorValue="FF0A66C2" name="Cerulean"/></Fill>
+            <Fill name="Fill"><SolidColor colorValue="FF0F1B2E" name="Node1Navy" id="0:241"/></Fill>
         </Shape>
 
         <!-- Network Node 2 (Middle) -->
         <Shape x="330.18" y="234.0" name="Node2" id="0:230">
             <Ellipse originX="0.5" originY="0.5" width="12" height="12"/>
-            <Fill name="Fill"><SolidColor colorValue="FF0A66C2" name="Cerulean"/></Fill>
+            <Fill name="Fill"><SolidColor colorValue="FF0F1B2E" name="Node2Navy" id="0:231"/></Fill>
         </Shape>
 
         <!-- Network Node 3 (Bottom) -->
         <Shape x="319.54" y="292.33" name="Node3" id="0:220">
             <Ellipse originX="0.5" originY="0.5" width="12" height="12"/>
-            <Fill name="Fill"><SolidColor colorValue="FF0A66C2" name="Cerulean"/></Fill>
+            <Fill name="Fill"><SolidColor colorValue="FF0F1B2E" name="Node3Navy" id="0:221"/></Fill>
         </Shape>
 
         <!-- 3. Cerulean S-Circuit Line (Stroke & Trim Animation) -->
@@ -64,13 +64,13 @@
                 <!-- 6. Top Left Loop -->
                 <CubicDetachedVertex x="195.47" y="169.4" inRotation="1.57" inDistance="16" outRotation="-0.3" outDistance="22"/>
                 <!-- 7. Through Node 1 -->
-                <CubicDetachedVertex x="292.94" y="142.8" inRotation="3.14" inDistance="20" outRotation="0.0" outDistance="20"/>
+                <CubicDetachedVertex x="292.94" y="157.62" inRotation="3.14" inDistance="26" outRotation="0.0" outDistance="20"/>
                 <!-- 8. Connect to Location Pin -->
                 <CubicDetachedVertex x="358.72" y="146.06" inRotation="3.14" inDistance="12" outRotation="0.0" outDistance="0"/>
             </PointsPath>
             <Stroke thickness="8" cap="round" join="round">
                 <SolidColor colorValue="FF0A66C2" name="CeruleanBlue"/>
-                <TrimPath start="0" end="1" name="Trim" id="0:211"/>
+                <TrimPath start="0" end="0" name="Trim" id="0:211"/>
             </Stroke>
         </Shape>
 
@@ -179,7 +179,7 @@
 
         <!-- 6. Wordmark & Tagline -->
         <Node x="250" y="380" name="WordmarkGroup" id="0:300">
-            <Text x="0" y="0" originX="0.5" originY="0.5" alignValue="center" name="BrandTitle" id="0:301">
+            <Text x="0" y="0" originX="0.5" originY="0.5" alignValue="center" name="BrandTitle" id="0:301" opacity="0">
                 <TextStylePaint fontSize="32" fontAssetId="0:100" name="SmartStyle" id="0:302">
                     <Fill name="Fill"><SolidColor colorValue="FF0F1B2E" name="Navy"/></Fill>
                 </TextStylePaint>
@@ -190,7 +190,7 @@
                 <TextValueRun styleId="0:303" text="TRANSIT" name="RunTransit"/>
             </Text>
 
-            <Text x="0" y="36" originX="0.5" originY="0.5" alignValue="center" name="Tagline" id="0:310">
+            <Text x="0" y="36" originX="0.5" originY="0.5" alignValue="center" name="Tagline" id="0:310" opacity="0">
                 <TextStylePaint fontSize="13.5" fontAssetId="0:101" name="TaglineStyle" id="0:311">
                     <Fill name="Fill"><SolidColor colorValue="FF0F1B2E" name="NavyText"/></Fill>
                 </TextStylePaint>
@@ -237,159 +237,41 @@
         <LinearAnimation duration="1" name="Static" id="0:51">
             <KeyedObject objectId="0:211">
                 <KeyedProperty propertyKey="115">
-                    <KeyFrameDouble value="1" frame="0" interpolationType="linear"/>
+                    <KeyFrameDouble value="0" frame="0" interpolationType="linear"/>
                 </KeyedProperty>
             </KeyedObject>
             <KeyedObject objectId="0:300">
                 <KeyedProperty propertyKey="18">
-                    <KeyFrameDouble value="1" frame="0" interpolationType="linear"/>
+                    <KeyFrameDouble value="0" frame="0" interpolationType="linear"/>
                 </KeyedProperty>
             </KeyedObject>
         </LinearAnimation>
 
         <!-- 2. TraceAndConnect (0-700ms, 42 frames @ 60fps) -->
-        <LinearAnimation duration="42" name="TraceAndConnect" id="0:52">
-            <!-- S-Trace outline draws 0% to 100% eased -->
-            <KeyedObject objectId="0:211">
-                <KeyedProperty propertyKey="115">
-                    <KeyFrameDouble value="0" frame="0" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1" frame="42" interpolationType="linear"/>
-                </KeyedProperty>
-            </KeyedObject>
-            <!-- Node 3 pulse as trace reaches it (~frame 10) -->
-            <KeyedObject objectId="0:220">
-                <KeyedProperty propertyKey="16"> <!-- scaleX -->
-                    <KeyFrameDouble value="1.0" frame="0" interpolationType="linear"/>
-                    <KeyFrameDouble value="1.0" frame="8" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.35" frame="12" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.0" frame="17" interpolationType="linear"/>
-                </KeyedProperty>
-                <KeyedProperty propertyKey="17"> <!-- scaleY -->
-                    <KeyFrameDouble value="1.0" frame="0" interpolationType="linear"/>
-                    <KeyFrameDouble value="1.0" frame="8" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.35" frame="12" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.0" frame="17" interpolationType="linear"/>
-                </KeyedProperty>
-            </KeyedObject>
-            <!-- Node 2 pulse as trace reaches it (~frame 23) -->
-            <KeyedObject objectId="0:230">
-                <KeyedProperty propertyKey="16">
-                    <KeyFrameDouble value="1.0" frame="0" interpolationType="linear"/>
-                    <KeyFrameDouble value="1.0" frame="20" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.35" frame="24" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.0" frame="29" interpolationType="linear"/>
-                </KeyedProperty>
-                <KeyedProperty propertyKey="17">
-                    <KeyFrameDouble value="1.0" frame="0" interpolationType="linear"/>
-                    <KeyFrameDouble value="1.0" frame="20" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.35" frame="24" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.0" frame="29" interpolationType="linear"/>
-                </KeyedProperty>
-            </KeyedObject>
-            <!-- Node 1 pulse as trace reaches it (~frame 34) -->
-            <KeyedObject objectId="0:240">
-                <KeyedProperty propertyKey="16">
-                    <KeyFrameDouble value="1.0" frame="0" interpolationType="linear"/>
-                    <KeyFrameDouble value="1.0" frame="31" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.35" frame="35" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.0" frame="40" interpolationType="linear"/>
-                </KeyedProperty>
-                <KeyedProperty propertyKey="17">
-                    <KeyFrameDouble value="1.0" frame="0" interpolationType="linear"/>
-                    <KeyFrameDouble value="1.0" frame="31" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.35" frame="35" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.0" frame="40" interpolationType="linear"/>
-                </KeyedProperty>
-            </KeyedObject>
-            <!-- Wordmark hidden during trace -->
-            <KeyedObject objectId="0:300">
-                <KeyedProperty propertyKey="18">
-                    <KeyFrameDouble value="0" frame="0" interpolationType="linear"/>
-                    <KeyFrameDouble value="0" frame="42" interpolationType="linear"/>
-                </KeyedProperty>
-            </KeyedObject>
-        </LinearAnimation>
+        <LinearAnimation duration="105" name="TraceAndConnect" id="0:52">
+  <KeyedObject objectId="0:211"><KeyedProperty propertyKey="115"><KeyFrameDouble value="0" frame="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.32" y1="0" x2="0.18" y2="1"/></KeyFrameDouble><KeyFrameDouble value="1" frame="105" interpolationType="cubic"><CubicEaseInterpolator x1="0.22" y1="0" x2="0.25" y2="1"/></KeyFrameDouble></KeyedProperty></KeyedObject>
+  <KeyedObject objectId="0:220"><KeyedProperty propertyKey="16"><KeyFrameDouble value="1" frame="0" interpolationType="cubic"/><KeyFrameDouble value="1" frame="22" interpolationType="cubic"/><KeyFrameDouble value="0.06" frame="27" interpolationType="cubic"/><KeyFrameDouble value="1.12" frame="31" interpolationType="cubic"/><KeyFrameDouble value="1" frame="36" interpolationType="cubic"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble value="1" frame="0" interpolationType="cubic"/><KeyFrameDouble value="1.08" frame="31" interpolationType="cubic"/><KeyFrameDouble value="1" frame="36" interpolationType="cubic"/></KeyedProperty></KeyedObject>
+  <KeyedObject objectId="0:221"><KeyedProperty propertyKey="37"><KeyFrameColor value="FF0F1B2E" frame="0" interpolationType="linear"/><KeyFrameColor value="FF0F1B2E" frame="25" interpolationType="linear"/><KeyFrameColor value="FF22C8FF" frame="31" interpolationType="linear"/><KeyFrameColor value="FF22C8FF" frame="105" interpolationType="linear"/></KeyedProperty></KeyedObject>
+  <KeyedObject objectId="0:230"><KeyedProperty propertyKey="16"><KeyFrameDouble value="1" frame="0" interpolationType="cubic"/><KeyFrameDouble value="1" frame="47" interpolationType="cubic"/><KeyFrameDouble value="0.06" frame="52" interpolationType="cubic"/><KeyFrameDouble value="1.12" frame="56" interpolationType="cubic"/><KeyFrameDouble value="1" frame="61" interpolationType="cubic"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble value="1" frame="0" interpolationType="cubic"/><KeyFrameDouble value="1.08" frame="56" interpolationType="cubic"/><KeyFrameDouble value="1" frame="61" interpolationType="cubic"/></KeyedProperty></KeyedObject>
+  <KeyedObject objectId="0:231"><KeyedProperty propertyKey="37"><KeyFrameColor value="FF0F1B2E" frame="0" interpolationType="linear"/><KeyFrameColor value="FF0F1B2E" frame="50" interpolationType="linear"/><KeyFrameColor value="FF22C8FF" frame="56" interpolationType="linear"/><KeyFrameColor value="FF22C8FF" frame="105" interpolationType="linear"/></KeyedProperty></KeyedObject>
+  <KeyedObject objectId="0:240"><KeyedProperty propertyKey="16"><KeyFrameDouble value="1" frame="0" interpolationType="cubic"/><KeyFrameDouble value="1" frame="73" interpolationType="cubic"/><KeyFrameDouble value="0.06" frame="78" interpolationType="cubic"/><KeyFrameDouble value="1.12" frame="82" interpolationType="cubic"/><KeyFrameDouble value="1" frame="87" interpolationType="cubic"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble value="1" frame="0" interpolationType="cubic"/><KeyFrameDouble value="1.08" frame="82" interpolationType="cubic"/><KeyFrameDouble value="1" frame="87" interpolationType="cubic"/></KeyedProperty></KeyedObject>
+  <KeyedObject objectId="0:241"><KeyedProperty propertyKey="37"><KeyFrameColor value="FF0F1B2E" frame="0" interpolationType="linear"/><KeyFrameColor value="FF0F1B2E" frame="76" interpolationType="linear"/><KeyFrameColor value="FF22C8FF" frame="82" interpolationType="linear"/><KeyFrameColor value="FF22C8FF" frame="105" interpolationType="linear"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
 
         <!-- 3. Arrival (700-900ms, 12 frames @ 60fps) -->
-        <LinearAnimation duration="12" name="Arrival" id="0:53">
-            <KeyedObject objectId="0:211">
-                <KeyedProperty propertyKey="115">
-                    <KeyFrameDouble value="1" frame="0" interpolationType="linear"/>
-                </KeyedProperty>
-            </KeyedObject>
-            <!-- Pin single arrival pulse (1.0 -> 1.15 -> 1.0) -->
-            <KeyedObject objectId="0:250">
-                <KeyedProperty propertyKey="16"> <!-- scaleX -->
-                    <KeyFrameDouble value="1.0" frame="0" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.15" frame="6" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.0" frame="12" interpolationType="linear"/>
-                </KeyedProperty>
-                <KeyedProperty propertyKey="17"> <!-- scaleY -->
-                    <KeyFrameDouble value="1.0" frame="0" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.15" frame="6" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1.0" frame="12" interpolationType="linear"/>
-                </KeyedProperty>
-            </KeyedObject>
-            <!-- Wordmark remains hidden -->
-            <KeyedObject objectId="0:300">
-                <KeyedProperty propertyKey="18">
-                    <KeyFrameDouble value="0" frame="0" interpolationType="linear"/>
-                    <KeyFrameDouble value="0" frame="12" interpolationType="linear"/>
-                </KeyedProperty>
-            </KeyedObject>
-        </LinearAnimation>
+        <LinearAnimation duration="18" name="Arrival" id="0:53">
+  <KeyedObject objectId="0:211"><KeyedProperty propertyKey="115"><KeyFrameDouble value="1" frame="0" interpolationType="cubic"/></KeyedProperty></KeyedObject>
+    <KeyedObject objectId="0:253"><KeyedProperty propertyKey="37"><KeyFrameColor value="FF0A66C2" frame="0" interpolationType="linear"/><KeyFrameColor value="FF22C8FF" frame="5" interpolationType="cubic"/></KeyedProperty></KeyedObject>
+  <KeyedObject objectId="0:250"><KeyedProperty propertyKey="16"><KeyFrameDouble value="1" frame="0" interpolationType="cubic"/><KeyFrameDouble value="1.12" frame="8" interpolationType="cubic"/><KeyFrameDouble value="1" frame="18" interpolationType="cubic"/></KeyedProperty><KeyedProperty propertyKey="17"><KeyFrameDouble value="1" frame="0" interpolationType="cubic"/><KeyFrameDouble value="1.12" frame="8" interpolationType="cubic"/><KeyFrameDouble value="1" frame="18" interpolationType="cubic"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
 
         <!-- 4. Wordmark (900-1100ms, 12 frames @ 60fps) -->
-        <LinearAnimation duration="12" name="Wordmark" id="0:54">
-            <KeyedObject objectId="0:211">
-                <KeyedProperty propertyKey="115">
-                    <KeyFrameDouble value="1" frame="0" interpolationType="linear"/>
-                </KeyedProperty>
-            </KeyedObject>
-            <!-- Wordmark fades in from opacity 0 to 1 -->
-            <KeyedObject objectId="0:300">
-                <KeyedProperty propertyKey="18">
-                    <KeyFrameDouble value="0" frame="0" interpolationType="cubic">
-                        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.2" y2="1"/>
-                    </KeyFrameDouble>
-                    <KeyFrameDouble value="1" frame="12" interpolationType="linear"/>
-                </KeyedProperty>
-            </KeyedObject>
-        </LinearAnimation>
+        <LinearAnimation duration="24" name="Wordmark" id="0:54">
+  <KeyedObject objectId="0:211"><KeyedProperty propertyKey="115"><KeyFrameDouble value="1" frame="0"/></KeyedProperty></KeyedObject>
+  <KeyedObject objectId="0:300"><KeyedProperty propertyKey="18"><KeyFrameDouble value="1" frame="0"/></KeyedProperty></KeyedObject>
+  <KeyedObject objectId="0:301"><KeyedProperty propertyKey="18"><KeyFrameDouble value="0" frame="0"/><KeyFrameDouble value="1" frame="15" interpolationType="cubic"/></KeyedProperty></KeyedObject>
+  <KeyedObject objectId="0:310"><KeyedProperty propertyKey="18"><KeyFrameDouble value="0" frame="0"/><KeyFrameDouble value="0" frame="15"/><KeyFrameDouble value="1" frame="24" interpolationType="cubic"/></KeyedProperty></KeyedObject>
+</LinearAnimation>
 
         <!-- 5. Idle (1100ms onward, loopable, 108 frames = 1.8s per cycle) -->
         <LinearAnimation loopValue="loop" duration="108" name="Idle" id="0:55">
@@ -399,6 +281,16 @@
                 </KeyedProperty>
             </KeyedObject>
             <KeyedObject objectId="0:300">
+                <KeyedProperty propertyKey="18">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:301">
+                <KeyedProperty propertyKey="18">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:310">
                 <KeyedProperty propertyKey="18">
                     <KeyFrameDouble value="1" frame="0" interpolationType="linear"/>
                 </KeyedProperty>

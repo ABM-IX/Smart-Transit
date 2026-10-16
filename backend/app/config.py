@@ -26,11 +26,11 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = ["*"]
     
     # Transit Pricing Constants (Botswana Pula - BWP)
-    TAXI_STANDARD_FARE: float = 8.0
+    TAXI_STANDARD_FARE: float = 10.0
     TAXI_SPECIAL_BASE: float = 10.0
     TAXI_SPECIAL_PER_KM: float = 2.5
     TAXI_SPECIAL_PER_MIN: float = 0.5
-    BUS_COMBI_FARE: float = 8.0
+    BUS_COMBI_FARE: float = 9.0
     
     # Geofencing & Operational Parameters (Meters & Seconds)
     HAIL_MAX_DISTANCE_METERS: float = 60.0

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants.dart';
 import '../../core/theme.dart';
 import 'passenger_dashboard.dart';
 
@@ -14,7 +15,7 @@ class ModeSelectionScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Choose your mode',
             style: TextStyle(
               fontSize: 26,
@@ -24,12 +25,9 @@ class ModeSelectionScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Select your preferred transit modality in Gaborone & Southern Africa.',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.secondaryText,
-            ),
+            style: TextStyle(fontSize: 14, color: AppTheme.secondaryText),
           ),
           const SizedBox(height: 24),
 
@@ -39,8 +37,9 @@ class ModeSelectionScreen extends StatelessWidget {
             subtitle: 'Flexible urban arterial routes & local network',
             badgeText: 'URBAN CORRIDOR',
             icon: Icons.airport_shuttle_outlined,
-            fare: 'P8.00',
+            fare: 'P${AppConstants.standardFareBWP.toStringAsFixed(2)}',
             modeColor: AppTheme.combiColor,
+            isDarkTheme: Theme.of(context).brightness == Brightness.dark,
             onTap: () => onModeSelected(TransportMode.combi),
           ),
           const SizedBox(height: 14),
@@ -51,8 +50,9 @@ class ModeSelectionScreen extends StatelessWidget {
             subtitle: 'Scheduled long-distance & regional intercity routes',
             badgeText: 'INTERCITY',
             icon: Icons.directions_bus_outlined,
-            fare: 'From P20',
+            fare: 'Varies by route',
             modeColor: AppTheme.busColor,
+            isDarkTheme: Theme.of(context).brightness == Brightness.dark,
             onTap: () => onModeSelected(TransportMode.bus),
           ),
           const SizedBox(height: 14),
@@ -63,8 +63,9 @@ class ModeSelectionScreen extends StatelessWidget {
             subtitle: 'Private special or shared on-demand direct hail',
             badgeText: 'ON-DEMAND',
             icon: Icons.local_taxi_outlined,
-            fare: 'From P8.00',
+            fare: 'From P${AppConstants.taxiBaseFareBWP.toStringAsFixed(2)}',
             modeColor: AppTheme.taxiColor,
+            isDarkTheme: Theme.of(context).brightness == Brightness.dark,
             onTap: () => onModeSelected(TransportMode.taxi),
           ),
         ],
@@ -79,6 +80,7 @@ class ModeSelectionScreen extends StatelessWidget {
     required IconData icon,
     required String fare,
     required Color modeColor,
+    required bool isDarkTheme,
     required VoidCallback onTap,
   }) {
     return Container(
@@ -106,13 +108,13 @@ class ModeSelectionScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Left colored accent indicator stripe
-                  Container(
-                    width: 5,
-                    color: modeColor,
-                  ),
+                  Container(width: 5, color: modeColor),
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 16.0,
+                      ),
                       child: Row(
                         children: [
                           // Colored Icon container
@@ -123,7 +125,11 @@ class ModeSelectionScreen extends StatelessWidget {
                               color: modeColor.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Icon(icon, color: modeColor, size: 24),
+                            child: Icon(
+                              icon,
+                              color: isDarkTheme ? Colors.white : Colors.black,
+                              size: 24,
+                            ),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -135,7 +141,7 @@ class ModeSelectionScreen extends StatelessWidget {
                                   children: [
                                     Text(
                                       title,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w800,
                                         color: AppTheme.brandNavy,
@@ -143,7 +149,10 @@ class ModeSelectionScreen extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 8),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: modeColor.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(6),
@@ -163,7 +172,7 @@ class ModeSelectionScreen extends StatelessWidget {
                                 const SizedBox(height: 3),
                                 Text(
                                   subtitle,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     color: AppTheme.secondaryText,
                                     height: 1.3,
@@ -179,7 +188,7 @@ class ModeSelectionScreen extends StatelessWidget {
                             children: [
                               Text(
                                 fare,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w900,
                                   fontSize: 14,
                                   color: AppTheme.brandNavy,
