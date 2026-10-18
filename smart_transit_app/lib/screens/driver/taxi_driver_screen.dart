@@ -59,6 +59,29 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
   void _syncTaxiPhaseWithTransit() {
     final transit = _transitSubscription;
     if (!mounted || transit == null || _currentHail == null) return;
+    if (transit.driverTripEnded) {
+      final fare =
+          transit.driverTripEndedFare ??
+          _currentHail?.fareEstimate ??
+          AppConstants.taxiBaseFareBWP;
+      setState(() {
+        _shiftEarnings += fare;
+        _tripsCompleted += 1;
+        _phase = TaxiDriverTripPhase.searching;
+        _currentHail = null;
+        _riderName = null;
+        _riderPhone = null;
+        _pickupLabel = null;
+        _destinationLabel = null;
+        _routeKey = null;
+        _lastRouteOrigin = null;
+        _driverRoutePoints = const [];
+        _routeDistanceKm = null;
+        _routeDurationMinutes = null;
+      });
+      transit.acknowledgeDriverTripEnded();
+      return;
+    }
     TaxiDriverTripPhase? nextPhase;
     if (transit.driverTripStarted &&
         _phase != TaxiDriverTripPhase.onTrip &&

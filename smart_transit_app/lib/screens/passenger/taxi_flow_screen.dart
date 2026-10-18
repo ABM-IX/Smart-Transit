@@ -920,10 +920,18 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
     }
 
     if (transit.passengerStatus == PassengerTripStatus.completed) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final completionSurface = isDark ? const Color(0xFF111C2D) : Colors.white;
+      final completionText = isDark
+          ? const Color(0xFFF4F7FB)
+          : AppTheme.brandNavy;
+      final completionSecondary = isDark
+          ? const Color(0xFFB8C5D6)
+          : AppTheme.secondaryText;
       return Container(
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
-          color: AppTheme.cardSurface,
+          color: completionSurface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           border: Border(top: BorderSide(color: AppTheme.borderGrey, width: 1)),
         ),
@@ -949,7 +957,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               style: TextStyle(
                 fontWeight: FontWeight.w900,
                 fontSize: 20,
-                color: AppTheme.brandNavy,
+                color: completionText,
               ),
               textAlign: TextAlign.center,
             ),
@@ -959,7 +967,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.secondaryText,
+                color: completionSecondary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -969,7 +977,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
-                color: AppTheme.brandNavy,
+                color: completionText,
               ),
               textAlign: TextAlign.center,
             ),

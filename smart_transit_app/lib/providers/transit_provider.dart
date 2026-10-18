@@ -82,6 +82,8 @@ class TransitProvider extends ChangeNotifier {
   HailRequest? _acceptedDriverHail;
   bool _driverAtPickup = false;
   bool _driverTripStarted = false;
+  bool _driverTripEnded = false;
+  double? _driverTripEndedFare;
   final Set<String> _countedBoardingIds = {};
   String? _lastStopRequest;
   int _passengersCarried = 0;
@@ -118,6 +120,13 @@ class TransitProvider extends ChangeNotifier {
   bool get isDriverOnline => _isDriverOnline;
   bool get driverAtPickup => _driverAtPickup;
   bool get driverTripStarted => _driverTripStarted;
+  bool get driverTripEnded => _driverTripEnded;
+  double? get driverTripEndedFare => _driverTripEndedFare;
+  void acknowledgeDriverTripEnded() {
+    _driverTripEnded = false;
+    _driverTripEndedFare = null;
+  }
+
   SpacingAdvisory? get spacingAdvisory => _spacingAdvisory;
   List<HailRequest> get incomingHails => _incomingHails;
   HailRequest? get latestHailAlert => _latestHailAlert;
@@ -807,6 +816,29 @@ class TransitProvider extends ChangeNotifier {
           unawaited(_persistPassengerTrip());
           notifyListeners();
         },
+        'passenger-trip-ended': (data) {
+          if (data is! Map<String, dynamic> ||
+              data['driverId']?.toString() != userId ||
+              _driverTripEnded) {
+            return;
+          }
+          final hail = _acceptedDriverHail;
+          final passengerId = (data['passengerId'] ?? data['passenger_id'])
+              ?.toString();
+          if (hail == null || hail.passengerId != passengerId) return;
+
+          final fare =
+              (data['fare'] as num?)?.toDouble() ??
+              hail.fareEstimate ??
+              AppConstants.taxiBaseFareBWP;
+          _driverTripEnded = true;
+          _driverTripEndedFare = fare;
+          _acceptedDriverHail = null;
+          _driverAtPickup = false;
+          _driverTripStarted = false;
+          unawaited(endTrip(hail, userId, fare));
+          notifyListeners();
+        },
         'trip-completed': (data) {
           _arrivalCheckTimer?.cancel();
           if (data is Map<String, dynamic>) {
@@ -1405,6 +1437,9 @@ class TransitProvider extends ChangeNotifier {
   }
 
   Future<bool> endTrip(HailRequest hail, String driverId, double fare) async {
+    _acceptedDriverHail = null;
+    _driverAtPickup = false;
+    _driverTripStarted = false;
     final resolvedPickup = await PlaceNameService.resolvePlaceName(
       LatLng(hail.pickupLat, hail.pickupLng),
       preferredName: hail.pickupName ?? hail.stopName,
@@ -1416,10 +1451,6 @@ class TransitProvider extends ChangeNotifier {
       'tripId': hail.requestId,
       'revenue': fare,
     });
-    _acceptedDriverHail = null;
-    _driverAtPickup = false;
-    _driverTripStarted = false;
-
     try {
       await Supabase.instance.client.from('trips').upsert({
         'request_id': hail.requestId,

@@ -539,7 +539,9 @@ sio.on('trip-end', trip_end)
 @sio.event
 async def passenger_end_trip(sid, data):
     passenger_id = data.get("passengerId") or data.get("passenger_id")
-    driver_id = data.get("driverId") or data.get("driver_id")
+    assignment = taxi_assignments.get(passenger_id, {}) if passenger_id else {}
+    driver_id = data.get("driverId") or data.get("driver_id") or assignment.get("driverId") or assignment.get("driver_id")
+    request_id = data.get("requestId") or data.get("request_id") or assignment.get("requestId") or assignment.get("request_id")
     route_id = data.get("routeId", "taxi-service")
     fare = float(data.get("fare") or data.get("fareEstimate") or get_fare("TAXI"))
 
@@ -554,6 +556,8 @@ async def passenger_end_trip(sid, data):
     end_payload = {
         "passengerId": passenger_id,
         "driverId": driver_id,
+        "requestId": request_id,
+        "tripId": request_id,
         "routeId": route_id,
         "fare": fare,
         "status": "COMPLETED",
