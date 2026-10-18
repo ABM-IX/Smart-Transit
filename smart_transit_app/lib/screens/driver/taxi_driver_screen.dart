@@ -44,6 +44,38 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
   List<LatLng> _driverRoutePoints = const [];
   double? _routeDistanceKm;
   int? _routeDurationMinutes;
+  TransitProvider? _transitSubscription;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final transit = context.read<TransitProvider>();
+    if (identical(transit, _transitSubscription)) return;
+    _transitSubscription?.removeListener(_syncTaxiPhaseWithTransit);
+    _transitSubscription = transit;
+    transit.addListener(_syncTaxiPhaseWithTransit);
+  }
+
+  void _syncTaxiPhaseWithTransit() {
+    final transit = _transitSubscription;
+    if (!mounted || transit == null || _currentHail == null) return;
+    TaxiDriverTripPhase? nextPhase;
+    if (transit.driverTripStarted &&
+        _phase != TaxiDriverTripPhase.onTrip &&
+        _phase != TaxiDriverTripPhase.searching) {
+      nextPhase = TaxiDriverTripPhase.onTrip;
+    } else if (transit.driverAtPickup &&
+        _phase == TaxiDriverTripPhase.enRouteToPickup) {
+      nextPhase = TaxiDriverTripPhase.arrivedAtPickup;
+    }
+    if (nextPhase != null) setState(() => _phase = nextPhase!);
+  }
+
+  @override
+  void dispose() {
+    _transitSubscription?.removeListener(_syncTaxiPhaseWithTransit);
+    super.dispose();
+  }
 
   String _resolvedPickupName() {
     if (_pickupLabel != null &&
@@ -79,7 +111,8 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
     }
     final pickupTarget =
         transit.livePassengerLocation ?? LatLng(hail.pickupLat, hail.pickupLng);
-    final target = _phase == TaxiDriverTripPhase.onTrip &&
+    final target =
+        _phase == TaxiDriverTripPhase.onTrip &&
             hail.destinationLat != null &&
             hail.destinationLng != null
         ? LatLng(hail.destinationLat!, hail.destinationLng!)
@@ -99,7 +132,11 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
     _loadDriverRoute(key, origin, target);
   }
 
-  Future<void> _loadDriverRoute(String key, LatLng origin, LatLng target) async {
+  Future<void> _loadDriverRoute(
+    String key,
+    LatLng origin,
+    LatLng target,
+  ) async {
     const distance = Distance();
     final directKm = distance.as(LengthUnit.Kilometer, origin, target);
     try {
@@ -181,7 +218,10 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
     });
   }
 
-  Future<void> _loadRiderContact(TransitProvider transit, String passengerId) async {
+  Future<void> _loadRiderContact(
+    TransitProvider transit,
+    String passengerId,
+  ) async {
     try {
       final contact = await transit.fetchUserContact(passengerId);
       if (!mounted) return;
@@ -232,10 +272,14 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
             pickupMarker: _currentHail == null
                 ? null
                 : (transit.livePassengerLocation ??
-                    LatLng(_currentHail!.pickupLat, _currentHail!.pickupLng)),
-            destination: _currentHail?.destinationLat != null &&
+                      LatLng(_currentHail!.pickupLat, _currentHail!.pickupLng)),
+            destination:
+                _currentHail?.destinationLat != null &&
                     _currentHail?.destinationLng != null
-                ? LatLng(_currentHail!.destinationLat!, _currentHail!.destinationLng!)
+                ? LatLng(
+                    _currentHail!.destinationLat!,
+                    _currentHail!.destinationLng!,
+                  )
                 : null,
             drivers: transit.activeDrivers
                 .where((d) => d.serviceType == 'TAXI')
@@ -507,7 +551,9 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _riderName?.isNotEmpty == true ? _riderName! : 'Passenger',
+                          _riderName?.isNotEmpty == true
+                              ? _riderName!
+                              : 'Passenger',
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 16,
@@ -740,6 +786,8 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
               StatusPill(
                 label: _phase == TaxiDriverTripPhase.onTrip
                     ? 'IN PROGRESS'
+                    : _phase == TaxiDriverTripPhase.arrivedAtPickup
+                    ? 'AT PICKUP'
                     : 'EN ROUTE',
                 color: AppTheme.accentGreen,
               ),
@@ -843,20 +891,25 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
               ),
             )
           else if (_phase == TaxiDriverTripPhase.arrivedAtPickup)
-            SizedBox(
-              height: 52,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.directions_car),
-                label: const Text('PASSENGER BOARDED • START TRIP'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.black,
-                ),
-                onPressed: () {
-                  if (_currentHail != null) {
-                    transit.startTrip(_currentHail!, auth.userId);
-                  }
-                  setState(() => _phase = TaxiDriverTripPhase.onTrip);
-                },
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+              decoration: BoxDecoration(
+                color: AppTheme.statusSuccess.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.where_to_vote, color: AppTheme.statusSuccess),
+                  SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      'At pickup. Waiting for the passenger to confirm boarding.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ],
               ),
             )
           else if (_phase == TaxiDriverTripPhase.onTrip)

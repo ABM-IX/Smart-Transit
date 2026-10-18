@@ -200,6 +200,7 @@ async def driver_location(sid, data):
                         and (time.time() - float(assignment.get("started_at") or 0.0)) >= 3.5
                     ):
                         assignment["arrived"] = True
+                        p["status"] = "ARRIVED"
                         await sio.emit('driver-arrived-pickup', {
                             "driverId": driver_id,
                             "passengerId": p_id,
@@ -214,7 +215,7 @@ async def driver_location(sid, data):
                         }, to=p["socket_id"])
 
                     # Automatic Boarding: Trigger when vehicle is in 20m proximity and co-moving
-                    if p.get("status") == "WAITING" and dist_meters <= 20.0 and curr_speed > 2.0:
+                    if service_type != "TAXI" and p.get("status") == "WAITING" and dist_meters <= 20.0 and curr_speed > 2.0:
                         p["status"] = "ON_BOARD"
                         await sio.emit('boarding-confirmed', {
                             "driverId": driver_id,
@@ -231,7 +232,7 @@ async def driver_location(sid, data):
 
                     # Automatic Trip Completion / Alighting Detection:
                     # When passenger was ON_BOARD and distance now exceeds 60m with vehicle moving away
-                    elif p.get("status") == "ON_BOARD" and dist_meters > 60.0 and curr_speed > 3.0:
+                    elif service_type != "TAXI" and p.get("status") == "ON_BOARD" and dist_meters > 60.0 and curr_speed > 3.0:
                         p["status"] = "COMPLETED"
                         completion_payload = {
                             "driverId": driver_id,

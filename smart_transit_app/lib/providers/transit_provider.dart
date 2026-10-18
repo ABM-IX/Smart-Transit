@@ -58,6 +58,7 @@ class TransitProvider extends ChangeNotifier {
   String? _matchedPassengerPhone;
   double? _estimatedFare;
   String? _currentRequestId;
+  String? _activeServiceType;
   LatLng? _livePassengerLocation;
   int? _etaSeconds;
   double? _etaDistanceMeters;
@@ -78,6 +79,10 @@ class TransitProvider extends ChangeNotifier {
   SpacingAdvisory? _spacingAdvisory;
   final List<HailRequest> _incomingHails = [];
   HailRequest? _latestHailAlert;
+  HailRequest? _acceptedDriverHail;
+  bool _driverAtPickup = false;
+  bool _driverTripStarted = false;
+  final Set<String> _countedBoardingIds = {};
   String? _lastStopRequest;
   int _passengersCarried = 0;
   int _driverTripsCompleted = 0;
@@ -111,6 +116,8 @@ class TransitProvider extends ChangeNotifier {
   }
 
   bool get isDriverOnline => _isDriverOnline;
+  bool get driverAtPickup => _driverAtPickup;
+  bool get driverTripStarted => _driverTripStarted;
   SpacingAdvisory? get spacingAdvisory => _spacingAdvisory;
   List<HailRequest> get incomingHails => _incomingHails;
   HailRequest? get latestHailAlert => _latestHailAlert;
@@ -140,11 +147,14 @@ class TransitProvider extends ChangeNotifier {
   }
 
   void _updateEtaFromDriverCoords(LatLng driverPos, {double? speedKmh}) {
-    final target = _taxiPickupLocation ?? _livePassengerLocation ?? _currentLocation;
+    final target =
+        _taxiPickupLocation ?? _livePassengerLocation ?? _currentLocation;
     const distance = Distance();
     final distMeters = distance.as(LengthUnit.Meter, driverPos, target);
     _etaDistanceMeters = distMeters;
-    final effectiveSpeed = (speedKmh != null && speedKmh > 10.0) ? speedKmh : 35.0;
+    final effectiveSpeed = (speedKmh != null && speedKmh > 10.0)
+        ? speedKmh
+        : 35.0;
     final rawSec = (distMeters / (effectiveSpeed * 1000.0 / 3600.0)).round();
     _etaSeconds = math.max(45, rawSec);
     _checkProximityArrival();
@@ -153,7 +163,7 @@ class TransitProvider extends ChangeNotifier {
   void _checkProximityArrival() {
     if (_passengerStatus != PassengerTripStatus.driverAccepted) return;
     final dist = _etaDistanceMeters;
-    if (dist == null || dist > 40.0) return;
+    if (dist == null || dist > 35.0) return;
 
     final acceptedAt = _driverAcceptedAt ?? DateTime.now();
     final elapsedMs = DateTime.now().difference(acceptedAt).inMilliseconds;
@@ -239,6 +249,31 @@ class TransitProvider extends ChangeNotifier {
     await updateCurrentLocation();
   }
 
+  void _checkDriverPickupProximity() {
+    final hail = _acceptedDriverHail;
+    if (!_isDriverOnline ||
+        hail == null ||
+        _driverAtPickup ||
+        _driverTripStarted) {
+      return;
+    }
+    const distance = Distance();
+    final meters = distance.as(
+      LengthUnit.Meter,
+      _currentLocation,
+      LatLng(hail.pickupLat, hail.pickupLng),
+    );
+    // Match the combi stop arrival radius: the cab is considered at pickup within 35m.
+    if (meters > 35) return;
+    _driverAtPickup = true;
+    _socket.emit('driver-arrived', {
+      'passengerId': hail.passengerId,
+      'driverId': _driverOnlinePayload?['driverId'],
+      'requestId': hail.requestId,
+    });
+    notifyListeners();
+  }
+
   Future<void> _restoreDriverPresence() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -257,19 +292,33 @@ class TransitProvider extends ChangeNotifier {
         await prefs.remove(_savedPassengerTripKey);
         return;
       }
-      await prefs.setString(_savedPassengerTripKey, jsonEncode({
-        'status': _passengerStatus.name,
-        'requestId': _currentRequestId,
-        'driverId': _assignedDriverId,
-        'driverName': _matchedDriverName,
-        'driverPhone': _matchedDriverPhone,
-        'driverPlate': _matchedDriverPlate,
-        'fare': _estimatedFare,
-        'pickupName': _taxiPickupName,
-        'destinationName': _taxiDestinationName,
-        'pickup': _taxiPickupLocation == null ? null : {'lat': _taxiPickupLocation!.latitude, 'lng': _taxiPickupLocation!.longitude},
-        'destination': _taxiDestinationLocation == null ? null : {'lat': _taxiDestinationLocation!.latitude, 'lng': _taxiDestinationLocation!.longitude},
-      }));
+      await prefs.setString(
+        _savedPassengerTripKey,
+        jsonEncode({
+          'status': _passengerStatus.name,
+          'serviceType': _activeServiceType,
+          'requestId': _currentRequestId,
+          'driverId': _assignedDriverId,
+          'driverName': _matchedDriverName,
+          'driverPhone': _matchedDriverPhone,
+          'driverPlate': _matchedDriverPlate,
+          'fare': _estimatedFare,
+          'pickupName': _taxiPickupName,
+          'destinationName': _taxiDestinationName,
+          'pickup': _taxiPickupLocation == null
+              ? null
+              : {
+                  'lat': _taxiPickupLocation!.latitude,
+                  'lng': _taxiPickupLocation!.longitude,
+                },
+          'destination': _taxiDestinationLocation == null
+              ? null
+              : {
+                  'lat': _taxiDestinationLocation!.latitude,
+                  'lng': _taxiDestinationLocation!.longitude,
+                },
+        }),
+      );
     } catch (_) {}
   }
 
@@ -284,11 +333,14 @@ class TransitProvider extends ChangeNotifier {
       for (final candidate in PassengerTripStatus.values) {
         if (candidate.name == statusName) status = candidate;
       }
-      if (status == null || status == PassengerTripStatus.idle || status == PassengerTripStatus.completed) {
+      if (status == null ||
+          status == PassengerTripStatus.idle ||
+          status == PassengerTripStatus.completed) {
         await prefs.remove(_savedPassengerTripKey);
         return;
       }
       _passengerStatus = status;
+      _activeServiceType = data['serviceType']?.toString();
       _currentRequestId = data['requestId']?.toString();
       _assignedDriverId = data['driverId']?.toString();
       _matchedDriverName = data['driverName']?.toString();
@@ -299,8 +351,16 @@ class TransitProvider extends ChangeNotifier {
       _taxiDestinationName = data['destinationName']?.toString();
       final pickup = data['pickup'];
       final destination = data['destination'];
-      if (pickup is Map) _taxiPickupLocation = LatLng((pickup['lat'] as num).toDouble(), (pickup['lng'] as num).toDouble());
-      if (destination is Map) _taxiDestinationLocation = LatLng((destination['lat'] as num).toDouble(), (destination['lng'] as num).toDouble());
+      if (pickup is Map)
+        _taxiPickupLocation = LatLng(
+          (pickup['lat'] as num).toDouble(),
+          (pickup['lng'] as num).toDouble(),
+        );
+      if (destination is Map)
+        _taxiDestinationLocation = LatLng(
+          (destination['lat'] as num).toDouble(),
+          (destination['lng'] as num).toDouble(),
+        );
     } catch (_) {}
   }
 
@@ -367,11 +427,14 @@ class TransitProvider extends ChangeNotifier {
             },
           });
         }
-        if (role == 'drivers' && _isDriverOnline && _driverOnlinePayload != null) {
+        if (role == 'drivers' &&
+            _isDriverOnline &&
+            _driverOnlinePayload != null) {
           _socket.emit('driver-online', _driverOnlinePayload);
           _location.startLocationTracking((pos, speed, heading) {
             _currentLocation = pos;
             _vehicleSpeedKmh = speed;
+            _checkDriverPickupProximity();
             _socket.emit('driver-location', {
               ...?_driverOnlinePayload,
               'coords': {'lat': pos.latitude, 'lng': pos.longitude},
@@ -392,23 +455,37 @@ class TransitProvider extends ChangeNotifier {
         'session-restored': (data) {
           if (data is! Map<String, dynamic>) return;
           final request = data['request'];
-          if (request is Map<String, dynamic> && _passengerStatus != PassengerTripStatus.idle) {
+          if (request is Map<String, dynamic> &&
+              _passengerStatus != PassengerTripStatus.idle) {
             _currentRequestId ??= request['requestId']?.toString();
             _estimatedFare ??= (request['fareEstimate'] as num?)?.toDouble();
             final pickup = request['pickupLoc'] ?? request['pickup'];
             final destination = request['destinationLoc'] ?? request['dropoff'];
-            if (pickup is Map<String, dynamic>) _taxiPickupLocation ??= LatLng((pickup['lat'] as num).toDouble(), (pickup['lng'] as num).toDouble());
-            if (destination is Map<String, dynamic>) _taxiDestinationLocation ??= LatLng((destination['lat'] as num).toDouble(), (destination['lng'] as num).toDouble());
+            if (pickup is Map<String, dynamic>)
+              _taxiPickupLocation ??= LatLng(
+                (pickup['lat'] as num).toDouble(),
+                (pickup['lng'] as num).toDouble(),
+              );
+            if (destination is Map<String, dynamic>)
+              _taxiDestinationLocation ??= LatLng(
+                (destination['lat'] as num).toDouble(),
+                (destination['lng'] as num).toDouble(),
+              );
             _taxiPickupName ??= request['pickupName']?.toString();
             _taxiDestinationName ??= request['destinationName']?.toString();
           }
           final assignment = data['assignment'];
           if (assignment is Map<String, dynamic>) {
-            _assignedDriverId = assignment['driverId']?.toString() ?? assignment['driver_id']?.toString();
+            _assignedDriverId =
+                assignment['driverId']?.toString() ??
+                assignment['driver_id']?.toString();
             _passengerStatus = data['boarded'] == true
                 ? PassengerTripStatus.onBoard
-                : (assignment['arrived'] == true ? PassengerTripStatus.driverArrived : PassengerTripStatus.driverAccepted);
-            if (_assignedDriverId != null) _hydrateMatchedDriverProfile(_assignedDriverId!);
+                : (assignment['arrived'] == true
+                      ? PassengerTripStatus.driverArrived
+                      : PassengerTripStatus.driverAccepted);
+            if (_assignedDriverId != null)
+              _hydrateMatchedDriverProfile(_assignedDriverId!);
           }
           unawaited(_persistPassengerTrip());
           notifyListeners();
@@ -421,6 +498,7 @@ class TransitProvider extends ChangeNotifier {
                 driver.driverId == _assignedDriverId &&
                 driver.latitude != 0.0 &&
                 driver.longitude != 0.0) {
+              _vehicleSpeedKmh = driver.speed;
               _updateEtaFromDriverCoords(
                 LatLng(driver.latitude, driver.longitude),
                 speedKmh: driver.speed,
@@ -437,6 +515,7 @@ class TransitProvider extends ChangeNotifier {
                 driver.driverId == _assignedDriverId &&
                 driver.latitude != 0.0 &&
                 driver.longitude != 0.0) {
+              _vehicleSpeedKmh = driver.speed;
               _updateEtaFromDriverCoords(
                 LatLng(driver.latitude, driver.longitude),
                 speedKmh: driver.speed,
@@ -466,7 +545,8 @@ class TransitProvider extends ChangeNotifier {
             }
             _etaSeconds = (data['etaSeconds'] as num?)?.toInt() ?? _etaSeconds;
             _etaDistanceMeters =
-                (data['distanceMeters'] as num?)?.toDouble() ?? _etaDistanceMeters;
+                (data['distanceMeters'] as num?)?.toDouble() ??
+                _etaDistanceMeters;
             final speed = (data['speed'] as num?)?.toDouble() ?? 0.0;
             // Keep vehicle speed updated so passenger UI can show "I've Arrived" when stationary
             _vehicleSpeedKmh = speed;
@@ -542,12 +622,22 @@ class TransitProvider extends ChangeNotifier {
         'passenger-boarded': (data) {
           if (data is Map<String, dynamic>) {
             final pId = data['passengerId'] ?? data['passenger_id'];
+            final boardingId = (data['requestId'] ?? pId)?.toString();
+            final boardedDriverId = (data['driverId'] ?? data['driver_id'])
+                ?.toString();
             _incomingHails.removeWhere((h) => h.passengerId == pId);
             if (_latestHailAlert?.passengerId == pId) {
               _latestHailAlert = null;
             }
-            // Increment driver's live passenger count when a passenger confirms boarding
-            _passengersCarried += 1;
+            if (boardedDriverId == userId &&
+                boardingId != null &&
+                _countedBoardingIds.add(boardingId)) {
+              _passengersCarried += 1;
+            }
+            if (_acceptedDriverHail?.passengerId == pId) {
+              _driverAtPickup = true;
+              _driverTripStarted = true;
+            }
             notifyListeners();
           }
         },
@@ -604,6 +694,8 @@ class TransitProvider extends ChangeNotifier {
               final lat = (coords['lat'] ?? coords['latitude']) as num?;
               final lng = (coords['lng'] ?? coords['longitude']) as num?;
               if (lat != null && lng != null && lat != 0 && lng != 0) {
+                final reportedSpeed =
+                    (data['speed'] as num?)?.toDouble() ?? 0.0;
                 final liveDriver = LiveDriver(
                   driverId: acceptedDriverId,
                   routeId: data['routeId']?.toString() ?? 'taxi-service',
@@ -611,14 +703,16 @@ class TransitProvider extends ChangeNotifier {
                   vehicleId: data['driverPlate']?.toString() ?? 'B-BW',
                   latitude: lat.toDouble(),
                   longitude: lng.toDouble(),
-                  speed: 35.0,
+                  speed: reportedSpeed,
                   heading: 0.0,
                   occupancy: 1,
                   status: 'ONLINE',
                 );
                 _activeDrivers[acceptedDriverId] = liveDriver;
+                _vehicleSpeedKmh = reportedSpeed;
                 _updateEtaFromDriverCoords(
                   LatLng(lat.toDouble(), lng.toDouble()),
+                  speedKmh: reportedSpeed,
                 );
               }
             } else if (acceptedDriverId != null &&
@@ -651,13 +745,15 @@ class TransitProvider extends ChangeNotifier {
         },
         'taxi-arrived': (data) {
           if (data is Map<String, dynamic>) {
-            _assignedDriverId = data['driverId']?.toString() ?? _assignedDriverId;
+            _assignedDriverId =
+                data['driverId']?.toString() ?? _assignedDriverId;
             if (data['status'] == 'ARRIVED_AT_PICKUP') {
               _arrivalCheckTimer?.cancel();
               _passengerStatus = PassengerTripStatus.driverArrived;
               _etaSeconds = null;
               _etaDistanceMeters =
-                  (data['distanceMeters'] as num?)?.toDouble() ?? _etaDistanceMeters;
+                  (data['distanceMeters'] as num?)?.toDouble() ??
+                  _etaDistanceMeters;
             } else if (_passengerStatus != PassengerTripStatus.driverArrived &&
                 _passengerStatus != PassengerTripStatus.onBoard) {
               _driverAcceptedAt ??= DateTime.now();
@@ -681,7 +777,8 @@ class TransitProvider extends ChangeNotifier {
         'driver-arrived-pickup': (data) {
           if (data is Map<String, dynamic>) {
             _arrivalCheckTimer?.cancel();
-            _assignedDriverId = data['driverId']?.toString() ?? _assignedDriverId;
+            _assignedDriverId =
+                data['driverId']?.toString() ?? _assignedDriverId;
             _passengerStatus = PassengerTripStatus.driverArrived;
             _etaSeconds = null;
             _etaDistanceMeters = null;
@@ -697,6 +794,15 @@ class TransitProvider extends ChangeNotifier {
         },
         'trip-started': (data) {
           _arrivalCheckTimer?.cancel();
+          if (data is Map<String, dynamic> &&
+              data['driverId']?.toString() == userId &&
+              data['passengerId']?.toString() ==
+                  _acceptedDriverHail?.passengerId) {
+            _driverAtPickup = true;
+            _driverTripStarted = true;
+            notifyListeners();
+            return;
+          }
           _passengerStatus = PassengerTripStatus.onBoard;
           unawaited(_persistPassengerTrip());
           notifyListeners();
@@ -738,6 +844,7 @@ class TransitProvider extends ChangeNotifier {
                 _selectedRoute!.id.startsWith('bus-')
             ? 'BUS'
             : 'COMBI');
+    _activeServiceType = resolvedType.toUpperCase();
     _passengerStatus = PassengerTripStatus.hailPending;
     _estimatedFare = _selectedRoute!.baseFare;
     _taxiPickupLocation = _currentLocation;
@@ -774,6 +881,7 @@ class TransitProvider extends ChangeNotifier {
     String? destinationName,
     double? offeredFare,
   }) async {
+    _activeServiceType = 'TAXI';
     _currentRequestId = null;
     _matchedDriverName = null;
     _matchedDriverPhone = null;
@@ -793,7 +901,9 @@ class TransitProvider extends ChangeNotifier {
       preferredName: pickupName,
     );
     _taxiPickupName = resolvedPickupName;
-    _taxiDestinationName = PlaceNameService.sanitizeLocationName(destinationName) ?? destinationName;
+    _taxiDestinationName =
+        PlaceNameService.sanitizeLocationName(destinationName) ??
+        destinationName;
     _passengerStatus = PassengerTripStatus.searchingTaxi;
     unawaited(_persistPassengerTrip());
     final payload = <String, dynamic>{
@@ -830,14 +940,16 @@ class TransitProvider extends ChangeNotifier {
     final driverId =
         _assignedDriverId ??
         (_activeDrivers.isNotEmpty ? _activeDrivers.keys.first : 'driver-1');
-    final routeId =
-        _selectedRoute?.id ??
-        (_routes.isNotEmpty ? _routes.first.id : 'transit-line');
+    final routeId = _activeServiceType == 'TAXI'
+        ? 'taxi-service'
+        : (_selectedRoute?.id ??
+              (_routes.isNotEmpty ? _routes.first.id : 'transit-line'));
 
     _socket.emit('boarding', {
       'driverId': driverId,
       'passengerId': passengerId,
       'routeId': routeId,
+      if (_currentRequestId != null) 'requestId': _currentRequestId,
     });
     _assignedDriverId = driverId;
     _passengerStatus = PassengerTripStatus.onBoard;
@@ -947,11 +1059,10 @@ class TransitProvider extends ChangeNotifier {
       'serviceType': serviceType,
       'pickupName': resolvedPickup,
       'dropoffName':
-          _taxiDestinationName ?? _selectedRoute?.destinationName ?? 'Destination',
-      'pickup': {
-        'lat': pickupPoint.latitude,
-        'lng': pickupPoint.longitude,
-      },
+          _taxiDestinationName ??
+          _selectedRoute?.destinationName ??
+          'Destination',
+      'pickup': {'lat': pickupPoint.latitude, 'lng': pickupPoint.longitude},
       if (_taxiDestinationLocation != null)
         'dropoff': {
           'lat': _taxiDestinationLocation!.latitude,
@@ -1012,6 +1123,7 @@ class TransitProvider extends ChangeNotifier {
     });
     _location.stopLocationTracking();
     _passengerStatus = PassengerTripStatus.idle;
+    _activeServiceType = null;
     unawaited(_persistPassengerTrip());
     _assignedDriverId = null;
     _currentRequestId = null;
@@ -1025,6 +1137,7 @@ class TransitProvider extends ChangeNotifier {
       cancelHail(passengerId);
     } else {
       _passengerStatus = PassengerTripStatus.idle;
+      _activeServiceType = null;
     }
     _assignedDriverId = null;
     _matchedDriverName = null;
@@ -1070,8 +1183,14 @@ class TransitProvider extends ChangeNotifier {
         'vehiclePlate': vehicleId,
         'coords': initialCoords,
       };
-      unawaited(SharedPreferences.getInstance().then((prefs) =>
-          prefs.setString(_savedDriverPresenceKey, jsonEncode(_driverOnlinePayload))));
+      unawaited(
+        SharedPreferences.getInstance().then(
+          (prefs) => prefs.setString(
+            _savedDriverPresenceKey,
+            jsonEncode(_driverOnlinePayload),
+          ),
+        ),
+      );
       _socket.emit('driver-online', _driverOnlinePayload);
 
       // Immediately emit initial driver-location so stationary test devices have live coords & ETA
@@ -1123,6 +1242,7 @@ class TransitProvider extends ChangeNotifier {
       _location.startLocationTracking((pos, speed, heading) {
         _currentLocation = pos;
         _vehicleSpeedKmh = speed;
+        _checkDriverPickupProximity();
         _socket.emit('driver-location', {
           'driverId': driverId,
           'routeId': routeId,
@@ -1156,7 +1276,11 @@ class TransitProvider extends ChangeNotifier {
       });
     } else {
       _driverOnlinePayload = null;
-      unawaited(SharedPreferences.getInstance().then((prefs) => prefs.remove(_savedDriverPresenceKey)));
+      unawaited(
+        SharedPreferences.getInstance().then(
+          (prefs) => prefs.remove(_savedDriverPresenceKey),
+        ),
+      );
       _driverHeartbeatTimer?.cancel();
       _location.stopLocationTracking();
       _socket.emit('driver-offline', {'driverId': driverId});
@@ -1189,6 +1313,9 @@ class TransitProvider extends ChangeNotifier {
     String? driverPhone,
     String? driverPlate,
   }) {
+    _acceptedDriverHail = hail;
+    _driverAtPickup = false;
+    _driverTripStarted = false;
     _socket.emit('accept-hail', {
       'passengerId': hail.passengerId,
       'driverId': driverId,
@@ -1219,11 +1346,13 @@ class TransitProvider extends ChangeNotifier {
   }
 
   void notifyDriverArrived(HailRequest hail, String driverId) {
+    _driverAtPickup = true;
     _socket.emit('driver-arrived', {
       'passengerId': hail.passengerId,
       'driverId': driverId,
       'requestId': hail.requestId,
     });
+    notifyListeners();
   }
 
   void startTrip(HailRequest hail, String driverId) {
@@ -1284,8 +1413,12 @@ class TransitProvider extends ChangeNotifier {
       'passengerId': hail.passengerId,
       'driverId': driverId,
       'requestId': hail.requestId,
+      'tripId': hail.requestId,
       'revenue': fare,
     });
+    _acceptedDriverHail = null;
+    _driverAtPickup = false;
+    _driverTripStarted = false;
 
     try {
       await Supabase.instance.client.from('trips').upsert({

@@ -18,6 +18,7 @@ class CustomMapView extends StatefulWidget {
   final List<LatLng> routePoints;
   final LatLng? destination;
   final LatLng? pickupMarker;
+  final String? highlightDriverId;
 
   const CustomMapView({
     super.key,
@@ -30,6 +31,7 @@ class CustomMapView extends StatefulWidget {
     this.routePoints = const [],
     this.destination,
     this.pickupMarker,
+    this.highlightDriverId,
   });
 
   @override
@@ -143,9 +145,15 @@ class _CustomMapViewState extends State<CustomMapView> {
                     color: AppTheme.cardSurface,
                     shape: BoxShape.circle,
                     border: Border.all(color: AppTheme.hailColor, width: 3),
-                    boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 8)],
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black38, blurRadius: 8),
+                    ],
                   ),
-                  child: const Icon(Icons.flag_rounded, color: AppTheme.hailColor, size: 21),
+                  child: const Icon(
+                    Icons.flag_rounded,
+                    color: AppTheme.hailColor,
+                    size: 21,
+                  ),
                 ),
               ),
 
@@ -159,9 +167,15 @@ class _CustomMapViewState extends State<CustomMapView> {
                     color: AppTheme.taxiColor,
                     shape: BoxShape.circle,
                     border: Border.all(color: AppTheme.cardSurface, width: 3),
-                    boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 8)],
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black38, blurRadius: 8),
+                    ],
                   ),
-                  child: const Icon(Icons.person_pin_circle, color: Colors.white, size: 23),
+                  child: const Icon(
+                    Icons.person_pin_circle,
+                    color: Colors.white,
+                    size: 23,
+                  ),
                 ),
               ),
 
@@ -228,13 +242,14 @@ class _CustomMapViewState extends State<CustomMapView> {
 
             // Live Driver Markers: Distinct by color + icon + shape
             ...widget.drivers.map((driver) {
+              final isAssigned = driver.driverId == widget.highlightDriverId;
               final isTaxi = driver.serviceType == 'TAXI';
               final isBus =
                   driver.serviceType == 'BUS' ||
                   (driver.routeId?.startsWith('bus-') ?? false);
 
               final Color modeColor = isTaxi
-                  ? AppTheme.taxiColor
+                  ? (isAssigned ? AppTheme.botswanaSky : AppTheme.taxiColor)
                   : isBus
                   ? AppTheme.busColor
                   : AppTheme.combiColor;
@@ -253,27 +268,60 @@ class _CustomMapViewState extends State<CustomMapView> {
 
               return Marker(
                 point: LatLng(driver.latitude, driver.longitude),
-                width: 40,
-                height: 40,
+                width: isAssigned ? 86 : 40,
+                height: isAssigned ? 62 : 40,
+                alignment: isAssigned
+                    ? Alignment.bottomCenter
+                    : Alignment.center,
                 child: GestureDetector(
                   onTap: () => widget.onDriverTapped?.call(driver),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: modeColor,
-                      borderRadius: borderRadius,
-                      border: Border.all(
-                        color: AppTheme.cardSurface,
-                        width: 2.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: modeColor.withValues(alpha: 0.35),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isAssigned)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.brandNavy,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'YOUR DRIVER',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                    child: Icon(modeIcon, color: AppTheme.onPrimary, size: 20),
+                      Container(
+                        width: isAssigned ? 38 : 40,
+                        height: isAssigned ? 38 : 40,
+                        decoration: BoxDecoration(
+                          color: modeColor,
+                          borderRadius: borderRadius,
+                          border: Border.all(
+                            color: AppTheme.cardSurface,
+                            width: isAssigned ? 3 : 2.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: modeColor.withValues(alpha: 0.4),
+                              blurRadius: 7,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          isAssigned ? Icons.navigation_rounded : modeIcon,
+                          color: AppTheme.onPrimary,
+                          size: 20,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );

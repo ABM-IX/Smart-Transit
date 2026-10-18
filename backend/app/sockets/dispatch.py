@@ -260,6 +260,8 @@ async def accept_hail(sid, data):
         "driverId": driver_id,
         "started_at": time.time(),
         "request_id": request_id,
+        "route_id": route_id,
+        "routeId": route_id,
         "fareEstimate": fare_est,
         "serviceType": service_type,
         "arrived": False,
@@ -357,7 +359,16 @@ async def driver_arrived(sid, data):
                 break
 
     if passenger_id:
+        assignment = taxi_assignments.get(passenger_id)
+        if assignment and driver_id and driver_id not in (
+            assignment.get("driver_id"), assignment.get("driverId")
+        ):
+            return
+        if assignment:
+            assignment["arrived"] = True
         passenger = active_passengers.get(passenger_id)
+        if passenger:
+            passenger["status"] = "ARRIVED"
         if passenger and passenger.get("socket_id"):
             await sio.emit('driver-arrived-pickup', {
                 "driverId": driver_id,
@@ -380,9 +391,12 @@ sio.on('driver-arrived', driver_arrived)
 
 @sio.event
 async def boarding(sid, data):
-    driver_id = data.get("driverId") or data.get("driver_id")
     passenger_id = data.get("passengerId") or data.get("passenger_id")
-    route_id = data.get("routeId") or data.get("route_id")
+    assignment = taxi_assignments.get(passenger_id, {}) if passenger_id else {}
+    driver_id = data.get("driverId") or data.get("driver_id") or assignment.get("driver_id") or assignment.get("driverId")
+    route_id = data.get("routeId") or data.get("route_id") or assignment.get("route_id") or assignment.get("routeId")
+    request_id = data.get("requestId") or assignment.get("request_id")
+    driver = active_drivers.get(driver_id, {})
 
     # Deactivate and clear hail from active hails
     if passenger_id:
@@ -394,8 +408,35 @@ async def boarding(sid, data):
         "driverId": driver_id,
         "passengerId": passenger_id,
         "routeId": route_id,
+        "requestId": request_id,
         "timestamp": time.time()
     }
+
+    active_boarding = active_boardings.get(passenger_id) if passenger_id else None
+    if passenger_id and not active_boarding:
+        active_boardings[passenger_id] = {
+            "driver_id": driver_id,
+            "route_id": route_id or (driver or {}).get("route_id"),
+            "request_id": request_id,
+            "since": time.time(),
+        }
+    if assignment:
+        assignment["boarded"] = True
+        assignment["arrived"] = True
+    if request_id and request_id not in active_trips:
+        active_trips[request_id] = {
+            "trip_id": request_id,
+            "tripId": request_id,
+            "request_id": request_id,
+            "driver_id": driver_id,
+            "driverId": driver_id,
+            "passenger_id": passenger_id,
+            "passengerId": passenger_id,
+            "route_id": route_id or "taxi-service",
+            "service_type": assignment.get("serviceType", "TAXI"),
+            "start_time": time.time(),
+            "start_coords": driver.get("coords"),
+        }
 
     # Broadcast to route & drivers to remove waiting hail badge
     if route_id:
@@ -405,7 +446,6 @@ async def boarding(sid, data):
     await sio.emit('passenger-boarded', board_payload, room="drivers")
     await sio.emit('boarding', board_payload, room='dashboard')
 
-    driver = active_drivers.get(driver_id)
     if driver and driver.get("socket_id"):
         await sio.emit('passenger-boarded', board_payload, to=driver["socket_id"])
 
@@ -413,13 +453,8 @@ async def boarding(sid, data):
     if passenger and passenger.get("socket_id"):
         await sio.emit('boarding-confirmed', board_payload, to=passenger["socket_id"])
         await sio.emit('trip-started', board_payload, to=passenger["socket_id"])
-
-    if driver and passenger:
-        active_boardings[passenger_id] = {
-            "driver_id": driver_id,
-            "route_id": route_id or driver.get("route_id"),
-            "since": time.time()
-        }
+    if driver and driver.get("socket_id"):
+        await sio.emit('trip-started', board_payload, to=driver["socket_id"])
 
 sio.on('boarding', boarding)
 
@@ -463,7 +498,7 @@ sio.on('trip-start', trip_start)
 
 @sio.event
 async def trip_end(sid, data):
-    trip_id = data.get("tripId") or f"trip-{uuid.uuid4().hex[:8]}"
+    trip_id = data.get("tripId") or data.get("requestId") or f"trip-{uuid.uuid4().hex[:8]}"
     driver_id = data.get("driverId") or data.get("driver_id")
     passenger_id = data.get("passengerId") or data.get("passenger_id")
     revenue = float(data.get("revenue") or data.get("fare") or get_fare("TAXI"))
@@ -492,7 +527,10 @@ async def trip_end(sid, data):
             await sio.emit('taxi-trip-ended', end_payload, to=passenger["socket_id"])
             await sio.emit('trip-completed', end_payload, to=passenger["socket_id"])
         taxi_assignments.pop(passenger_id, None)
+        active_boardings.pop(passenger_id, None)
         active_passengers.pop(passenger_id, None)
+    if request_id:
+        active_taxi_requests.pop(request_id, None)
 
     await sio.emit('trip-completed', {"tripId": trip_id, "driverId": driver_id, "fare": revenue}, room='dashboard')
 
