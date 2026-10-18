@@ -760,12 +760,34 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 ),
               ),
             ],
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () => transit.cancelHail(auth.userId),
+              icon: const Icon(Icons.close, color: AppTheme.accentRed),
+              label: const Text(
+                'Cancel Ride',
+                style: TextStyle(
+                  color: AppTheme.accentRed,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
           ],
         ),
       );
     }
 
     if (transit.passengerStatus == PassengerTripStatus.onBoard) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final tripActionBackground = isDark
+          ? Theme.of(context).colorScheme.primary
+          : AppTheme.brandNavy;
+      final tripActionForeground = isDark
+          ? Theme.of(context).colorScheme.onPrimary
+          : Colors.white;
       final vehicleStationary = transit.vehicleSpeedKmh < 5.0;
       return Container(
         padding: const EdgeInsets.all(20),
@@ -900,14 +922,14 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 finalFare:
                     transit.estimatedFare ?? AppConstants.taxiBaseFareBWP,
               ),
-              icon: const Icon(Icons.pin_drop, size: 18),
+              icon: Icon(Icons.pin_drop, size: 18, color: tripActionForeground),
               label: const Text(
                 'I Have Arrived • End My Trip',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.brandNavy,
-                foregroundColor: Colors.white,
+                backgroundColor: tripActionBackground,
+                foregroundColor: tripActionForeground,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -1217,10 +1239,20 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
           ],
 
           const SizedBox(height: 16),
+          if (_destinationLocation == null) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Select a destination before requesting a cab.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+          ],
           ElevatedButton(
             onPressed:
-                _destinationLocation != null &&
-                    (_routeLoading || _routeError || _tripDistanceKm == null)
+                _destinationLocation == null ||
+                    _routeLoading ||
+                    _routeError ||
+                    _tripDistanceKm == null
                 ? null
                 : () async {
                     _driverName = null;
@@ -1256,7 +1288,9 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               ),
             ),
             child: Text(
-              _serviceType == 'SPECIAL'
+              _destinationLocation == null
+                  ? 'Select Destination First'
+                  : _serviceType == 'SPECIAL'
                   ? 'Offer P${_offerFare.toStringAsFixed(2)} for Special Cab'
                   : 'Request STANDARD Cab Now',
               style: const TextStyle(fontWeight: FontWeight.w800),

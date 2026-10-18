@@ -59,6 +59,24 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
   void _syncTaxiPhaseWithTransit() {
     final transit = _transitSubscription;
     if (!mounted || transit == null || _currentHail == null) return;
+    final cancelledRequestId = transit.driverTripCancelledRequestId;
+    if (cancelledRequestId == _currentHail!.requestId) {
+      setState(() {
+        _phase = TaxiDriverTripPhase.searching;
+        _currentHail = null;
+        _riderName = null;
+        _riderPhone = null;
+        _pickupLabel = null;
+        _destinationLabel = null;
+        _routeKey = null;
+        _lastRouteOrigin = null;
+        _driverRoutePoints = const [];
+        _routeDistanceKm = null;
+        _routeDurationMinutes = null;
+      });
+      transit.acknowledgeDriverTripCancelled(cancelledRequestId!);
+      return;
+    }
     if (transit.driverTripEnded) {
       final fare =
           transit.driverTripEndedFare ??
@@ -80,6 +98,33 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
         _routeDurationMinutes = null;
       });
       transit.acknowledgeDriverTripEnded();
+      return;
+    }
+    final hasProviderAcceptance =
+        transit.acceptedDriverHail?.requestId == _currentHail!.requestId;
+    final requestStillIncoming = transit.incomingHails.any(
+      (hail) => hail.requestId == _currentHail!.requestId,
+    );
+    final acceptanceWasRejected =
+        _phase == TaxiDriverTripPhase.enRouteToPickup && !hasProviderAcceptance;
+    final requestWasWithdrawn =
+        _phase == TaxiDriverTripPhase.requestReceived &&
+        !hasProviderAcceptance &&
+        !requestStillIncoming;
+    if (acceptanceWasRejected || requestWasWithdrawn) {
+      setState(() {
+        _phase = TaxiDriverTripPhase.searching;
+        _currentHail = null;
+        _riderName = null;
+        _riderPhone = null;
+        _pickupLabel = null;
+        _destinationLabel = null;
+        _routeKey = null;
+        _lastRouteOrigin = null;
+        _driverRoutePoints = const [];
+        _routeDistanceKm = null;
+        _routeDurationMinutes = null;
+      });
       return;
     }
     TaxiDriverTripPhase? nextPhase;

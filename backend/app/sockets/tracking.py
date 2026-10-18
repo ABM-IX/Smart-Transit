@@ -69,6 +69,25 @@ async def driver_online(sid, data):
         "last_update": time.time()
     }
     active_drivers[driver_id] = driver_data
+    active_request_id = data.get("activeRequestId")
+    if active_request_id:
+        assignment = next(
+            (
+                assigned
+                for assigned in taxi_assignments.values()
+                if (assigned.get("driver_id") or assigned.get("driverId")) == driver_id
+                and (assigned.get("request_id") or assigned.get("requestId")) == active_request_id
+            ),
+            None,
+        )
+        if assignment is None:
+            await sio.emit('passenger-trip-cancelled', {
+                "driverId": driver_id,
+                "passengerId": data.get("activePassengerId"),
+                "requestId": active_request_id,
+                "tripId": active_request_id,
+                "status": "NO_LONGER_ACTIVE",
+            }, to=sid)
     await sio.emit('fleet-update', {'type': 'driver', **driver_data}, room='dashboard')
     await sio.emit('vehicle-update', {'type': 'driver', **driver_data}, room=f"passengers-{route_id}")
     await sio.emit('driver-location', {**driver_data}, room=f"passengers-{route_id}")
@@ -134,6 +153,28 @@ async def driver_location(sid, data):
         "socket_id": sid
     }
     active_drivers[driver_id] = driver_data
+
+    # Reconcile accepted taxi rides on each location heartbeat. Mobile sockets
+    # can briefly disconnect and miss the original cancellation event.
+    active_request_id = data.get("activeRequestId") or data.get("active_request_id")
+    if service_type == "TAXI" and active_request_id:
+        active_assignment = next(
+            (
+                (passenger_id, assignment)
+                for passenger_id, assignment in taxi_assignments.items()
+                if (assignment.get("driver_id") or assignment.get("driverId")) == driver_id
+                and (assignment.get("request_id") or assignment.get("requestId")) == active_request_id
+            ),
+            None,
+        )
+        if active_assignment is None:
+            await sio.emit('passenger-trip-cancelled', {
+                "driverId": driver_id,
+                "passengerId": data.get("activePassengerId") or data.get("active_passenger_id"),
+                "requestId": active_request_id,
+                "tripId": active_request_id,
+                "status": "NO_LONGER_ACTIVE",
+            }, to=sid)
 
     # Persist live GPS position to database
     lat = float(coords.get("lat") or coords.get("latitude") or 0.0)

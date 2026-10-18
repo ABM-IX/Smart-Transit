@@ -39,7 +39,14 @@ async def passenger_request_taxi(sid, data):
 
     if not passenger_id or not pickup:
         return
+    if not dropoff:
+        await sio.emit('taxi-request-rejected', {
+            "reason": "DESTINATION_REQUIRED",
+            "message": "Select a destination before requesting a taxi.",
+        }, to=sid)
+        return
 
+    _clear_taxi_requests_for_passenger(passenger_id)
     request_id = f"req-{uuid.uuid4().hex[:8]}"
     recommended_fare = get_fare(service_type, pickup, dropoff)
     offered_fare = data.get("offeredFare") or data.get("offered_fare")
@@ -61,6 +68,9 @@ async def passenger_request_taxi(sid, data):
     }
     active_taxi_requests[request_id] = request
     active_hails[passenger_id] = request
+
+    def request_is_active():
+        return active_hails.get(passenger_id) is request
 
     # Update active passenger in memory & notify dashboard
     active_passengers[passenger_id] = {
@@ -85,7 +95,11 @@ async def passenger_request_taxi(sid, data):
         'coords': pickup,
         'status': 'WAITING'
     }, room='dashboard')
+    if not request_is_active():
+        return
     await sio.emit('new-hail', request, room='dashboard')
+    if not request_is_active():
+        return
     await sio.emit('new-taxi-request', request, room='drivers-taxi-service')
 
     # Find nearest online taxi drivers
@@ -98,11 +112,15 @@ async def passenger_request_taxi(sid, data):
     closest_taxis = online_taxis[:5]
 
     for d in closest_taxis:
+        if not request_is_active():
+            return
         target_sid = d.get("socket_id")
         if target_sid:
             await sio.emit('new-taxi-request', request, to=target_sid)
             await sio.emit('new-hail', request, to=target_sid)
 
+    if not request_is_active():
+        return
     await sio.emit('taxi-dispatched', {
         "status": "finding_driver",
         "requestId": request_id,
@@ -136,6 +154,13 @@ async def hail(sid, data):
         else:
             service_type = "COMBI"
 
+    if service_type in ("TAXI", "SPECIAL") and not destination_loc:
+        await sio.emit('hail-request-rejected', {
+            "reason": "DESTINATION_REQUIRED",
+            "message": "Select a destination before requesting a taxi.",
+        }, to=sid)
+        return
+
     request_id = f"req-{uuid.uuid4().hex[:8]}"
     fare_estimate = float(data.get("fareEstimate") or get_fare(service_type, pickup_loc, destination_loc))
     pickup_name = data.get("pickupName") or data.get("pickup_name") or data.get("stopName") or data.get("stop_name")
@@ -158,9 +183,13 @@ async def hail(sid, data):
         "requestedAt": time.time()
     }
 
+    _clear_taxi_requests_for_passenger(passenger_id)
     active_hails[passenger_id] = hail_payload
     if route_id == "taxi-service" or service_type == "TAXI":
         active_taxi_requests[request_id] = hail_payload
+
+    def request_is_active():
+        return active_hails.get(passenger_id) is hail_payload
 
     # Register passenger & update dashboard
     active_passengers[passenger_id] = {
@@ -185,11 +214,19 @@ async def hail(sid, data):
         'coords': pickup_loc,
         'status': 'WAITING'
     }, room='dashboard')
+    if not request_is_active():
+        return
 
     # Emit to drivers on route & general drivers room & dashboard
     await sio.emit('new-hail', hail_payload, room=f"drivers-{route_id}")
+    if not request_is_active():
+        return
     await sio.emit('new-hail', hail_payload, room='drivers')
+    if not request_is_active():
+        return
     await sio.emit('new-hail', hail_payload, room='dashboard')
+    if not request_is_active():
+        return
     await sio.emit('hail-queued', {
         'requestId': request_id,
         'routeId': route_id,
@@ -199,6 +236,8 @@ async def hail(sid, data):
 
     # Also emit directly to individual sockets of matching online drivers
     for d in active_drivers.values():
+        if not request_is_active():
+            return
         if (d.get("routeId") == route_id or d.get("route_id") == route_id or d.get("serviceType") == "TAXI") and d.get("socket_id"):
             await sio.emit('new-hail', hail_payload, to=d["socket_id"])
 
@@ -211,12 +250,83 @@ async def cancel_hail(sid, data):
     if not passenger_id:
         return
 
+    assignment = taxi_assignments.get(passenger_id)
+    if assignment:
+        assigned_request_id = assignment.get("request_id") or assignment.get("requestId")
+        requested_id = data.get("requestId") or data.get("request_id")
+        driver_id = assignment.get("driver_id") or assignment.get("driverId")
+        if requested_id and requested_id != assigned_request_id:
+            passenger = active_passengers.get(passenger_id, {})
+            if passenger.get("socket_id") != sid:
+                await sio.emit('hail-cancel-rejected', {
+                    "passengerId": passenger_id,
+                    "requestId": assigned_request_id,
+                    "driverId": driver_id,
+                    "serviceType": assignment.get("serviceType", "TAXI"),
+                    "status": "DRIVER_ACCEPTED",
+                }, to=sid)
+                return
+        if assignment.get("boarded"):
+            await sio.emit('hail-cancel-rejected', {
+                "passengerId": passenger_id,
+                "requestId": assigned_request_id,
+                "driverId": driver_id,
+                "serviceType": assignment.get("serviceType", "TAXI"),
+                "status": "ON_BOARD",
+            }, to=sid)
+            return
+
+        route_id = assignment.get("route_id") or assignment.get("routeId") or route_id
+        taxi_assignments.pop(passenger_id, None)
+        active_boardings.pop(passenger_id, None)
+        active_passengers.pop(passenger_id, None)
+        active_hails.pop(passenger_id, None)
+        _clear_taxi_requests_for_passenger(passenger_id, assigned_request_id)
+        _clear_active_trips_for_passenger(passenger_id, assigned_request_id)
+        cancel_payload = {
+            "passengerId": passenger_id,
+            "driverId": driver_id,
+            "requestId": assigned_request_id,
+            "tripId": assigned_request_id,
+            "routeId": route_id,
+            "status": "CANCELLED",
+        }
+        driver = active_drivers.get(driver_id, {})
+        if driver.get("socket_id"):
+            await sio.emit('passenger-trip-cancelled', cancel_payload, to=driver["socket_id"])
+        await sio.emit('passenger-trip-cancelled', cancel_payload, room='drivers')
+        await sio.emit('hail-cancelled', cancel_payload, room=f"drivers-{route_id}")
+        await sio.emit('hail-cancelled', cancel_payload, room='drivers')
+        await sio.emit('hail-cancelled', cancel_payload, room='dashboard')
+        await sio.emit('fleet-remove', {
+            'type': 'passenger',
+            'id': passenger_id,
+            'passengerId': passenger_id,
+        }, room='dashboard')
+        return
+
+    active_request = active_hails.get(passenger_id)
+    requested_id = data.get("requestId") or data.get("request_id")
+    active_request_id = (active_request or {}).get("requestId")
+    if requested_id and (
+        not active_request or requested_id != active_request_id
+    ):
+        return
+    request_id = requested_id or active_request_id
+
     active_hails.pop(passenger_id, None)
     active_passengers.pop(passenger_id, None)
     taxi_assignments.pop(passenger_id, None)
-    _clear_taxi_requests_for_passenger(passenger_id)
-    await sio.emit('hail-cancelled', {"passengerId": passenger_id, "routeId": route_id}, room=f"drivers-{route_id}")
-    await sio.emit('hail-cancelled', {"passengerId": passenger_id, "routeId": route_id}, room='dashboard')
+    _clear_taxi_requests_for_passenger(passenger_id, request_id)
+    cancel_payload = {
+        "passengerId": passenger_id,
+        "requestId": request_id,
+        "routeId": route_id,
+        "status": "CANCELLED",
+    }
+    await sio.emit('hail-cancelled', cancel_payload, room=f"drivers-{route_id}")
+    await sio.emit('hail-cancelled', cancel_payload, room='drivers')
+    await sio.emit('hail-cancelled', cancel_payload, room='dashboard')
     await sio.emit('fleet-remove', {'type': 'passenger', 'id': passenger_id, 'passengerId': passenger_id}, room='dashboard')
 
 sio.on('cancel-hail', cancel_hail)
@@ -233,9 +343,23 @@ async def accept_hail(sid, data):
     if not passenger_id or not driver_id:
         return
 
-    active_hails.pop(passenger_id, None)
+    active_request = active_hails.get(passenger_id)
+    active_request_id = (active_request or {}).get("requestId")
+    request_id = request_id or active_request_id
+    req = active_request
+    request_passenger_id = (req or {}).get("passengerId") or (req or {}).get("passenger_id")
+    request_matches = bool(req) and request_passenger_id == passenger_id
+    if request_id and active_request_id != request_id:
+        request_matches = False
+    if not request_matches or passenger_id in taxi_assignments:
+        await sio.emit('hail-accept-rejected', {
+            "passengerId": passenger_id,
+            "requestId": request_id,
+            "status": "REQUEST_NO_LONGER_AVAILABLE",
+        }, to=sid)
+        return
+
     passenger = active_passengers.get(passenger_id)
-    req = active_taxi_requests.get(request_id) if request_id else None
     driver = active_drivers.get(driver_id, {})
 
     incoming_coords = data.get("coords")
@@ -289,6 +413,17 @@ async def accept_hail(sid, data):
         "serviceType": service_type,
         "arrived": False,
     }
+    active_hails.pop(passenger_id, None)
+    _clear_taxi_requests_for_passenger(passenger_id, request_id)
+
+    unavailable_payload = {
+        "passengerId": passenger_id,
+        "requestId": request_id,
+        "routeId": route_id,
+        "status": "ACCEPTED",
+    }
+    await sio.emit('hail-cancelled', unavailable_payload, room=f"drivers-{route_id}")
+    await sio.emit('hail-cancelled', unavailable_payload, room='drivers')
 
     payload = {
         "passengerId": passenger_id,

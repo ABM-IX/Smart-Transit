@@ -105,6 +105,18 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
     final transit = Provider.of<TransitProvider>(context);
     final auth = Provider.of<AuthProvider>(context);
 
+    final acceptedByProvider = transit.acceptedDriverHail;
+    if (_acceptedHail != null &&
+        acceptedByProvider?.requestId != _acceptedHail!.requestId) {
+      final rejectedRequestId = _acceptedHail!.requestId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _acceptedHail?.requestId == rejectedRequestId) {
+          setState(() => _acceptedHail = null);
+        }
+        transit.acknowledgeDriverTripCancelled(rejectedRequestId);
+      });
+    }
+
     // Filter incoming hails to only those matching this driver's route
     final targetRoute = widget.driverRole == UserRole.driverTaxi
         ? 'taxi-service'
