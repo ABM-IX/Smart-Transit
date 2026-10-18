@@ -133,7 +133,8 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
     final activeDriverCount = routeDrivers.length;
     if (transit.passengerStatus == PassengerTripStatus.hailPending) {
       return _buildPendingHailCard(transit, auth, routeDrivers);
-    } else if (transit.passengerStatus == PassengerTripStatus.driverAccepted) {
+    } else if (transit.passengerStatus == PassengerTripStatus.driverAccepted ||
+        transit.passengerStatus == PassengerTripStatus.driverArrived) {
       return _buildDriverAcceptedCard(context, transit, auth, routeDrivers);
     } else if (transit.passengerStatus == PassengerTripStatus.onBoard) {
       return _buildOnBoardCard(context, transit, auth);
@@ -395,7 +396,6 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
         routeDrivers.first.longitude,
       );
     }
-    final isWithinProximity = distMeters != null && distMeters <= 25.0;
     final activeDriverCount = routeDrivers.length;
 
     return Container(
@@ -571,9 +571,7 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                       ),
                     ),
                     Text(
-                      isWithinProximity
-                          ? 'Vehicle has arrived at your stop (within 25m)!'
-                          : 'Approaching vehicles have received your stop alert.',
+                      'Approaching vehicles have received your stop alert.',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppTheme.secondaryText,
@@ -585,27 +583,6 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
             ],
           ),
           const SizedBox(height: 16),
-
-          // Proximity-Gated Boarding Button: Only visible when vehicle is within 25m
-          if (isWithinProximity) ...[
-            ElevatedButton.icon(
-              onPressed: () => transit.confirmBoarding(auth.userId),
-              icon: const Icon(Icons.directions_walk, size: 20),
-              label: const Text(
-                'Confirm Boarding (I am on board)',
-                style: TextStyle(fontWeight: FontWeight.w900),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryTeal,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
 
           TextButton(
             onPressed: () => transit.cancelHail(auth.userId),
@@ -628,27 +605,99 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
     AuthProvider auth,
     List<LiveDriver> routeDrivers,
   ) {
+    final assignedDrivers = routeDrivers
+        .where((driver) => driver.driverId == transit.assignedDriverId)
+        .toList();
+    final assignedDriver =
+        assignedDrivers.isNotEmpty ? assignedDrivers.first : null;
     double? distMeters = transit.etaDistanceMeters;
-    if (distMeters == null && routeDrivers.isNotEmpty) {
+    if (distMeters == null && assignedDriver != null) {
       distMeters = _calculateDistanceMeters(
         transit.currentLocation.latitude,
         transit.currentLocation.longitude,
-        routeDrivers.first.latitude,
-        routeDrivers.first.longitude,
+        assignedDriver.latitude,
+        assignedDriver.longitude,
       );
     }
-    final isWithinProximity = distMeters != null && distMeters <= 25.0;
+    final driverHasArrived =
+        transit.passengerStatus == PassengerTripStatus.driverArrived;
+    final pickupArea = transit.taxiPickupName ?? 'your pickup point';
+    final vehiclePlate =
+        (transit.matchedDriverPlate?.isNotEmpty == true &&
+            transit.matchedDriverPlate != 'B-BW')
+        ? transit.matchedDriverPlate!
+        : (assignedDriver?.vehicleId ?? 'Active Vehicle');
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppTheme.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              color: driverHasArrived
+                  ? AppTheme.statusSuccess.withValues(alpha: 0.12)
+                  : AppTheme.primaryTeal.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: driverHasArrived
+                    ? AppTheme.statusSuccess
+                    : AppTheme.primaryTeal,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  driverHasArrived
+                      ? Icons.where_to_vote
+                      : Icons.access_time_filled,
+                  color: driverHasArrived
+                      ? AppTheme.statusSuccess
+                      : AppTheme.primaryTeal,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    driverHasArrived
+                        ? 'Driver has arrived at $pickupArea!'
+                        : 'Vehicle is coming to $pickupArea',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                      color: AppTheme.brandNavy,
+                    ),
+                  ),
+                ),
+                if (!driverHasArrived)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.brandNavy,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'ETA: ${transit.etaDisplay}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
           Row(
             children: [
               Container(
@@ -657,8 +706,10 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                   color: AppTheme.statusSuccess.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.check,
+                child: Icon(
+                  widget.mode == TransportMode.bus
+                      ? Icons.directions_bus
+                      : Icons.airport_shuttle,
                   color: AppTheme.statusSuccess,
                   size: 24,
                 ),
@@ -669,7 +720,11 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Vehicle Arriving (${transit.assignedDriverId ?? ""})',
+                      transit.matchedDriverName?.isNotEmpty == true
+                          ? transit.matchedDriverName!
+                          : (driverHasArrived
+                                ? 'Driver has arrived'
+                                : 'Driver accepted your hail'),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -677,12 +732,28 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (transit.matchedDriverPhone?.isNotEmpty == true)
+                      Text(
+                        'Phone • ${transit.matchedDriverPhone!}',
+                        style: TextStyle(
+                          color: AppTheme.secondaryText,
+                          fontSize: 12,
+                        ),
+                      ),
                     Text(
-                      isWithinProximity
-                          ? 'Vehicle at pickup point!'
+                      'Vehicle • $vehiclePlate',
+                      style: TextStyle(
+                        color: AppTheme.secondaryText,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      driverHasArrived
+                          ? 'Your driver is at $pickupArea. Please board now.'
                           : (distMeters != null
-                                ? 'Driver is en route (${distMeters < 1000 ? "${distMeters.toStringAsFixed(0)}m" : "${(distMeters / 1000).toStringAsFixed(1)}km"} away)'
-                                : 'Driver is en route to your stop.'),
+                                ? 'En route (${distMeters < 1000 ? "${distMeters.toStringAsFixed(0)}m" : "${(distMeters / 1000).toStringAsFixed(1)} km"} away) • Est. arrival: ${transit.etaDisplay}'
+                                : 'En route to $pickupArea • Est. arrival: ${transit.etaDisplay}'),
                       style: TextStyle(
                         color: AppTheme.secondaryText,
                         fontSize: 13,
@@ -693,10 +764,11 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
               ),
             ],
           ),
-          if (isWithinProximity) ...[
+          if (driverHasArrived) ...[
             const SizedBox(height: 16),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: () => transit.confirmBoarding(auth.userId),
+              icon: const Icon(Icons.hail, color: Colors.white),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryTeal,
                 foregroundColor: Colors.white,
@@ -705,7 +777,7 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              child: const Text(
+              label: const Text(
                 'Confirm Boarding (I am on board)',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
@@ -1015,13 +1087,21 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
 
           ElevatedButton(
             onPressed: () {
+              final ratingToSubmit = _tripRating;
+              final commentToSubmit = _commentController.text.trim();
+              _commentController.clear();
+              if (mounted) {
+                setState(() {
+                  _tripRating = 5;
+                  _stopRequested = false;
+                });
+              }
               transit.submitRating(
                 driverId: driverIdToRate,
                 passengerId: auth.userId,
-                rating: _tripRating,
-                comment: _commentController.text.trim(),
+                rating: ratingToSubmit,
+                comment: commentToSubmit,
               );
-              transit.resetPassengerTrip();
               widget.onExitToMain();
             },
             style: ElevatedButton.styleFrom(

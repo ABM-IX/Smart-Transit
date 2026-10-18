@@ -91,42 +91,7 @@ sio.on('passenger-request-taxi', passenger_request_taxi)
 
 @sio.event
 async def taxi_accept(sid, data):
-    passenger_id = data.get("passengerId") or data.get("passenger_id")
-    driver_id = data.get("driverId") or data.get("driver_id")
-    request_id = data.get("requestId")
-    route_id = data.get("routeId", "taxi-service")
-
-    if not passenger_id or not driver_id:
-        return
-
-    if passenger_id in taxi_assignments:
-        await sio.emit('taxi-error', {"reason": "Ride already assigned"}, to=sid)
-        return
-
-    req = active_taxi_requests.get(request_id) if request_id else None
-    taxi_assignments[passenger_id] = {
-        "driver_id": driver_id,
-        "started_at": time.time(),
-        "request_id": request_id
-    }
-    active_hails.pop(passenger_id, None)
-
-    passenger = active_passengers.get(passenger_id)
-    if passenger and passenger.get("socket_id"):
-        await sio.emit('taxi-arrived', {
-            "driverId": driver_id,
-            "routeId": route_id,
-            "requestId": request_id,
-            "fareEstimate": req.get("fareEstimate") if req else get_fare("TAXI")
-        }, to=passenger["socket_id"])
-
-    await sio.emit('hail-accepted', {
-        "type": "taxi-assign",
-        "passengerId": passenger_id,
-        "driverId": driver_id,
-        "requestId": request_id,
-        "routeId": route_id
-    }, room='dashboard')
+    await accept_hail(sid, data)
 
 sio.on('taxi-accept', taxi_accept)
 
@@ -151,6 +116,8 @@ async def hail(sid, data):
 
     request_id = f"req-{uuid.uuid4().hex[:8]}"
     fare_estimate = float(data.get("fareEstimate") or get_fare(service_type, pickup_loc, destination_loc))
+    pickup_name = data.get("pickupName") or data.get("pickup_name") or data.get("stopName") or data.get("stop_name")
+    destination_name = data.get("destinationName") or data.get("dropoffName") or data.get("dropoff_name")
 
     hail_payload = {
         "requestId": request_id,
@@ -159,7 +126,10 @@ async def hail(sid, data):
         "routeId": route_id,
         "route_id": route_id,
         "pickupLoc": pickup_loc,
+        "pickupName": pickup_name,
+        "stopName": pickup_name,
         "destinationLoc": destination_loc,
+        "destinationName": destination_name,
         "serviceType": service_type,
         "service_type": service_type,
         "fareEstimate": fare_estimate,
@@ -221,6 +191,7 @@ async def cancel_hail(sid, data):
 
     active_hails.pop(passenger_id, None)
     active_passengers.pop(passenger_id, None)
+    taxi_assignments.pop(passenger_id, None)
     await sio.emit('hail-cancelled', {"passengerId": passenger_id, "routeId": route_id}, room=f"drivers-{route_id}")
     await sio.emit('hail-cancelled', {"passengerId": passenger_id, "routeId": route_id}, room='dashboard')
     await sio.emit('fleet-remove', {'type': 'passenger', 'id': passenger_id, 'passengerId': passenger_id}, room='dashboard')
@@ -229,6 +200,8 @@ sio.on('cancel-hail', cancel_hail)
 
 @sio.event
 async def accept_hail(sid, data):
+    from app.services.geo import calculate_eta
+
     passenger_id = data.get("passengerId") or data.get("passenger_id")
     driver_id = data.get("driverId") or data.get("driver_id")
     route_id = data.get("routeId", "taxi-service")
@@ -241,9 +214,46 @@ async def accept_hail(sid, data):
     passenger = active_passengers.get(passenger_id)
     req = active_taxi_requests.get(request_id) if request_id else None
     driver = active_drivers.get(driver_id, {})
+
+    incoming_coords = data.get("coords")
+    if incoming_coords and driver_id in active_drivers:
+        active_drivers[driver_id]["coords"] = incoming_coords
+        driver = active_drivers[driver_id]
+
+    driver_coords = incoming_coords or driver.get("coords")
+    driver_plate = (
+        data.get("driverPlate")
+        or data.get("vehiclePlate")
+        or data.get("vehicleId")
+        or driver.get("vehiclePlate")
+        or driver.get("vehicleId")
+        or "B-BW"
+    )
     service_type = req.get("serviceType") if req else ("TAXI" if route_id == "taxi-service" else "COMBI")
     default_fare = get_fare(service_type)
     fare_est = (req.get("fareEstimate") if req else None) or default_fare
+
+    # Compute initial distance and ETA right on acceptance
+    dist_meters = None
+    eta_sec = None
+    p_coords = (passenger.get("coords") if passenger else None) or (req.get("pickupLoc") if req else None)
+    if driver_coords and p_coords:
+        try:
+            d_lat = float(driver_coords.get("lat") or driver_coords.get("latitude") or 0.0)
+            d_lng = float(driver_coords.get("lng") or driver_coords.get("longitude") or 0.0)
+            p_lat = float(p_coords.get("lat") or p_coords.get("latitude") or 0.0)
+            p_lng = float(p_coords.get("lng") or p_coords.get("longitude") or 0.0)
+            if d_lat != 0.0 and d_lng != 0.0 and p_lat != 0.0 and p_lng != 0.0:
+                dist_meters = round(
+                    haversine_distance({"lat": d_lat, "lng": d_lng}, {"lat": p_lat, "lng": p_lng}),
+                    1,
+                )
+                eff_speed = float(driver.get("speed") or 0.0)
+                if eff_speed <= 10.0:
+                    eff_speed = 35.0
+                eta_sec = max(60, calculate_eta(dist_meters, eff_speed))
+        except Exception:
+            pass
 
     taxi_assignments[passenger_id] = {
         "driver_id": driver_id,
@@ -251,7 +261,8 @@ async def accept_hail(sid, data):
         "started_at": time.time(),
         "request_id": request_id,
         "fareEstimate": fare_est,
-        "serviceType": service_type
+        "serviceType": service_type,
+        "arrived": False,
     }
 
     payload = {
@@ -259,10 +270,12 @@ async def accept_hail(sid, data):
         "driverId": driver_id,
         "routeId": route_id,
         "requestId": request_id,
-        "driverPlate": driver.get("vehiclePlate") or "B-BW",
+        "driverPlate": driver_plate,
         "fareEstimate": fare_est,
         "serviceType": service_type,
-        "coords": driver.get("coords")
+        "coords": driver_coords,
+        "distanceMeters": dist_meters,
+        "etaSeconds": eta_sec,
     }
 
     # Share contact details only with the two sockets in this accepted match.
@@ -282,13 +295,44 @@ async def accept_hail(sid, data):
     except Exception:
         pass
 
+    driver_name = data.get("driverName") or driver.get("driverName") or contacts.get(driver_id, {}).get("name", "")
+    driver_phone = data.get("driverPhone") or driver.get("driverPhone") or contacts.get(driver_id, {}).get("phone", "")
+
     if passenger and passenger.get("socket_id"):
+        p_sid = passenger["socket_id"]
         await sio.emit('hail-accepted', {
             **payload,
-            "driverName": contacts.get(driver_id, {}).get("name", ""),
-            "driverPhone": contacts.get(driver_id, {}).get("phone", "")
-        }, to=passenger["socket_id"])
-        await sio.emit('taxi-arrived', payload, to=passenger["socket_id"])
+            "driverName": driver_name,
+            "driverPhone": driver_phone,
+        }, to=p_sid)
+        await sio.emit('taxi-arrived', {
+            **payload,
+            "driverName": driver_name,
+            "driverPhone": driver_phone,
+            "status": "DRIVER_ACCEPTED",
+        }, to=p_sid)
+        if driver_coords:
+            await sio.emit('driver-location', {
+                "driverId": driver_id,
+                "routeId": route_id,
+                "serviceType": service_type,
+                "vehicleId": driver_plate,
+                "vehiclePlate": driver_plate,
+                "coords": driver_coords,
+                "speed": float(driver.get("speed") or 0.0),
+                "heading": float(driver.get("heading") or 0.0),
+                "occupancy": driver.get("occupancy", 0),
+                "status": "ONLINE",
+            }, to=p_sid)
+        if eta_sec is not None and dist_meters is not None:
+            await sio.emit('eta-update', {
+                "driverId": driver_id,
+                "etaSeconds": eta_sec,
+                "distanceMeters": dist_meters,
+                "speed": float(driver.get("speed") or 0.0),
+                "occupancy": driver.get("occupancy", 0),
+                "routeId": route_id,
+            }, to=p_sid)
 
     if driver.get("socket_id"):
         await sio.emit('hail-accepted', {

@@ -3,7 +3,8 @@ from sqlalchemy import select
 from app.database import AsyncSessionLocal
 from app.models.user import DriverProfile
 from app.sockets.gateway import (
-    sio, active_drivers, active_passengers, taxi_assignments, system_active
+    sio, active_drivers, active_passengers, active_taxi_requests,
+    taxi_assignments, system_active
 )
 from app.services.geo import haversine_distance, calculate_eta
 from app.services.headway import calculate_spacing_advisories
@@ -71,6 +72,10 @@ async def driver_online(sid, data):
     await sio.emit('fleet-update', {'type': 'driver', **driver_data}, room='dashboard')
     await sio.emit('vehicle-update', {'type': 'driver', **driver_data}, room=f"passengers-{route_id}")
     await sio.emit('driver-location', {**driver_data}, room=f"passengers-{route_id}")
+    for request in active_taxi_requests.values():
+        passenger_id = request.get("passengerId") or request.get("passenger_id")
+        if passenger_id and passenger_id not in taxi_assignments:
+            await sio.emit('new-taxi-request', request, to=sid)
 
 sio.on('driver-online', driver_online)
 
@@ -183,6 +188,30 @@ async def driver_location(sid, data):
                     curr_speed = float(data.get("speed") or 0.0)
                     eff_speed = curr_speed if curr_speed > 10.0 else 35.0
                     eta_sec = calculate_eta(dist_meters, eff_speed)
+
+                    # Automatic Arrival at Pickup Detection:
+                    # Trigger when an assigned driver reaches within 35m of the passenger's pickup location
+                    if (
+                        assignment
+                        and (assignment.get("driver_id") == driver_id or assignment.get("driverId") == driver_id)
+                        and not assignment.get("arrived")
+                        and p.get("status") == "WAITING"
+                        and dist_meters <= 35.0
+                        and (time.time() - float(assignment.get("started_at") or 0.0)) >= 3.5
+                    ):
+                        assignment["arrived"] = True
+                        await sio.emit('driver-arrived-pickup', {
+                            "driverId": driver_id,
+                            "passengerId": p_id,
+                            "status": "ARRIVED_AT_PICKUP",
+                            "distanceMeters": dist_meters,
+                        }, to=p["socket_id"])
+                        await sio.emit('taxi-arrived', {
+                            "driverId": driver_id,
+                            "passengerId": p_id,
+                            "status": "ARRIVED_AT_PICKUP",
+                            "distanceMeters": dist_meters,
+                        }, to=p["socket_id"])
 
                     # Automatic Boarding: Trigger when vehicle is in 20m proximity and co-moving
                     if p.get("status") == "WAITING" and dist_meters <= 20.0 and curr_speed > 2.0:

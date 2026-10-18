@@ -27,35 +27,16 @@ async def connect(sid, environ, auth=None):
 
 @sio.event
 async def disconnect(sid):
-    # Clean up disconnected drivers or passengers
-    driver_to_remove = None
+    # Keep shift and trip records across short mobile background disconnects.
     for d_id, driver in list(active_drivers.items()):
         if driver.get("socket_id") == sid:
-            driver_to_remove = d_id
-            break
-    if driver_to_remove:
-        active_drivers.pop(driver_to_remove, None)
-        await sio.emit('fleet-remove', {
-            'type': 'driver',
-            'id': driver_to_remove,
-            'driverId': driver_to_remove,
-            'driver_id': driver_to_remove
-        }, room='dashboard')
+            driver["socket_id"] = None
+            driver["last_disconnect"] = time.time()
 
-    passenger_to_remove = None
     for p_id, passenger in list(active_passengers.items()):
         if passenger.get("socket_id") == sid:
-            passenger_to_remove = p_id
-            break
-    if passenger_to_remove:
-        active_passengers.pop(passenger_to_remove, None)
-        active_hails.pop(passenger_to_remove, None)
-        await sio.emit('fleet-remove', {
-            'type': 'passenger',
-            'id': passenger_to_remove,
-            'passengerId': passenger_to_remove,
-            'passenger_id': passenger_to_remove
-        }, room='dashboard')
+            passenger["socket_id"] = None
+            passenger["last_disconnect"] = time.time()
 
 @sio.event
 async def join(sid, data):
@@ -84,6 +65,7 @@ async def join(sid, data):
             if not service_type:
                 service_type = "BUS" if route_id.startswith("bus-") else ("TAXI" if route_id == "taxi-service" else "COMBI")
             if p_id:
+                previous = active_passengers.get(p_id, {})
                 active_passengers[p_id] = {
                     "passenger_id": p_id,
                     "passengerId": p_id,
@@ -91,7 +73,8 @@ async def join(sid, data):
                     "routeId": route_id,
                     "serviceType": service_type,
                     "service_type": service_type,
-                    "coords": coords,
+                    "coords": coords or previous.get("coords"),
+                    "status": previous.get("status", "WAITING"),
                     "socket_id": sid,
                     "last_update": time.time()
                 }
@@ -125,3 +108,24 @@ async def subscribe_route(sid, data):
         await sio.emit('active-drivers-snapshot', drivers_on_route, to=sid)
 
 sio.on('subscribe-route', subscribe_route)
+
+@sio.on('resume-session')
+async def resume_session(sid, data):
+    payload = data if isinstance(data, dict) else {}
+    if payload.get("role") != "passengers":
+        return
+    passenger_id = payload.get("userId")
+    if not passenger_id:
+        return
+    request = active_hails.get(passenger_id)
+    assignment = taxi_assignments.get(passenger_id)
+    boarding = active_boardings.get(passenger_id)
+    passenger = active_passengers.get(passenger_id)
+    if passenger:
+        passenger["socket_id"] = sid
+        passenger["last_update"] = time.time()
+    await sio.emit('session-restored', {
+        "request": request,
+        "assignment": assignment,
+        "boarded": bool(boarding),
+    }, to=sid)

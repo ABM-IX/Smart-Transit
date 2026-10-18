@@ -1,9 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
+import '../../models/hail_request_model.dart';
 import '../../models/user_role.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/transit_provider.dart';
+import '../../services/place_name_service.dart';
 import '../../widgets/custom_map_view.dart';
 import '../../widgets/status_pill.dart';
 import 'spacing_advisory_widget.dart';
@@ -29,6 +34,58 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
   final double _shiftRevenue = 0.0;
   String? _displayedHailId;
   bool _showHailAlert = false;
+  HailRequest? _acceptedHail;
+  String? _resolvedHailPickupName;
+  String? _lookupRequestId;
+  List<LatLng> _hailRoutePoints = const [];
+
+  Future<void> _resolveHailDetails(
+    HailRequest hail,
+    LatLng driverOrigin,
+  ) async {
+    if (_lookupRequestId == hail.requestId) return;
+    _lookupRequestId = hail.requestId;
+    final pickupPt = LatLng(hail.pickupLat, hail.pickupLng);
+    final name = await PlaceNameService.resolvePlaceName(
+      pickupPt,
+      preferredName: hail.pickupName ?? hail.stopName,
+    );
+    if (mounted) {
+      setState(() {
+        _resolvedHailPickupName = name;
+        _hailRoutePoints = [driverOrigin, pickupPt];
+      });
+    }
+    try {
+      final coords =
+          '${driverOrigin.longitude},${driverOrigin.latitude};${pickupPt.longitude},${pickupPt.latitude}';
+      final response = await http
+          .get(
+            Uri.parse(
+              'https://router.project-osrm.org/route/v1/driving/$coords?overview=full&geometries=geojson',
+            ),
+          )
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        final routes = body['routes'] as List?;
+        if (routes != null && routes.isNotEmpty) {
+          final coordinates = routes.first['geometry']['coordinates'] as List;
+          final points = coordinates
+              .map(
+                (point) => LatLng(
+                  (point[1] as num).toDouble(),
+                  (point[0] as num).toDouble(),
+                ),
+              )
+              .toList();
+          if (mounted && points.length >= 2) {
+            setState(() => _hailRoutePoints = points);
+          }
+        }
+      }
+    } catch (_) {}
+  }
 
   @override
   void initState() {
@@ -56,6 +113,18 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         .where((h) => h.routeId == targetRoute)
         .toList();
 
+    final activeHail =
+        _acceptedHail ?? (relevantHails.isNotEmpty ? relevantHails.first : null);
+    if (activeHail != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _resolveHailDetails(activeHail, transit.currentLocation);
+      });
+    } else if (_hailRoutePoints.isNotEmpty) {
+      _hailRoutePoints = const [];
+      _lookupRequestId = null;
+      _resolvedHailPickupName = null;
+    }
+
     // Trigger non-intrusive 5s auto-dismissing hail toast on new hail
     if (relevantHails.isNotEmpty &&
         relevantHails.first.requestId != _displayedHailId) {
@@ -79,6 +148,10 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
           CustomMapView(
             userLocation: transit.currentLocation,
             stops: transit.stops,
+            routePoints: activeHail != null ? _hailRoutePoints : const [],
+            pickupMarker: activeHail != null
+                ? LatLng(activeHail.pickupLat, activeHail.pickupLng)
+                : null,
             activeHails: relevantHails,
             drivers: transit.activeDrivers
                 .where((d) => d.driverId != auth.userId)
@@ -336,9 +409,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                                   ),
                                 ),
                                 Text(
-                                  relevantHails.first.stopName != null
-                                      ? 'Waiting at ${relevantHails.first.stopName} (P${relevantHails.first.fareEstimate.toStringAsFixed(2)})'
-                                      : 'Waiting along corridor (P${relevantHails.first.fareEstimate.toStringAsFixed(2)})',
+                                  'Waiting at ${_resolvedHailPickupName ?? PlaceNameService.sanitizeLocationName(relevantHails.first.pickupName ?? relevantHails.first.stopName) ?? "Route Corridor"} (P${relevantHails.first.fareEstimate.toStringAsFixed(2)})',
                                   style: TextStyle(
                                     color: AppTheme.borderGrey,
                                     fontSize: 11,
@@ -407,8 +478,17 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
   Widget _buildDriverBottomPanel(
     TransitProvider transit,
     AuthProvider auth,
-    List<dynamic> relevantHails,
+    List<HailRequest> relevantHails,
   ) {
+    final pendingHail = relevantHails.isNotEmpty ? relevantHails.first : null;
+    final pickupArea =
+        _resolvedHailPickupName ??
+        PlaceNameService.sanitizeLocationName(
+          (pendingHail ?? _acceptedHail)?.pickupName ??
+              (pendingHail ?? _acceptedHail)?.stopName,
+        ) ??
+        'Route Corridor';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -420,28 +500,108 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (relevantHails.isNotEmpty)
+          if (pendingHail != null)
             Container(
               margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppTheme.offWhite,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.lightGrey),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.pan_tool_alt_outlined,
-                    size: 16,
-                    color: AppTheme.hailColor,
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.pan_tool_alt_outlined,
+                        size: 18,
+                        color: AppTheme.hailColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Pickup: $pickupArea (${relevantHails.length} waiting)',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.black,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(height: 4),
                   Text(
-                    '${relevantHails.length} passenger(s) waiting along this route',
+                    'Directions to $pickupArea are shown on the map.',
                     style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                      color: AppTheme.accentBlue,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() => _acceptedHail = pendingHail);
+                        transit.acceptHail(
+                          pendingHail,
+                          auth.userId,
+                          driverName: auth.userName,
+                          driverPlate: auth.vehiclePlate,
+                        );
+                      },
+                      icon: const Icon(Icons.check_circle_outline, size: 18),
+                      label: Text('Accept Pickup at $pickupArea'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accentGreen,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (_acceptedHail != null)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.offWhite,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.accentGreen),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Navigating to Pickup: $pickupArea',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
                       color: AppTheme.black,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        final hail = _acceptedHail!;
+                        transit.notifyDriverArrived(hail, auth.userId);
+                        setState(() => _acceptedHail = null);
+                      },
+                      icon: const Icon(Icons.pin_drop, size: 18),
+                      label: Text('Arrived at $pickupArea'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.black,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
                     ),
                   ),
                 ],

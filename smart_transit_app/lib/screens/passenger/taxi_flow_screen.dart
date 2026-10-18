@@ -41,11 +41,75 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
   String? _contactDriverId;
   String? _driverName;
   String? _driverPhone;
+  String? _driverPlate;
+  List<LatLng> _driverToPickupRoutePoints = const [];
+  LatLng? _lastDriverRouteOrigin;
 
   @override
   void dispose() {
     _destController.dispose();
     super.dispose();
+  }
+
+  void _clearLocalTripState() {
+    _destController.clear();
+    _suggestions = [];
+    _destinationLocation = null;
+    _destinationName = null;
+    _tripRating = 5;
+    _offerFare = 12;
+    _routePoints = const [];
+    _driverToPickupRoutePoints = const [];
+    _lastDriverRouteOrigin = null;
+    _tripDistanceKm = null;
+    _tripDurationMinutes = null;
+    _routeLoading = false;
+    _routeError = false;
+    _contactDriverId = null;
+    _driverName = null;
+    _driverPhone = null;
+    _driverPlate = null;
+  }
+
+  Future<void> _ensureDriverToPickupRoute(
+    LatLng driverOrigin,
+    LatLng pickupTarget,
+  ) async {
+    const distance = Distance();
+    if (_lastDriverRouteOrigin != null &&
+        distance.as(LengthUnit.Meter, _lastDriverRouteOrigin!, driverOrigin) <
+            250 &&
+        _driverToPickupRoutePoints.isNotEmpty) {
+      return;
+    }
+    _lastDriverRouteOrigin = driverOrigin;
+    try {
+      final coords =
+          '${driverOrigin.longitude},${driverOrigin.latitude};${pickupTarget.longitude},${pickupTarget.latitude}';
+      final response = await http
+          .get(
+            Uri.parse(
+              'https://router.project-osrm.org/route/v1/driving/$coords?overview=full&geometries=geojson',
+            ),
+          )
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200) return;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final routes = data['routes'] as List?;
+      if (routes == null || routes.isEmpty) return;
+      final geometry = routes.first['geometry']['coordinates'] as List;
+      if (geometry.length < 2 || !mounted) return;
+      setState(() {
+        _driverToPickupRoutePoints = geometry
+            .map(
+              (point) => LatLng(
+                (point[1] as num).toDouble(),
+                (point[0] as num).toDouble(),
+              ),
+            )
+            .toList();
+      });
+    } catch (_) {}
   }
 
   double get _specialFare {
@@ -125,6 +189,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
       setState(() {
         _driverName = contact?['full_name'];
         _driverPhone = contact?['phone_number'];
+        _driverPlate = contact?['vehicle_plate'];
       });
     } catch (_) {}
   }
@@ -199,13 +264,34 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             geo.as(LengthUnit.Meter, pickup, LatLng(d.latitude, d.longitude)) <= 4000)
         .toList();
 
-    if (transit.passengerStatus == PassengerTripStatus.driverAccepted &&
-        transit.assignedDriverId != null &&
-        _contactDriverId != transit.assignedDriverId &&
-        transit.matchedDriverPhone?.isNotEmpty != true) {
-      _contactDriverId = transit.assignedDriverId;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _loadDriverContact(_contactDriverId!));
+    if ((transit.passengerStatus == PassengerTripStatus.driverAccepted ||
+            transit.passengerStatus == PassengerTripStatus.driverArrived) &&
+        transit.assignedDriverId != null) {
+      if (_contactDriverId != transit.assignedDriverId &&
+          transit.matchedDriverPhone?.isNotEmpty != true) {
+        _contactDriverId = transit.assignedDriverId;
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _loadDriverContact(_contactDriverId!),
+        );
+      }
+      final assignedList = taxiDrivers
+          .where((d) => d.driverId == transit.assignedDriverId)
+          .toList();
+      if (assignedList.isNotEmpty) {
+        final d = assignedList.first;
+        if (d.latitude != 0.0 && d.longitude != 0.0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _ensureDriverToPickupRoute(LatLng(d.latitude, d.longitude), pickup);
+          });
+        }
+      }
     }
+
+    final activePolylines =
+        (transit.passengerStatus == PassengerTripStatus.driverAccepted &&
+            _driverToPickupRoutePoints.isNotEmpty)
+        ? _driverToPickupRoutePoints
+        : _routePoints;
 
     return Stack(
       children: [
@@ -214,7 +300,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
           child: CustomMapView(
             userLocation: pickup,
             drivers: taxiDrivers,
-            routePoints: _routePoints,
+            routePoints: activePolylines,
             destination: _destinationLocation,
           ),
         ),
@@ -299,17 +385,23 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
       );
     }
 
-    if (transit.passengerStatus == PassengerTripStatus.driverAccepted) {
+    if (transit.passengerStatus == PassengerTripStatus.driverAccepted ||
+        transit.passengerStatus == PassengerTripStatus.driverArrived) {
       final taxiDrivers = transit.activeDrivers
           .where((d) => d.serviceType == 'TAXI')
           .toList();
+      final assignedDrivers = taxiDrivers
+          .where((d) => d.driverId == transit.assignedDriverId)
+          .toList();
+      final assignedDriver =
+          assignedDrivers.isEmpty ? null : assignedDrivers.first;
       double? distMeters = transit.etaDistanceMeters;
-      if (distMeters == null && taxiDrivers.isNotEmpty) {
+      if (distMeters == null && assignedDriver != null) {
         const double p = 0.017453292519943295;
         final lat1 = transit.currentLocation.latitude;
         final lon1 = transit.currentLocation.longitude;
-        final lat2 = taxiDrivers.first.latitude;
-        final lon2 = taxiDrivers.first.longitude;
+        final lat2 = assignedDriver.latitude;
+        final lon2 = assignedDriver.longitude;
         final a =
             0.5 -
             math.cos((lat2 - lat1) * p) / 2 +
@@ -319,19 +411,112 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 2;
         distMeters = 12742 * math.asin(math.sqrt(a)) * 1000.0;
       }
-      final isWithinProximity = distMeters != null && distMeters <= 25.0;
+      final driverHasArrived =
+          transit.passengerStatus == PassengerTripStatus.driverArrived;
+      final hasLocalDriverDistance =
+          distMeters != null && distMeters >= 0 && distMeters <= 300000;
+      if (!hasLocalDriverDistance) distMeters = null;
+      final etaLabel = transit.etaSeconds != null &&
+              transit.etaSeconds! > 0 &&
+              transit.etaSeconds! <= 3 * 60 * 60
+          ? transit.etaDisplay
+          : null;
+      final resolvedDriverName =
+          (transit.matchedDriverName?.isNotEmpty == true)
+          ? transit.matchedDriverName!
+          : (_driverName?.isNotEmpty == true
+                ? _driverName!
+                : 'Assigned Cab Driver');
+      final resolvedDriverPhone =
+          (transit.matchedDriverPhone?.isNotEmpty == true)
+          ? transit.matchedDriverPhone!
+          : (_driverPhone?.isNotEmpty == true ? _driverPhone! : null);
+      final resolvedDriverPlate =
+          (transit.matchedDriverPlate?.isNotEmpty == true &&
+              transit.matchedDriverPlate != 'B-BW')
+          ? transit.matchedDriverPlate!
+          : (_driverPlate?.isNotEmpty == true
+                ? _driverPlate!
+                : (assignedDriver?.vehicleId ??
+                      transit.matchedDriverPlate ??
+                      'Cab Registered'));
+      final pickupArea = transit.taxiPickupName ?? 'your location';
 
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: AppTheme.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           border: Border(top: BorderSide(color: AppTheme.borderGrey, width: 1)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Status & ETA Header Banner
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: driverHasArrived
+                    ? AppTheme.statusSuccess.withValues(alpha: 0.12)
+                    : AppTheme.taxiColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: driverHasArrived
+                      ? AppTheme.statusSuccess
+                      : AppTheme.taxiColor,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    driverHasArrived
+                        ? Icons.where_to_vote
+                        : Icons.access_time_filled,
+                    color: driverHasArrived
+                        ? AppTheme.statusSuccess
+                        : AppTheme.taxiColor,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      driverHasArrived
+                          ? 'Driver has arrived at $pickupArea!'
+                          : 'Driver is coming to $pickupArea',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                        color: AppTheme.brandNavy,
+                      ),
+                    ),
+                  ),
+                  if (!driverHasArrived && etaLabel != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0B1F2A),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppTheme.botswanaSky, width: 1),
+                      ),
+                      child: Text(
+                        'ETA: $etaLabel',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // Driver Details Card
             Row(
               children: [
                 Container(
@@ -352,33 +537,36 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        (transit.matchedDriverName?.isNotEmpty == true || _driverName?.isNotEmpty == true)
-                            ? (transit.matchedDriverName?.isNotEmpty == true ? transit.matchedDriverName! : _driverName!)
-                            : 'Your driver is on the way',
+                        resolvedDriverName,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                           color: AppTheme.brandNavy,
                         ),
                       ),
-                      if (transit.matchedDriverPhone?.isNotEmpty == true || _driverPhone?.isNotEmpty == true)
+                      if (resolvedDriverPhone != null)
                         SelectableText(
-                          'Driver • ${transit.matchedDriverPhone?.isNotEmpty == true ? transit.matchedDriverPhone : _driverPhone}',
-                          style: TextStyle(color: AppTheme.secondaryText, fontSize: 13),
-                        ),
-                      if (transit.matchedDriverPlate?.isNotEmpty == true)
-                        Text('Vehicle • ${transit.matchedDriverPlate}', style: TextStyle(color: AppTheme.secondaryText, fontSize: 12)),
-                      if (transit.etaSeconds != null)
-                        Text(
-                          'Pickup ETA: ${transit.etaDisplay}',
-                          style: const TextStyle(color: AppTheme.taxiColor, fontSize: 12, fontWeight: FontWeight.w700),
+                          'Phone • $resolvedDriverPhone',
+                          style: TextStyle(
+                            color: AppTheme.secondaryText,
+                            fontSize: 13,
+                          ),
                         ),
                       Text(
-                        isWithinProximity
-                            ? 'Cab arrived at pickup point!'
+                        'Vehicle • $resolvedDriverPlate • P${(transit.estimatedFare ?? AppConstants.taxiBaseFareBWP).toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: AppTheme.secondaryText,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        driverHasArrived
+                            ? 'Your cab is waiting for you at $pickupArea. Please board the vehicle.'
                             : (distMeters != null
-                                  ? 'Cab is en route (${distMeters < 1000 ? "${distMeters.toStringAsFixed(0)}m" : "${(distMeters / 1000).toStringAsFixed(1)}km"} away) • P${(transit.estimatedFare ?? AppConstants.taxiBaseFareBWP).toStringAsFixed(2)}'
-                                  : 'Driver is en route to pickup point'),
+                                  ? 'En route (${distMeters < 1000 ? "${distMeters.toStringAsFixed(0)}m" : "${(distMeters / 1000).toStringAsFixed(1)} km"} away) • Est. arrival: ${transit.etaDisplay}'
+                                  : 'En route to $pickupArea • Est. arrival: ${transit.etaDisplay}'),
                         style: TextStyle(
                           color: AppTheme.secondaryText,
                           fontSize: 13,
@@ -389,10 +577,11 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 ),
               ],
             ),
-            if (isWithinProximity) ...[
+            if (driverHasArrived) ...[
               const SizedBox(height: 16),
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: () => transit.confirmBoarding(auth.userId),
+                icon: const Icon(Icons.hail, color: Colors.white),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryTeal,
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -400,7 +589,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text(
+                label: const Text(
                   'Confirm Boarding (In the Cab)',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
@@ -640,12 +829,19 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
+                final driverToRate = transit.assignedDriverId ?? 'driver-1';
+                final ratingToSubmit = _tripRating;
+                _clearLocalTripState();
                 transit.submitRating(
-                  driverId: transit.assignedDriverId ?? 'driver-1',
+                  driverId: driverToRate,
                   passengerId: auth.userId,
-                  rating: _tripRating,
+                  rating: ratingToSubmit,
                 );
-                setState(() => _tripRating = 5);
+                if (widget.onExitToMain != null) {
+                  widget.onExitToMain!.call();
+                } else {
+                  Navigator.maybePop(context);
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryTeal,
@@ -692,7 +888,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             style: const TextStyle(color: Colors.white),
             onChanged: (query) {
               _destinationLocation = null;
-            _destinationName = null;
+              _destinationName = null;
               _routePoints = const [];
               _tripDistanceKm = null;
               _tripDurationMinutes = null;
@@ -712,7 +908,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                       padding: EdgeInsets.all(12),
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                      color: _cyan,
+                        color: _cyan,
                       ),
                     )
                   : null,
@@ -812,8 +1008,11 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 : () async {
               _driverName = null;
               _driverPhone = null;
+              _driverPlate = null;
               _contactDriverId = null;
-              final pickupName = await PlaceNameService.reverseGeocode(
+              _driverToPickupRoutePoints = const [];
+              _lastDriverRouteOrigin = null;
+              final pickupName = await PlaceNameService.resolvePlaceName(
                 transit.currentLocation,
               );
               if (!mounted) return;
@@ -822,7 +1021,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 serviceType: _serviceType,
                 pickup: transit.currentLocation,
                 dropoff: _destinationLocation,
-                pickupName: pickupName ?? 'Current location',
+                pickupName: pickupName,
                 destinationName: _destinationName,
                 offeredFare: _serviceType == 'SPECIAL' ? _offerFare : AppConstants.taxiBaseFareBWP,
               );

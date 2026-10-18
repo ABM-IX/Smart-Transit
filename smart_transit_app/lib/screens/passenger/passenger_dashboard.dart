@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../models/route_model.dart';
+import '../../providers/transit_provider.dart';
 import 'mode_selection_screen.dart';
 import 'destinations_browser_screen.dart';
 import 'bus_combi_map_screen.dart';
@@ -22,9 +24,31 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
   int _currentTabIndex = 0;
   TransportMode? _selectedMode;
   TransitRoute? _selectedRoute;
+  int _lastSeenTripResetVersion = 0;
+
+  void _returnToLandingScreen() {
+    if (!mounted) return;
+    setState(() {
+      _currentTabIndex = 0;
+      _selectedRoute = null;
+      _selectedMode = null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final resetVersion = context.select<TransitProvider, int>(
+      (t) => t.tripResetVersion,
+    );
+    if (resetVersion != _lastSeenTripResetVersion) {
+      _lastSeenTripResetVersion = resetVersion;
+      if (_selectedMode != null || _selectedRoute != null || _currentTabIndex != 0) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _returnToLandingScreen();
+        });
+      }
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.white,
       body: IndexedStack(
@@ -96,7 +120,7 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
 
     if (_selectedMode == TransportMode.taxi) {
       return TaxiFlowScreen(
-        onExitToMain: () => setState(() => _selectedMode = null),
+        onExitToMain: _returnToLandingScreen,
       );
     }
 
@@ -139,10 +163,7 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
       body: BusCombiMapScreen(
         mode: _selectedMode!,
         route: _selectedRoute!,
-        onExitToMain: () => setState(() {
-          _selectedRoute = null;
-          _selectedMode = null;
-        }),
+        onExitToMain: _returnToLandingScreen,
       ),
     );
   }
