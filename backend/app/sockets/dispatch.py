@@ -8,6 +8,28 @@ from app.sockets.gateway import (
 from app.services.fare import get_fare, estimate_special_taxi_fare
 from app.services.geo import haversine_distance, find_nearest_stop
 
+
+def _clear_taxi_requests_for_passenger(passenger_id, request_id=None):
+    if request_id:
+        active_taxi_requests.pop(request_id, None)
+    if not passenger_id:
+        return
+    for active_request_id, request in list(active_taxi_requests.items()):
+        request_passenger_id = request.get("passengerId") or request.get("passenger_id")
+        if request_passenger_id == passenger_id:
+            active_taxi_requests.pop(active_request_id, None)
+
+
+def _clear_active_trips_for_passenger(passenger_id, request_id=None):
+    if request_id:
+        active_trips.pop(request_id, None)
+    if not passenger_id:
+        return
+    for active_trip_id, trip in list(active_trips.items()):
+        trip_passenger_id = trip.get("passengerId") or trip.get("passenger_id")
+        if trip_passenger_id == passenger_id:
+            active_trips.pop(active_trip_id, None)
+
 @sio.event
 async def passenger_request_taxi(sid, data):
     passenger_id = data.get("passengerId") or data.get("passenger_id")
@@ -192,6 +214,7 @@ async def cancel_hail(sid, data):
     active_hails.pop(passenger_id, None)
     active_passengers.pop(passenger_id, None)
     taxi_assignments.pop(passenger_id, None)
+    _clear_taxi_requests_for_passenger(passenger_id)
     await sio.emit('hail-cancelled', {"passengerId": passenger_id, "routeId": route_id}, room=f"drivers-{route_id}")
     await sio.emit('hail-cancelled', {"passengerId": passenger_id, "routeId": route_id}, room='dashboard')
     await sio.emit('fleet-remove', {'type': 'passenger', 'id': passenger_id, 'passengerId': passenger_id}, room='dashboard')
@@ -499,6 +522,7 @@ sio.on('trip-start', trip_start)
 @sio.event
 async def trip_end(sid, data):
     trip_id = data.get("tripId") or data.get("requestId") or f"trip-{uuid.uuid4().hex[:8]}"
+    request_id = data.get("requestId") or trip_id
     driver_id = data.get("driverId") or data.get("driver_id")
     passenger_id = data.get("passengerId") or data.get("passenger_id")
     revenue = float(data.get("revenue") or data.get("fare") or get_fare("TAXI"))
@@ -507,13 +531,13 @@ async def trip_end(sid, data):
         for p_id, assign in list(taxi_assignments.items()):
             if assign.get("driver_id") == driver_id or assign.get("driverId") == driver_id:
                 passenger_id = p_id
+                request_id = assign.get("request_id") or assign.get("requestId") or request_id
                 break
 
-    trip = active_trips.get(trip_id, {})
+    trip = active_trips.pop(trip_id, {})
     trip["end_time"] = time.time()
     trip["revenue"] = revenue
-    if trip_id not in active_trips:
-        active_trips[trip_id] = trip
+    _clear_active_trips_for_passenger(passenger_id, trip_id)
 
     if passenger_id:
         passenger = active_passengers.get(passenger_id)
@@ -529,6 +553,8 @@ async def trip_end(sid, data):
         taxi_assignments.pop(passenger_id, None)
         active_boardings.pop(passenger_id, None)
         active_passengers.pop(passenger_id, None)
+        active_hails.pop(passenger_id, None)
+        _clear_taxi_requests_for_passenger(passenger_id, request_id)
     if request_id:
         active_taxi_requests.pop(request_id, None)
 
@@ -552,6 +578,8 @@ async def passenger_end_trip(sid, data):
     active_hails.pop(passenger_id, None)
     active_boardings.pop(passenger_id, None)
     taxi_assignments.pop(passenger_id, None)
+    _clear_taxi_requests_for_passenger(passenger_id, request_id)
+    _clear_active_trips_for_passenger(passenger_id, request_id)
 
     end_payload = {
         "passengerId": passenger_id,
