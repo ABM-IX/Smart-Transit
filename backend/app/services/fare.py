@@ -3,23 +3,16 @@ from typing import Dict, Optional
 from app.config import settings
 
 def estimate_special_taxi_fare(pickup: Dict[str, float], dropoff: Optional[Dict[str, float]]) -> float:
-    """
-    Calculates dynamic special taxi fare based on base price, distance, and duration.
-    """
+    """Recommend a metered fare using the passenger pricing specification."""
     if not pickup or not dropoff:
-        return settings.TAXI_SPECIAL_BASE
+        return 12.0
     
     from app.services.geo import haversine_distance
     distance_meters = haversine_distance(pickup, dropoff)
     distance_km = distance_meters / 1000.0
-    duration_min = (distance_km / 30.0) * 60.0 # Assuming ~30km/h avg speed
-    
-    calculated_fare = (
-        settings.TAXI_SPECIAL_BASE +
-        (distance_km * settings.TAXI_SPECIAL_PER_KM) +
-        (duration_min * settings.TAXI_SPECIAL_PER_MIN)
-    )
-    return max(settings.TAXI_SPECIAL_BASE, round(calculated_fare, 2))
+    duration_min = (distance_km / 30.0) * 60.0
+    calculated_fare = 10.0 + max(0.0, distance_km - 1.0) * 2.5 + max(0.0, duration_min - 3.0) * 0.3
+    return round(max(12.0, calculated_fare), 2)
 
 def get_fare(service_type: str, pickup: Optional[Dict[str, float]] = None, dropoff: Optional[Dict[str, float]] = None) -> float:
     """

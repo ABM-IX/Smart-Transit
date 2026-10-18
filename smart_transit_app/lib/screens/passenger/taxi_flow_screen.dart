@@ -21,16 +21,114 @@ class TaxiFlowScreen extends StatefulWidget {
 }
 
 class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
+  static const _navy = Color(0xFF101D2F);
+  static const _panel = Color(0xFF19283D);
+  static const _cyan = Color(0xFF22BCEB);
   String _serviceType = 'STANDARD';
   final TextEditingController _destController = TextEditingController();
   List<Map<String, dynamic>> _suggestions = [];
   bool _isSearching = false;
   LatLng? _destinationLocation;
   int _tripRating = 5;
+  double _offerFare = 12;
+  List<LatLng> _routePoints = const [];
+  double? _tripDistanceKm;
+  int? _tripDurationMinutes;
+  bool _routeLoading = false;
+  String? _contactDriverId;
+  String? _driverName;
+  String? _driverPhone;
+
+  @override
+  void dispose() {
+    _destController.dispose();
+    super.dispose();
+  }
+
+  double get _specialFare {
+    if (_destinationLocation == null) return 12;
+    final pickup = context.read<TransitProvider>().currentLocation;
+    const distance = Distance();
+    final km = _tripDistanceKm ?? distance.as(LengthUnit.Kilometer, pickup, _destinationLocation!) * 1.25;
+    final minutes = (_tripDurationMinutes ?? (km / 30 * 60).ceil()).toDouble();
+    return math.max(12, 10 + math.max(0, km - 1) * 2.5 + math.max(0, minutes - 3) * .3).toDouble();
+  }
+
+  Widget _tierPill(String value, String title, String subtitle) {
+    final selected = _serviceType == value;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => setState(() {
+        _serviceType = value;
+        if (value == 'SPECIAL') _offerFare = _specialFare;
+      }),
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: selected ? _cyan : _panel,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: selected ? _cyan : const Color(0xFF34445D)),
+        ),
+        child: Row(children: [
+          if (selected) const Icon(Icons.check, size: 16, color: Color(0xFF08233A)),
+          if (selected) const SizedBox(width: 6),
+          Expanded(child: Text('$title ($subtitle)', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: selected ? const Color(0xFF08233A) : Colors.white))),
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _loadRoute(LatLng destination) async {
+    final pickup = context.read<TransitProvider>().currentLocation;
+    setState(() => _routeLoading = true);
+    try {
+      final coords = '${pickup.longitude},${pickup.latitude};${destination.longitude},${destination.latitude}';
+      final response = await http.get(Uri.parse(
+        'https://router.project-osrm.org/route/v1/driving/$coords?overview=full&geometries=geojson',
+      )).timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) throw StateError('Route unavailable');
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final route = (data['routes'] as List).first as Map<String, dynamic>;
+      final geometry = route['geometry']['coordinates'] as List;
+      if (!mounted || destination != _destinationLocation) return;
+      setState(() {
+        _routePoints = geometry
+            .map((point) => LatLng((point[1] as num).toDouble(), (point[0] as num).toDouble()))
+            .toList();
+        _tripDistanceKm = (route['distance'] as num).toDouble() / 1000;
+        _tripDurationMinutes = ((route['duration'] as num).toDouble() / 60).ceil();
+        _routeLoading = false;
+        if (_serviceType == 'SPECIAL') _offerFare = _specialFare;
+      });
+    } catch (_) {
+      if (!mounted || destination != _destinationLocation) return;
+      const distance = Distance();
+      final km = distance.as(LengthUnit.Kilometer, pickup, destination) * 1.25;
+      setState(() {
+        _routePoints = [pickup, destination];
+        _tripDistanceKm = km;
+        _tripDurationMinutes = (km / 25 * 60).ceil();
+        _routeLoading = false;
+        if (_serviceType == 'SPECIAL') _offerFare = _specialFare;
+      });
+    }
+  }
+
+  Future<void> _loadDriverContact(String driverId) async {
+    try {
+      final contact = await context.read<TransitProvider>().fetchUserContact(driverId);
+      if (!mounted || _contactDriverId != driverId) return;
+      setState(() {
+        _driverName = contact?['full_name'];
+        _driverPhone = contact?['phone_number'];
+      });
+    } catch (_) {}
+  }
 
   Future<void> _searchAddress(String query) async {
     if (query.length < 3) {
-      setState(() => _suggestions = []);
+      if (mounted) setState(() => _suggestions = []);
       return;
     }
     setState(() => _isSearching = true);
@@ -44,6 +142,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
       );
       if (res.statusCode == 200) {
         final List<dynamic> data = jsonDecode(res.body);
+        if (!mounted) return;
         setState(() {
           _suggestions = data
               .take(5)
@@ -59,15 +158,17 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
       }
     } catch (_) {
     } finally {
-      setState(() => _isSearching = false);
+      if (mounted) setState(() => _isSearching = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.white,
+      backgroundColor: _navy,
       appBar: AppBar(
+        backgroundColor: const Color(0xFF0B1526),
+        foregroundColor: Colors.white,
         leading: IconButton(
           tooltip: 'Back to main screen',
           icon: const Icon(Icons.arrow_back),
@@ -87,15 +188,32 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
     // Only taxi drivers
+    final pickup = transit.currentLocation;
+    const geo = Distance();
     final taxiDrivers = transit.activeDrivers
-        .where((d) => d.serviceType == 'TAXI')
+        .where((d) => d.serviceType == 'TAXI' && d.status == 'ONLINE')
+        .where((d) => d.driverId == transit.assignedDriverId ||
+            geo.as(LengthUnit.Meter, pickup, LatLng(d.latitude, d.longitude)) <= 4000)
         .toList();
+
+    if (transit.passengerStatus == PassengerTripStatus.driverAccepted &&
+        transit.assignedDriverId != null &&
+        _contactDriverId != transit.assignedDriverId &&
+        transit.matchedDriverPhone?.isNotEmpty != true) {
+      _contactDriverId = transit.assignedDriverId;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadDriverContact(_contactDriverId!));
+    }
 
     return Stack(
       children: [
-        CustomMapView(
-          userLocation: transit.currentLocation,
-          drivers: taxiDrivers,
+        Theme(
+          data: Theme.of(context).copyWith(brightness: Brightness.dark),
+          child: CustomMapView(
+            userLocation: pickup,
+            drivers: taxiDrivers,
+            routePoints: _routePoints,
+            destination: _destinationLocation,
+          ),
         ),
 
         // Live Taxis Count Badge
@@ -107,7 +225,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             ),
             child: StatusPill(
               label: '${taxiDrivers.length} Online Cabs Nearby',
-              color: AppTheme.black,
+              color: Colors.white,
               icon: Icons.local_taxi,
             ),
           ),
@@ -125,7 +243,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 maxHeight:
                     MediaQuery.of(context).orientation == Orientation.landscape
                     ? MediaQuery.of(context).size.height * 0.55
-                    : MediaQuery.of(context).size.height * 0.65,
+                    : MediaQuery.of(context).size.height * 0.52,
               ),
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -231,19 +349,33 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Taxi Assigned (${transit.assignedDriverId ?? "Driver En Route"})',
+                        (transit.matchedDriverName?.isNotEmpty == true || _driverName?.isNotEmpty == true)
+                            ? (transit.matchedDriverName?.isNotEmpty == true ? transit.matchedDriverName! : _driverName!)
+                            : 'Your driver is on the way',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                           color: AppTheme.brandNavy,
                         ),
                       ),
+                      if (transit.matchedDriverPhone?.isNotEmpty == true || _driverPhone?.isNotEmpty == true)
+                        SelectableText(
+                          'Driver • ${transit.matchedDriverPhone?.isNotEmpty == true ? transit.matchedDriverPhone : _driverPhone}',
+                          style: TextStyle(color: AppTheme.secondaryText, fontSize: 13),
+                        ),
+                      if (transit.matchedDriverPlate?.isNotEmpty == true)
+                        Text('Vehicle • ${transit.matchedDriverPlate}', style: TextStyle(color: AppTheme.secondaryText, fontSize: 12)),
+                      if (transit.etaSeconds != null)
+                        Text(
+                          'Pickup ETA: ${transit.etaDisplay}',
+                          style: const TextStyle(color: AppTheme.taxiColor, fontSize: 12, fontWeight: FontWeight.w700),
+                        ),
                       Text(
                         isWithinProximity
                             ? 'Cab arrived at pickup point!'
                             : (distMeters != null
                                   ? 'Cab is en route (${distMeters < 1000 ? "${distMeters.toStringAsFixed(0)}m" : "${(distMeters / 1000).toStringAsFixed(1)}km"} away) • P${(transit.estimatedFare ?? AppConstants.taxiBaseFareBWP).toStringAsFixed(2)}'
-                                  : 'Driver is en route to pickup point • P${(transit.estimatedFare ?? AppConstants.taxiBaseFareBWP).toStringAsFixed(2)}'),
+                                  : 'Driver is en route to pickup point'),
                         style: TextStyle(
                           color: AppTheme.secondaryText,
                           fontSize: 13,
@@ -320,7 +452,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                         ),
                       ),
                       Text(
-                        'Cruising with ${transit.assignedDriverId ?? "Driver"} • Enjoy your ride!',
+                        'Cruising with ${transit.matchedDriverName ?? _driverName ?? "your driver"} • Enjoy your ride!',
                         style: TextStyle(
                           color: AppTheme.secondaryText,
                           fontSize: 13,
@@ -533,7 +665,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: _navy,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         border: Border(top: BorderSide(color: AppTheme.lightGrey, width: 1)),
       ),
@@ -541,50 +673,12 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Standard vs Special Chips
+          // Flexible tier pills keep the selector within narrow screens.
           Row(
             children: [
-              ChoiceChip(
-                label: Text(
-                  'Standard (P${AppConstants.taxiBaseFareBWP.toStringAsFixed(2)})',
-                ),
-                selected: _serviceType == 'STANDARD',
-                selectedColor: Theme.of(context).colorScheme.primary,
-                backgroundColor: AppTheme.surfaceContainer,
-                side: BorderSide(
-                  color: _serviceType == 'STANDARD'
-                      ? Theme.of(context).colorScheme.primary
-                      : AppTheme.outline,
-                ),
-                labelStyle: TextStyle(
-                  color: _serviceType == 'STANDARD'
-                      ? Theme.of(context).colorScheme.onPrimary
-                      : Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-                onSelected: (_) => setState(() => _serviceType = 'STANDARD'),
-              ),
+              Expanded(child: _tierPill('STANDARD', 'Standard', 'P10.00')),
               const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('Special / Direct (Metered)'),
-                selected: _serviceType == 'SPECIAL',
-                selectedColor: Theme.of(context).colorScheme.primary,
-                backgroundColor: AppTheme.surfaceContainer,
-                side: BorderSide(
-                  color: _serviceType == 'SPECIAL'
-                      ? Theme.of(context).colorScheme.primary
-                      : AppTheme.outline,
-                ),
-                labelStyle: TextStyle(
-                  color: _serviceType == 'SPECIAL'
-                      ? Theme.of(context).colorScheme.onPrimary
-                      : Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-                onSelected: (_) => setState(() => _serviceType = 'SPECIAL'),
-              ),
+              Expanded(child: _tierPill('SPECIAL', 'Special / Direct', 'Metered')),
             ],
           ),
           const SizedBox(height: 12),
@@ -592,30 +686,63 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
           // Destination Search Field
           TextField(
             controller: _destController,
-            onChanged: _searchAddress,
+            style: const TextStyle(color: Colors.white),
+            onChanged: (query) {
+              _destinationLocation = null;
+              _routePoints = const [];
+              _tripDistanceKm = null;
+              _tripDurationMinutes = null;
+              _routeLoading = false;
+              _searchAddress(query);
+            },
             decoration: InputDecoration(
               hintText: 'Where to? (e.g. Main Mall, Game City)',
+              hintStyle: const TextStyle(color: Color(0xFF9AA9BE)),
               prefixIcon: Icon(
                 Icons.location_on_outlined,
-                color: AppTheme.black,
+                color: _cyan,
               ),
               suffixIcon: _isSearching
                   ? Padding(
                       padding: EdgeInsets.all(12),
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppTheme.black,
+                      color: _cyan,
                       ),
                     )
                   : null,
               filled: true,
-              fillColor: AppTheme.offWhite,
+              fillColor: _panel,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: AppTheme.lightGrey),
+                borderSide: const BorderSide(color: _cyan, width: 1.5),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: _cyan, width: 1.5),
               ),
             ),
           ),
+
+          if (_routeLoading) ...[
+            const SizedBox(height: 12),
+            const LinearProgressIndicator(
+              minHeight: 2,
+              color: _cyan,
+              backgroundColor: _panel,
+            ),
+          ] else if (_tripDistanceKm != null && _tripDurationMinutes != null) ...[
+            const SizedBox(height: 12),
+            Row(children: [
+              const Icon(Icons.route, color: _cyan, size: 18),
+              const SizedBox(width: 8),
+              Text('${_tripDistanceKm!.toStringAsFixed(1)} km', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+              const SizedBox(width: 14),
+              const Icon(Icons.schedule, color: _cyan, size: 18),
+              const SizedBox(width: 6),
+              Text('About $_tripDurationMinutes min', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+            ]),
+          ],
 
           // Suggestions List
           if (_suggestions.isNotEmpty) ...[
@@ -623,7 +750,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             Container(
               constraints: const BoxConstraints(maxHeight: 140),
               decoration: BoxDecoration(
-                color: AppTheme.white,
+                color: _panel,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppTheme.lightGrey),
               ),
@@ -640,12 +767,14 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                       s['name'] ?? '',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 13, color: AppTheme.black),
+                      style: const TextStyle(fontSize: 13, color: Colors.white),
                     ),
                     onTap: () {
                       _destController.text = s['name'] ?? '';
                       _destinationLocation = LatLng(s['lat'], s['lon']);
+                      _offerFare = _specialFare;
                       setState(() => _suggestions = []);
+                      _loadRoute(_destinationLocation!);
                     },
                   );
                 },
@@ -653,17 +782,32 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             ),
           ],
 
+          if (_serviceType == 'SPECIAL' && _destinationLocation != null) ...[
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(child: Text('Recommended P${_specialFare.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white70, fontSize: 12))),
+              IconButton(onPressed: () => setState(() => _offerFare = math.max(12, _offerFare - 2).toDouble()), icon: const Icon(Icons.remove_circle_outline, color: _cyan)),
+              Text('P${_offerFare.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              IconButton(onPressed: () => setState(() => _offerFare += 2), icon: const Icon(Icons.add_circle_outline, color: _cyan)),
+            ]),
+          ],
+
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
+              _driverName = null;
+              _driverPhone = null;
+              _contactDriverId = null;
               transit.requestTaxiBooking(
                 passengerId: auth.userId,
                 serviceType: _serviceType,
                 pickup: transit.currentLocation,
                 dropoff: _destinationLocation,
+                offeredFare: _serviceType == 'SPECIAL' ? _offerFare : AppConstants.taxiBaseFareBWP,
               );
             },
-            child: Text('Request $_serviceType Cab Now'),
+            style: ElevatedButton.styleFrom(backgroundColor: _cyan, foregroundColor: const Color(0xFF08233A), minimumSize: const Size.fromHeight(50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+            child: Text(_serviceType == 'SPECIAL' ? 'Offer P${_offerFare.toStringAsFixed(2)} for Special Cab' : 'Request STANDARD Cab Now', style: const TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],
       ),

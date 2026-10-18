@@ -29,6 +29,19 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
   HailRequest? _currentHail;
   double _shiftEarnings = 0.0;
   int _tripsCompleted = 0;
+  String? _riderName;
+  String? _riderPhone;
+
+  Future<void> _loadRiderContact(TransitProvider transit, String passengerId) async {
+    try {
+      final contact = await transit.fetchUserContact(passengerId);
+      if (!mounted) return;
+      setState(() {
+        _riderName = contact?['full_name'];
+        _riderPhone = contact?['phone_number'];
+      });
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -464,10 +477,13 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                   flex: 2,
                   child: ElevatedButton(
                     onPressed: () {
+                      _riderName = null;
+                      _riderPhone = null;
                       transit.acceptHail(_currentHail!, auth.userId);
                       setState(
                         () => _phase = TaxiDriverTripPhase.enRouteToPickup,
                       );
+                      _loadRiderContact(transit, _currentHail!.passengerId);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.accentGreen,
@@ -527,6 +543,29 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
             ],
           ),
           const SizedBox(height: 16),
+
+          if (_phase == TaxiDriverTripPhase.enRouteToPickup && _currentHail != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: AppTheme.offWhite,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(children: [
+                const Icon(Icons.person_pin_circle, color: AppTheme.taxiColor),
+                const SizedBox(width: 10),
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(transit.matchedPassengerName?.isNotEmpty == true ? transit.matchedPassengerName! : (_riderName?.isNotEmpty == true ? _riderName! : 'Passenger'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                    if (transit.matchedPassengerPhone?.isNotEmpty == true || _riderPhone?.isNotEmpty == true)
+                      SelectableText(transit.matchedPassengerPhone?.isNotEmpty == true ? transit.matchedPassengerPhone! : _riderPhone!, style: TextStyle(color: AppTheme.secondaryText)),
+                  ],
+                )),
+              ]),
+            ),
+          ],
 
           // Primary Step Progress Button
           if (_phase == TaxiDriverTripPhase.enRouteToPickup)

@@ -45,6 +45,11 @@ class TransitProvider extends ChangeNotifier {
   // Passenger State
   PassengerTripStatus _passengerStatus = PassengerTripStatus.idle;
   String? _assignedDriverId;
+  String? _matchedDriverName;
+  String? _matchedDriverPhone;
+  String? _matchedDriverPlate;
+  String? _matchedPassengerName;
+  String? _matchedPassengerPhone;
   double? _estimatedFare;
   String? _currentRequestId;
   LatLng? _livePassengerLocation;
@@ -92,6 +97,25 @@ class TransitProvider extends ChangeNotifier {
   int get passengersCarried => _passengersCarried;
   int get driverTripsCompleted => _driverTripsCompleted;
   double get vehicleSpeedKmh => _vehicleSpeedKmh;
+
+  String? get matchedDriverName => _matchedDriverName;
+  String? get matchedDriverPhone => _matchedDriverPhone;
+  String? get matchedDriverPlate => _matchedDriverPlate;
+  String? get matchedPassengerName => _matchedPassengerName;
+  String? get matchedPassengerPhone => _matchedPassengerPhone;
+
+  Future<Map<String, String>?> fetchUserContact(String userId) async {
+    final row = await Supabase.instance.client
+        .from('users')
+        .select('full_name, phone_number')
+        .eq('id', userId)
+        .maybeSingle();
+    if (row == null) return null;
+    return {
+      'full_name': row['full_name']?.toString() ?? '',
+      'phone_number': row['phone_number']?.toString() ?? '',
+    };
+  }
 
   Future<void> loadDriverTripCount(String driverId) async {
     try {
@@ -239,6 +263,8 @@ class TransitProvider extends ChangeNotifier {
         },
         'new-hail': (data) {
           if (data is Map<String, dynamic>) {
+            _matchedPassengerName = null;
+            _matchedPassengerPhone = null;
             final hail = HailRequest.fromJson(data);
             _incomingHails.removeWhere(
               (h) =>
@@ -264,6 +290,8 @@ class TransitProvider extends ChangeNotifier {
         },
         'new-taxi-request': (data) {
           if (data is Map<String, dynamic>) {
+            _matchedPassengerName = null;
+            _matchedPassengerPhone = null;
             final hail = HailRequest.fromJson(data);
             _incomingHails.removeWhere(
               (h) =>
@@ -328,6 +356,14 @@ class TransitProvider extends ChangeNotifier {
         'hail-accepted': (data) {
           if (data is Map<String, dynamic>) {
             _assignedDriverId = data['driverId'];
+            if (userId == (data['passengerId']?.toString())) {
+              if (data['driverName'] != null) _matchedDriverName = data['driverName']?.toString();
+              if (data['driverPhone'] != null) _matchedDriverPhone = data['driverPhone']?.toString();
+              if (data['driverPlate'] != null) _matchedDriverPlate = data['driverPlate']?.toString();
+            } else if (userId == (data['driverId']?.toString())) {
+              if (data['passengerName'] != null) _matchedPassengerName = data['passengerName']?.toString();
+              if (data['passengerPhone'] != null) _matchedPassengerPhone = data['passengerPhone']?.toString();
+            }
             _estimatedFare =
                 (data['fareEstimate'] as num?)?.toDouble() ??
                 (_passengerStatus == PassengerTripStatus.searchingTaxi
@@ -409,8 +445,14 @@ class TransitProvider extends ChangeNotifier {
     required String serviceType,
     required LatLng pickup,
     LatLng? dropoff,
+    double? offeredFare,
   }) {
     _currentRequestId = null;
+    _matchedDriverName = null;
+    _matchedDriverPhone = null;
+    _matchedDriverPlate = null;
+    _matchedPassengerName = null;
+    _matchedPassengerPhone = null;
     _selectedRoute = null;
     _estimatedFare = AppConstants.taxiBaseFareBWP;
     _livePassengerLocation = pickup;
@@ -421,6 +463,7 @@ class TransitProvider extends ChangeNotifier {
       if (dropoff != null)
         'dropoff': {'lat': dropoff.latitude, 'lng': dropoff.longitude},
       'serviceType': serviceType,
+      if (offeredFare != null) 'offeredFare': offeredFare,
     });
     _location.startLocationTracking((pos, _, __) {
       _currentLocation = pos;

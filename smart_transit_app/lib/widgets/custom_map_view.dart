@@ -15,6 +15,8 @@ class CustomMapView extends StatefulWidget {
   final List<HailRequest> activeHails;
   final Function(TransitStop)? onStopTapped;
   final Function(LiveDriver)? onDriverTapped;
+  final List<LatLng> routePoints;
+  final LatLng? destination;
 
   const CustomMapView({
     super.key,
@@ -24,6 +26,8 @@ class CustomMapView extends StatefulWidget {
     this.activeHails = const [],
     this.onStopTapped,
     this.onDriverTapped,
+    this.routePoints = const [],
+    this.destination,
   });
 
   @override
@@ -43,6 +47,20 @@ class _CustomMapViewState extends State<CustomMapView> {
             widget.userLocation.longitude != AppConstants.defaultLongitude)) {
       _hasCenteredOnUser = true;
       _mapController.move(widget.userLocation, AppConstants.defaultZoom);
+    }
+    if (widget.routePoints.length > 1 &&
+        (oldWidget.routePoints.length != widget.routePoints.length ||
+            oldWidget.routePoints.first != widget.routePoints.first ||
+            oldWidget.routePoints.last != widget.routePoints.last)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _mapController.fitCamera(
+          CameraFit.coordinates(
+            coordinates: widget.routePoints,
+            padding: const EdgeInsets.fromLTRB(48, 90, 48, 300),
+          ),
+        );
+      });
     }
   }
 
@@ -65,6 +83,19 @@ class _CustomMapViewState extends State<CustomMapView> {
               ? smartTransitDarkTileBuilder
               : null,
         ),
+
+        if (widget.routePoints.length > 1)
+          PolylineLayer(
+            polylines: [
+              Polyline(
+                points: widget.routePoints,
+                strokeWidth: 5,
+                color: AppTheme.botswanaSky,
+                borderStrokeWidth: 1.5,
+                borderColor: AppTheme.brandNavy.withValues(alpha: 0.7),
+              ),
+            ],
+          ),
 
         // Markers Layer
         MarkerLayer(
@@ -99,6 +130,22 @@ class _CustomMapViewState extends State<CustomMapView> {
                 ),
               ),
             ),
+
+            if (widget.destination != null)
+              Marker(
+                point: widget.destination!,
+                width: 42,
+                height: 42,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.cardSurface,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.hailColor, width: 3),
+                    boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 8)],
+                  ),
+                  child: const Icon(Icons.flag_rounded, color: AppTheme.hailColor, size: 21),
+                ),
+              ),
 
             // Stop Markers (High contrast, distinct shape + icon)
             ...widget.stops.map((stop) {

@@ -19,7 +19,9 @@ async def passenger_request_taxi(sid, data):
         return
 
     request_id = f"req-{uuid.uuid4().hex[:8]}"
-    fare_estimate = get_fare(service_type, pickup, dropoff)
+    recommended_fare = get_fare(service_type, pickup, dropoff)
+    offered_fare = data.get("offeredFare") or data.get("offered_fare")
+    fare_estimate = max(12.0, float(offered_fare)) if service_type == "SPECIAL" and offered_fare is not None else recommended_fare
 
     request = {
         "requestId": request_id,
@@ -30,6 +32,7 @@ async def passenger_request_taxi(sid, data):
         "destinationLoc": dropoff,
         "serviceType": service_type,
         "fareEstimate": fare_estimate,
+        "recommendedFare": recommended_fare,
         "requestedAt": time.time()
     }
     active_taxi_requests[request_id] = request
@@ -260,9 +263,37 @@ async def accept_hail(sid, data):
         "coords": driver.get("coords")
     }
 
+    # Share contact details only with the two sockets in this accepted match.
+    contacts = {}
+    try:
+        from app.database import AsyncSessionLocal
+        from app.models.user import User
+        from sqlalchemy import select
+
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(select(User).where(User.id.in_([passenger_id, driver_id])))
+            for user in result.scalars():
+                contacts[user.id] = {
+                    "name": user.full_name or "",
+                    "phone": user.phone_number or ""
+                }
+    except Exception:
+        pass
+
     if passenger and passenger.get("socket_id"):
-        await sio.emit('hail-accepted', payload, to=passenger["socket_id"])
+        await sio.emit('hail-accepted', {
+            **payload,
+            "driverName": contacts.get(driver_id, {}).get("name", ""),
+            "driverPhone": contacts.get(driver_id, {}).get("phone", "")
+        }, to=passenger["socket_id"])
         await sio.emit('taxi-arrived', payload, to=passenger["socket_id"])
+
+    if driver.get("socket_id"):
+        await sio.emit('hail-accepted', {
+            **payload,
+            "passengerName": contacts.get(passenger_id, {}).get("name", ""),
+            "passengerPhone": contacts.get(passenger_id, {}).get("phone", "")
+        }, to=driver["socket_id"])
 
     await sio.emit('hail-accepted', payload, room=f"drivers-{route_id}")
     await sio.emit('hail-accepted', payload, room='dashboard')

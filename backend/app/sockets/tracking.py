@@ -158,17 +158,31 @@ async def driver_location(sid, data):
 
     # Compute and broadcast ETA & live speed to all waiting passengers on this route
     for p_id, p in active_passengers.items():
-        if p.get("routeId") == route_id or p.get("route_id") == route_id or service_type == "TAXI":
+        assignment = taxi_assignments.get(p_id, {})
+        assigned_taxi = (
+            service_type == "TAXI"
+            and (assignment.get("driver_id") == driver_id or assignment.get("driverId") == driver_id)
+        )
+        same_transit_route = (
+            service_type != "TAXI"
+            and (p.get("routeId") == route_id or p.get("route_id") == route_id)
+        )
+        if assigned_taxi or same_transit_route:
             p_coords = p.get("coords")
             if p_coords and p.get("socket_id"):
                 p_lat = float(p_coords.get("lat") or p_coords.get("latitude") or 0.0)
                 p_lng = float(p_coords.get("lng") or p_coords.get("longitude") or 0.0)
                 if p_lat != 0.0 and p_lng != 0.0:
-                    dist_km = haversine_distance(lat, lng, p_lat, p_lng)
-                    dist_meters = round(dist_km * 1000, 1)
+                    dist_meters = round(
+                        haversine_distance(
+                            {"lat": lat, "lng": lng},
+                            {"lat": p_lat, "lng": p_lng},
+                        ),
+                        1,
+                    )
                     curr_speed = float(data.get("speed") or 0.0)
                     eff_speed = curr_speed if curr_speed > 10.0 else 35.0
-                    eta_sec = calculate_eta(dist_km, eff_speed)
+                    eta_sec = calculate_eta(dist_meters, eff_speed)
 
                     # Automatic Boarding: Trigger when vehicle is in 20m proximity and co-moving
                     if p.get("status") == "WAITING" and dist_meters <= 20.0 and curr_speed > 2.0:

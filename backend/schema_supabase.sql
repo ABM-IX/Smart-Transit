@@ -117,6 +117,56 @@ CREATE TABLE IF NOT EXISTS public.taxi_bookings (
     completed_at TIMESTAMPTZ
 );
 
+-- Keep the existing SmartTransit identity and booking tables while adding the
+-- destination and bidding fields needed by direct taxi dispatch.
+ALTER TABLE public.taxi_bookings
+    ADD COLUMN IF NOT EXISTS pickup_address TEXT,
+    ADD COLUMN IF NOT EXISTS dropoff_address TEXT,
+    ADD COLUMN IF NOT EXISTS distance_km NUMERIC(7, 2),
+    ADD COLUMN IF NOT EXISTS duration_minutes INTEGER,
+    ADD COLUMN IF NOT EXISTS offered_fare NUMERIC(10, 2),
+    ADD COLUMN IF NOT EXISTS surge_multiplier NUMERIC(4, 2) NOT NULL DEFAULT 1.0,
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now());
+
+CREATE TABLE IF NOT EXISTS public.taxi_booking_offers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    booking_id VARCHAR(64) NOT NULL REFERENCES public.taxi_bookings(id) ON DELETE CASCADE,
+    driver_id VARCHAR(64) NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    counter_price NUMERIC(10, 2) NOT NULL CHECK (counter_price >= 12),
+    eta_minutes INTEGER NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+CREATE INDEX IF NOT EXISTS idx_taxi_booking_offers_booking ON public.taxi_booking_offers(booking_id, created_at);
+ALTER TABLE public.taxi_booking_offers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public read access for taxi booking offers" ON public.taxi_booking_offers FOR SELECT USING (true);
+CREATE POLICY "Allow insert/update for taxi booking offers" ON public.taxi_booking_offers FOR ALL USING (true);
+
+-- Nearby taxi count uses the live coordinates already maintained by drivers.
+CREATE OR REPLACE FUNCTION public.get_nearby_active_taxis(
+    user_lat DOUBLE PRECISION,
+    user_lng DOUBLE PRECISION,
+    radius_meters DOUBLE PRECISION DEFAULT 4000
+) RETURNS TABLE(driver_id VARCHAR, distance_meters DOUBLE PRECISION)
+LANGUAGE sql STABLE AS $$
+    SELECT dp.driver_id,
+        6371000 * 2 * asin(sqrt(
+          power(sin(radians(dp.current_lat - user_lat) / 2), 2) +
+          cos(radians(user_lat)) * cos(radians(dp.current_lat)) *
+          power(sin(radians(dp.current_lng - user_lng) / 2), 2)
+        )) AS distance_meters
+    FROM public.driver_profiles dp
+    WHERE dp.service_type = 'TAXI' AND dp.is_online = true
+      AND dp.current_lat IS NOT NULL AND dp.current_lng IS NOT NULL
+      AND dp.updated_at > timezone('utc'::text, now()) - INTERVAL '30 seconds'
+      AND 6371000 * 2 * asin(sqrt(
+          power(sin(radians(dp.current_lat - user_lat) / 2), 2) +
+          cos(radians(user_lat)) * cos(radians(dp.current_lat)) *
+          power(sin(radians(dp.current_lng - user_lng) / 2), 2)
+      )) <= radius_meters
+    ORDER BY distance_meters;
+$$;
+
 -- 10. Reviews Table (Post-Trip Commuter Feedback)
 CREATE TABLE IF NOT EXISTS public.reviews (
     id SERIAL PRIMARY KEY,
