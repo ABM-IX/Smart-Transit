@@ -445,6 +445,8 @@ class TransitProvider extends ChangeNotifier {
     required String serviceType,
     required LatLng pickup,
     LatLng? dropoff,
+    String? pickupName,
+    String? destinationName,
     double? offeredFare,
   }) {
     _currentRequestId = null;
@@ -460,8 +462,10 @@ class TransitProvider extends ChangeNotifier {
     _socket.emit('passenger-request-taxi', {
       'passengerId': passengerId,
       'pickup': {'lat': pickup.latitude, 'lng': pickup.longitude},
+      if (pickupName != null) 'pickupName': pickupName,
       if (dropoff != null)
         'dropoff': {'lat': dropoff.latitude, 'lng': dropoff.longitude},
+      if (destinationName != null) 'destinationName': destinationName,
       'serviceType': serviceType,
       if (offeredFare != null) 'offeredFare': offeredFare,
     });
@@ -790,8 +794,8 @@ class TransitProvider extends ChangeNotifier {
         'fare': hail.fareEstimate,
         'passenger_count': 1,
         'completed_at': DateTime.now().toUtc().toIso8601String(),
-        'pickup_name': hail.stopName ?? 'Pickup Point',
-        'dropoff_name': 'Destination',
+        'pickup_name': hail.pickupName ?? hail.stopName ?? 'Pickup Point',
+        'dropoff_name': hail.destinationName ?? 'Destination',
       }, onConflict: 'request_id');
       _driverTripsCompleted++;
     } catch (error) {
@@ -801,7 +805,7 @@ class TransitProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> endTrip(HailRequest hail, String driverId, double fare) async {
+  Future<bool> endTrip(HailRequest hail, String driverId, double fare) async {
     _socket.emit('trip-end', {
       'passengerId': hail.passengerId,
       'driverId': driverId,
@@ -820,14 +824,17 @@ class TransitProvider extends ChangeNotifier {
         'fare': fare,
         'passenger_count': 1,
         'completed_at': DateTime.now().toUtc().toIso8601String(),
-        'pickup_name': hail.stopName ?? 'Pickup Point',
-        'dropoff_name': 'Destination',
+        'pickup_name': hail.pickupName ?? hail.stopName ?? 'Pickup Point',
+        'dropoff_name': hail.destinationName ?? 'Destination',
       }, onConflict: 'request_id');
       _driverTripsCompleted++;
+      notifyListeners();
+      return true;
     } catch (error) {
       debugPrint('Could not save driver trip history: $error');
+      notifyListeners();
+      return false;
     }
-    notifyListeners();
   }
 
   @override

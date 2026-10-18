@@ -57,6 +57,28 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
           .order('created_at', ascending: false)
           .timeout(const Duration(seconds: 4));
 
+      final passengerIds = response
+          .map((row) => row['passenger_id']?.toString())
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
+          .toSet()
+          .toList();
+      final passengerNames = <String, String>{};
+      if (passengerIds.isNotEmpty) {
+        try {
+          final users = await client
+              .from('users')
+              .select('id, full_name')
+              .inFilter('id', passengerIds);
+          for (final user in users) {
+            final name = user['full_name']?.toString().trim();
+            if (name != null && name.isNotEmpty) {
+              passengerNames[user['id'].toString()] = name;
+            }
+          }
+        } catch (_) {}
+      }
+
       final List<Map<String, dynamic>> loaded = [];
       int tripsCount = 0;
       int passengersCount = 0;
@@ -79,8 +101,8 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
         loaded.add({
           'id': row['id']?.toString() ?? '',
           'route':
-              row['route_id'] ??
-              '${row['pickup_name'] ?? 'Origin'} → ${row['dropoff_name'] ?? 'Dropoff'}',
+              '${row['pickup_name'] ?? 'Pickup Point'} → ${row['dropoff_name'] ?? 'Destination'}',
+          'passenger': passengerNames[row['passenger_id']?.toString()] ?? 'Passenger',
           'date': dateStr,
           'trips': 1,
           'passengers': (row['passenger_count'] as num?)?.toInt() ?? 1,
@@ -299,6 +321,10 @@ class _DriverHistoryScreenState extends State<DriverHistoryScreen> {
                                       ),
                                     ),
                                   ],
+                                ),
+                                Text(
+                                  'Passenger: ${shift['passenger']}',
+                                  style: TextStyle(fontSize: 12, color: AppTheme.midGrey),
                                 ),
                                 Divider(height: 20, color: AppTheme.lightGrey),
                                 Row(

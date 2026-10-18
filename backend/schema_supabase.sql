@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS public.driver_profiles (
 -- 8. Trips Table (Completed Journey Records & Analytics)
 CREATE TABLE IF NOT EXISTS public.trips (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    request_id TEXT UNIQUE,
+    request_id TEXT,
     passenger_id TEXT NOT NULL,
     driver_id VARCHAR(64) NOT NULL REFERENCES public.users(id),
     route_id VARCHAR(64) REFERENCES public.routes(id) ON DELETE SET NULL,
@@ -99,6 +99,13 @@ CREATE TABLE IF NOT EXISTS public.trips (
     started_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
     ended_at TIMESTAMPTZ
 );
+
+-- Keep databases created from an earlier version of this schema compatible.
+ALTER TABLE public.trips
+    ADD COLUMN IF NOT EXISTS request_id TEXT,
+    ADD COLUMN IF NOT EXISTS passenger_count INTEGER NOT NULL DEFAULT 1;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_trips_request_id_unique
+    ON public.trips (request_id);
 
 -- 9. Taxi Bookings Table (Real-Time State Machine for Cabs)
 CREATE TABLE IF NOT EXISTS public.taxi_bookings (

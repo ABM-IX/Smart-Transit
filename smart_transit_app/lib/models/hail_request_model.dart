@@ -11,6 +11,8 @@ class HailRequest {
   final String serviceType;
   final double fareEstimate;
   final String? stopName;
+  final String? pickupName;
+  final String? destinationName;
   final String? message;
 
   HailRequest({
@@ -24,6 +26,8 @@ class HailRequest {
     required this.serviceType,
     required this.fareEstimate,
     this.stopName,
+    this.pickupName,
+    this.destinationName,
     this.message,
   });
 
@@ -61,6 +65,8 @@ class HailRequest {
       serviceType: serviceType,
       fareEstimate: (json['fareEstimate'] as num?)?.toDouble() ?? defaultFare,
       stopName: json['stopName']?.toString(),
+      pickupName: json['pickupName']?.toString() ?? json['pickup_name']?.toString(),
+      destinationName: json['destinationName']?.toString() ?? json['dropoffName']?.toString() ?? json['dropoff_name']?.toString(),
       message: json['message']?.toString(),
     );
   }

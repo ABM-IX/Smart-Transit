@@ -1,10 +1,15 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../models/hail_request_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/transit_provider.dart';
+import '../../services/place_name_service.dart';
 import '../../widgets/custom_map_view.dart';
 import '../../widgets/status_pill.dart';
 
@@ -31,6 +36,81 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
   int _tripsCompleted = 0;
   String? _riderName;
   String? _riderPhone;
+  String? _placeLookupRequestId;
+  String? _pickupLabel;
+  String? _destinationLabel;
+  String? _routeKey;
+  LatLng? _lastRouteOrigin;
+  List<LatLng> _driverRoutePoints = const [];
+
+  void _ensureRoute(TransitProvider transit) {
+    final hail = _currentHail;
+    if (hail == null ||
+        (_phase != TaxiDriverTripPhase.enRouteToPickup &&
+            _phase != TaxiDriverTripPhase.arrivedAtPickup &&
+            _phase != TaxiDriverTripPhase.onTrip)) {
+      return;
+    }
+    final target = _phase == TaxiDriverTripPhase.onTrip &&
+            hail.destinationLat != null && hail.destinationLng != null
+        ? LatLng(hail.destinationLat!, hail.destinationLng!)
+        : LatLng(hail.pickupLat, hail.pickupLng);
+    final key = '${hail.requestId}:${_phase == TaxiDriverTripPhase.onTrip ? 'destination' : 'pickup'}';
+    final origin = transit.currentLocation;
+    const distance = Distance();
+    if (_routeKey == key &&
+        _lastRouteOrigin != null &&
+        distance.as(LengthUnit.Meter, _lastRouteOrigin!, origin) < 400) {
+      return;
+    }
+    _routeKey = key;
+    _lastRouteOrigin = origin;
+    _loadDriverRoute(key, origin, target);
+  }
+
+  Future<void> _loadDriverRoute(String key, LatLng origin, LatLng target) async {
+    try {
+      final coords = '${origin.longitude},${origin.latitude};${target.longitude},${target.latitude}';
+      final response = await http.get(Uri.parse(
+        'https://router.project-osrm.org/route/v1/driving/$coords?overview=full&geometries=geojson',
+      )).timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) return;
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final routes = body['routes'] as List?;
+      if (routes == null || routes.isEmpty) return;
+      final coordinates = routes.first['geometry']['coordinates'] as List;
+      final points = coordinates
+          .map((point) => LatLng(
+                (point[1] as num).toDouble(),
+                (point[0] as num).toDouble(),
+              ))
+          .toList();
+      if (!mounted || _routeKey != key || points.length < 2) return;
+      setState(() => _driverRoutePoints = points);
+    } catch (_) {}
+  }
+
+  void _ensureRiderAndPlaceNames() {
+    final hail = _currentHail;
+    if (hail == null || _placeLookupRequestId == hail.requestId) return;
+    _placeLookupRequestId = hail.requestId;
+    _loadRiderContact(context.read<TransitProvider>(), hail.passengerId);
+    _loadPlaceNames(hail);
+  }
+
+  Future<void> _loadPlaceNames(HailRequest hail) async {
+    final pickup = hail.pickupName ?? hail.stopName ??
+        await PlaceNameService.reverseGeocode(LatLng(hail.pickupLat, hail.pickupLng));
+    final destination = hail.destinationName ??
+        (hail.destinationLat != null && hail.destinationLng != null
+            ? await PlaceNameService.reverseGeocode(LatLng(hail.destinationLat!, hail.destinationLng!))
+            : null);
+    if (!mounted || _currentHail?.requestId != hail.requestId) return;
+    setState(() {
+      _pickupLabel = pickup ?? 'Passenger pickup';
+      _destinationLabel = destination ?? 'Destination';
+    });
+  }
 
   Future<void> _loadRiderContact(TransitProvider transit, String passengerId) async {
     try {
@@ -55,8 +135,20 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
     if (taxiHails.isNotEmpty &&
         _phase == TaxiDriverTripPhase.searching &&
         transit.isDriverOnline) {
+      _routeKey = null;
+      _lastRouteOrigin = null;
+      _driverRoutePoints = const [];
+      _pickupLabel = null;
+      _destinationLabel = null;
+      _placeLookupRequestId = null;
+      _riderName = null;
+      _riderPhone = null;
       _currentHail = taxiHails.first;
       _phase = TaxiDriverTripPhase.requestReceived;
+    }
+    if (_currentHail != null) {
+      _ensureRiderAndPlaceNames();
+      _ensureRoute(transit);
     }
 
     return Scaffold(
@@ -67,6 +159,15 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
           CustomMapView(
             userLocation: transit.currentLocation,
             stops: const [],
+            routePoints: _currentHail == null ? const [] : _driverRoutePoints,
+            pickupMarker: _currentHail == null
+                ? null
+                : (transit.livePassengerLocation ??
+                    LatLng(_currentHail!.pickupLat, _currentHail!.pickupLng)),
+            destination: _currentHail?.destinationLat != null &&
+                    _currentHail?.destinationLng != null
+                ? LatLng(_currentHail!.destinationLat!, _currentHail!.destinationLng!)
+                : null,
             drivers: transit.activeDrivers
                 .where((d) => d.serviceType == 'TAXI')
                 .toList(),
@@ -337,7 +438,7 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Rider ${_currentHail!.passengerId.length > 8 ? _currentHail!.passengerId.substring(0, 8) : _currentHail!.passengerId}',
+                          _riderName?.isNotEmpty == true ? _riderName! : 'Passenger',
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 16,
@@ -407,7 +508,7 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Pickup: ${(transit.livePassengerLocation?.latitude ?? _currentHail!.pickupLat).toStringAsFixed(5)}, ${(transit.livePassengerLocation?.longitude ?? _currentHail!.pickupLng).toStringAsFixed(5)}',
+                          'Pickup: ${_pickupLabel ?? _currentHail!.pickupName ?? _currentHail!.stopName ?? 'Finding place…'}',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -429,7 +530,7 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                         child: Text(
                           _currentHail!.destinationLat != null &&
                                   _currentHail!.destinationLng != null
-                              ? 'Destination: ${_currentHail!.destinationLat!.toStringAsFixed(5)}, ${_currentHail!.destinationLng!.toStringAsFixed(5)}'
+                              ? 'Destination: ${_destinationLabel ?? _currentHail!.destinationName ?? 'Finding place…'}'
                               : 'Destination not provided',
                           style: const TextStyle(
                             fontSize: 13,
@@ -617,9 +718,9 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                   final fare =
                       _currentHail?.fareEstimate ??
                       AppConstants.taxiBaseFareBWP;
-                  if (_currentHail != null) {
-                    await transit.endTrip(_currentHail!, auth.userId, fare);
-                  }
+                  final historySaved = _currentHail == null
+                      ? false
+                      : await transit.endTrip(_currentHail!, auth.userId, fare);
                   setState(() {
                     _shiftEarnings += fare;
                     _tripsCompleted += 1;
@@ -629,7 +730,9 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        'Trip Completed! P${fare.toStringAsFixed(2)} collected.',
+                        historySaved
+                            ? 'Trip completed! P${fare.toStringAsFixed(2)} collected.'
+                            : 'Trip completed, but the trip history could not be saved. Please try again when connected.',
                       ),
                     ),
                   );

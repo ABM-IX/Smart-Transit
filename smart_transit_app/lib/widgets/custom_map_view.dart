@@ -17,6 +17,7 @@ class CustomMapView extends StatefulWidget {
   final Function(LiveDriver)? onDriverTapped;
   final List<LatLng> routePoints;
   final LatLng? destination;
+  final LatLng? pickupMarker;
 
   const CustomMapView({
     super.key,
@@ -28,6 +29,7 @@ class CustomMapView extends StatefulWidget {
     this.onDriverTapped,
     this.routePoints = const [],
     this.destination,
+    this.pickupMarker,
   });
 
   @override
@@ -144,6 +146,22 @@ class _CustomMapViewState extends State<CustomMapView> {
                     boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 8)],
                   ),
                   child: const Icon(Icons.flag_rounded, color: AppTheme.hailColor, size: 21),
+                ),
+              ),
+
+            if (widget.pickupMarker != null)
+              Marker(
+                point: widget.pickupMarker!,
+                width: 42,
+                height: 42,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.taxiColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.cardSurface, width: 3),
+                    boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 8)],
+                  ),
+                  child: const Icon(Icons.person_pin_circle, color: Colors.white, size: 23),
                 ),
               ),
 

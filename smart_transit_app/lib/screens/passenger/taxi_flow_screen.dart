@@ -8,6 +8,7 @@ import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/transit_provider.dart';
+import '../../services/place_name_service.dart';
 import '../../widgets/custom_map_view.dart';
 import '../../widgets/status_pill.dart';
 
@@ -29,12 +30,14 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
   List<Map<String, dynamic>> _suggestions = [];
   bool _isSearching = false;
   LatLng? _destinationLocation;
+  String? _destinationName;
   int _tripRating = 5;
   double _offerFare = 12;
   List<LatLng> _routePoints = const [];
   double? _tripDistanceKm;
   int? _tripDurationMinutes;
   bool _routeLoading = false;
+  bool _routeError = false;
   String? _contactDriverId;
   String? _driverName;
   String? _driverPhone;
@@ -91,6 +94,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final route = (data['routes'] as List).first as Map<String, dynamic>;
       final geometry = route['geometry']['coordinates'] as List;
+      if (geometry.length < 2) throw StateError('No drivable road route found');
       if (!mounted || destination != _destinationLocation) return;
       setState(() {
         _routePoints = geometry
@@ -99,18 +103,17 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
         _tripDistanceKm = (route['distance'] as num).toDouble() / 1000;
         _tripDurationMinutes = ((route['duration'] as num).toDouble() / 60).ceil();
         _routeLoading = false;
+        _routeError = false;
         if (_serviceType == 'SPECIAL') _offerFare = _specialFare;
       });
     } catch (_) {
       if (!mounted || destination != _destinationLocation) return;
-      const distance = Distance();
-      final km = distance.as(LengthUnit.Kilometer, pickup, destination) * 1.25;
       setState(() {
-        _routePoints = [pickup, destination];
-        _tripDistanceKm = km;
-        _tripDurationMinutes = (km / 25 * 60).ceil();
+        _routePoints = const [];
+        _tripDistanceKm = null;
+        _tripDurationMinutes = null;
         _routeLoading = false;
-        if (_serviceType == 'SPECIAL') _offerFare = _specialFare;
+        _routeError = true;
       });
     }
   }
@@ -689,10 +692,12 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             style: const TextStyle(color: Colors.white),
             onChanged: (query) {
               _destinationLocation = null;
+            _destinationName = null;
               _routePoints = const [];
               _tripDistanceKm = null;
               _tripDurationMinutes = null;
               _routeLoading = false;
+              _routeError = false;
               _searchAddress(query);
             },
             decoration: InputDecoration(
@@ -742,6 +747,12 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
               const SizedBox(width: 6),
               Text('About $_tripDurationMinutes min', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
             ]),
+          ] else if (_routeError) ...[
+            const SizedBox(height: 10),
+            Row(children: [
+              const Expanded(child: Text('No drivable road route found. Retry or choose another destination.', style: TextStyle(color: Colors.orangeAccent, fontSize: 12))),
+              IconButton(onPressed: () => _loadRoute(_destinationLocation!), icon: const Icon(Icons.refresh, color: _cyan), tooltip: 'Retry route'),
+            ]),
           ],
 
           // Suggestions List
@@ -771,6 +782,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                     ),
                     onTap: () {
                       _destController.text = s['name'] ?? '';
+                      _destinationName = s['name'] as String?;
                       _destinationLocation = LatLng(s['lat'], s['lon']);
                       _offerFare = _specialFare;
                       setState(() => _suggestions = []);
@@ -794,19 +806,28 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
 
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () {
+            onPressed: _destinationLocation != null &&
+                    (_routeLoading || _routeError || _tripDistanceKm == null)
+                ? null
+                : () async {
               _driverName = null;
               _driverPhone = null;
               _contactDriverId = null;
+              final pickupName = await PlaceNameService.reverseGeocode(
+                transit.currentLocation,
+              );
+              if (!mounted) return;
               transit.requestTaxiBooking(
                 passengerId: auth.userId,
                 serviceType: _serviceType,
                 pickup: transit.currentLocation,
                 dropoff: _destinationLocation,
+                pickupName: pickupName ?? 'Current location',
+                destinationName: _destinationName,
                 offeredFare: _serviceType == 'SPECIAL' ? _offerFare : AppConstants.taxiBaseFareBWP,
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: _cyan, foregroundColor: const Color(0xFF08233A), minimumSize: const Size.fromHeight(50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+            style: ElevatedButton.styleFrom(backgroundColor: _cyan, foregroundColor: const Color(0xFF08233A), disabledBackgroundColor: _panel, disabledForegroundColor: Colors.white54, minimumSize: const Size.fromHeight(50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
             child: Text(_serviceType == 'SPECIAL' ? 'Offer P${_offerFare.toStringAsFixed(2)} for Special Cab' : 'Request STANDARD Cab Now', style: const TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],

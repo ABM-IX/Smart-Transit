@@ -55,6 +55,28 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
           .order('created_at', ascending: false)
           .timeout(const Duration(seconds: 4));
 
+      final driverIds = response
+          .map((row) => row['driver_id']?.toString())
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
+          .toSet()
+          .toList();
+      final driverNames = <String, String>{};
+      if (driverIds.isNotEmpty) {
+        try {
+          final users = await client
+              .from('users')
+              .select('id, full_name')
+              .inFilter('id', driverIds);
+          for (final user in users) {
+            final name = user['full_name']?.toString().trim();
+            if (name != null && name.isNotEmpty) {
+              driverNames[user['id'].toString()] = name;
+            }
+          }
+        } catch (_) {}
+      }
+
       final List<Map<String, dynamic>> loaded = [];
       for (final row in response) {
         final rawMode = (row['service_type'] as String? ?? 'COMBI').toUpperCase();
@@ -80,7 +102,7 @@ class _PassengerHistoryScreenState extends State<PassengerHistoryScreen> {
           'fare': (row['fare'] as num?)?.toDouble() ?? _fareFallback(row),
           'date': dateStr,
           'driver': row['driver_id'] != null
-              ? 'Driver: ${row['driver_id']}'
+              ? 'Driver: ${driverNames[row['driver_id'].toString()] ?? 'Driver'}'
               : 'SmartTransit Operator',
           'status': row['status'] ?? 'Completed',
         });
