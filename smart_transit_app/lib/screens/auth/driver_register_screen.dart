@@ -258,7 +258,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Your transit operator profile for vehicle $plate ($_selectedMode) has been saved.',
+                  'Your driver profile for vehicle $plate ($_selectedMode) is ready. We sent a verification link to your email. Confirm your address, then sign in to begin.',
                   style: TextStyle(
                     fontSize: 13,
                     color: AppTheme.darkGrey,
@@ -294,7 +294,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'This corridor is now active and visible to passengers! You can sign in to begin your shift.',
+                          'If you don’t see the verification email, check your spam or junk folder.',
                           style: TextStyle(
                             fontSize: 11,
                             color: AppTheme.midGrey,
@@ -327,7 +327,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
       final formattedMessage = AuthService.formatAuthErrorMessage(e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Registration Error: $formattedMessage'),
+          content: Text(formattedMessage),
           backgroundColor: AppTheme.accentRed,
         ),
       );

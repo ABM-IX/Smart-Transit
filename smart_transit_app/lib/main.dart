@@ -6,6 +6,7 @@ import 'core/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/transit_provider.dart';
 import 'providers/theme_provider.dart';
+import 'screens/auth/reset_password_screen.dart';
 import 'screens/splash/splash_screen.dart';
 
 void main() async {
@@ -37,13 +38,17 @@ class SmartTransitApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<AppThemeProvider>(
-      builder: (context, appTheme, _) => MaterialApp(
-        title: 'SmartTransit',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: appTheme.themeMode,
-        home: const SplashScreen(),
+      builder: (context, appTheme, _) => Consumer<AuthProvider>(
+        builder: (context, auth, _) => MaterialApp(
+          title: 'SmartTransit',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: appTheme.themeMode,
+          home: auth.passwordRecoveryPending
+              ? const ResetPasswordScreen()
+              : const SplashScreen(),
+        ),
       ),
     );
   }

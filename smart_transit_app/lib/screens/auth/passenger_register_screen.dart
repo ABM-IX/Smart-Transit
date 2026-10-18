@@ -114,7 +114,7 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Your commuter profile has been successfully registered. You can now sign in to track live combis, buses, and hail cabs across Botswana.',
+                  'Your account is ready. We sent a verification link to your email. Open it to confirm your address, then sign in to start using SmartTransit.',
                   style: TextStyle(
                     fontSize: 13,
                     color: AppTheme.darkGrey,
@@ -139,7 +139,7 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Tip: Check your email inbox if email verification is enabled on your Supabase project.',
+                          'If you don’t see the email, check your spam or junk folder.',
                           style: TextStyle(
                             fontSize: 11,
                             color: AppTheme.midGrey,
@@ -172,7 +172,7 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
       final formattedMessage = AuthService.formatAuthErrorMessage(e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Registration Error: $formattedMessage'),
+          content: Text(formattedMessage),
           backgroundColor: AppTheme.accentRed,
         ),
       );

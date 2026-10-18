@@ -133,6 +133,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
   }
 
   Widget _tierPill(String value, String title, String subtitle) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final selected = _serviceType == value;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
@@ -144,9 +145,13 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
         height: 44,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
-          color: selected ? _cyan : _panel,
+          color: selected ? _cyan : (isDark ? _panel : Colors.white),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? _cyan : const Color(0xFF34445D)),
+          border: Border.all(
+            color: selected
+                ? _cyan
+                : (isDark ? const Color(0xFF34445D) : AppTheme.borderGrey),
+          ),
         ),
         child: Row(
           children: [
@@ -161,7 +166,9 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: selected ? const Color(0xFF08233A) : Colors.white,
+                  color: selected
+                      ? const Color(0xFF08233A)
+                      : (isDark ? Colors.white : const Color(0xFF0B1F2A)),
                 ),
               ),
             ),
@@ -301,11 +308,12 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: _navy,
+      backgroundColor: isDark ? _navy : Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0B1526),
-        foregroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF0B1526) : Colors.white,
+        foregroundColor: isDark ? Colors.white : const Color(0xFF0B1F2A),
         leading: IconButton(
           tooltip: 'Back to main screen',
           icon: const Icon(Icons.arrow_back),
@@ -377,15 +385,12 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
 
     return Stack(
       children: [
-        Theme(
-          data: Theme.of(context).copyWith(brightness: Brightness.dark),
-          child: CustomMapView(
-            userLocation: pickup,
-            drivers: visibleDrivers,
-            highlightDriverId: transit.assignedDriverId,
-            routePoints: activePolylines,
-            destination: _destinationLocation,
-          ),
+        CustomMapView(
+          userLocation: pickup,
+          drivers: visibleDrivers,
+          highlightDriverId: transit.assignedDriverId,
+          routePoints: activePolylines,
+          destination: _destinationLocation,
         ),
 
         // Live Taxis Count Badge
@@ -429,6 +434,16 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
   }
 
   Widget _buildTaxiBottomCard(TransitProvider transit, AuthProvider auth) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBackground = isDark ? _navy : Colors.white;
+    final controlSurface = isDark
+        ? _panel
+        : const Color(0xFFF4F7F8);
+    final primaryText = isDark ? Colors.white : const Color(0xFF0B1F2A);
+    final secondaryText = isDark
+        ? const Color(0xFFB3C0D1)
+        : const Color(0xFF64748B);
+
     if (transit.passengerStatus == PassengerTripStatus.searchingTaxi) {
       return Container(
         padding: const EdgeInsets.all(24),
@@ -1056,7 +1071,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _navy,
+        color: cardBackground,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         border: Border(top: BorderSide(color: AppTheme.lightGrey, width: 1)),
       ),
@@ -1079,7 +1094,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
           // Destination Search Field
           TextField(
             controller: _destController,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: primaryText),
             onChanged: (query) {
               _destinationLocation = null;
               _destinationName = null;
@@ -1092,7 +1107,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             },
             decoration: InputDecoration(
               hintText: 'Where to? (e.g. Main Mall, Game City)',
-              hintStyle: const TextStyle(color: Color(0xFF9AA9BE)),
+              hintStyle: TextStyle(color: secondaryText),
               prefixIcon: Icon(Icons.location_on_outlined, color: _cyan),
               suffixIcon: _isSearching
                   ? Padding(
@@ -1104,24 +1119,24 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                     )
                   : null,
               filled: true,
-              fillColor: _panel,
+              fillColor: controlSurface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: _cyan, width: 1.5),
+                borderSide: BorderSide(color: _cyan, width: 1.5),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: _cyan, width: 1.5),
+                borderSide: BorderSide(color: _cyan, width: 1.5),
               ),
             ),
           ),
 
           if (_routeLoading) ...[
             const SizedBox(height: 12),
-            const LinearProgressIndicator(
+            LinearProgressIndicator(
               minHeight: 2,
               color: _cyan,
-              backgroundColor: _panel,
+              backgroundColor: controlSurface,
             ),
           ] else if (_tripDistanceKm != null &&
               _tripDurationMinutes != null) ...[
@@ -1132,8 +1147,8 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 const SizedBox(width: 8),
                 Text(
                   '${_tripDistanceKm!.toStringAsFixed(1)} km',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: primaryText,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1142,8 +1157,8 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 const SizedBox(width: 6),
                 Text(
                   'About $_tripDurationMinutes min',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: primaryText,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1174,7 +1189,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             Container(
               constraints: const BoxConstraints(maxHeight: 140),
               decoration: BoxDecoration(
-                color: _panel,
+                color: controlSurface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppTheme.lightGrey),
               ),
@@ -1191,7 +1206,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                       s['name'] ?? '',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13, color: Colors.white),
+                      style: TextStyle(fontSize: 13, color: primaryText),
                     ),
                     onTap: () {
                       _destController.text = s['name'] ?? '';
@@ -1214,7 +1229,7 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 Expanded(
                   child: Text(
                     'Recommended P${_specialFare.toStringAsFixed(2)}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: TextStyle(color: secondaryText, fontSize: 12),
                   ),
                 ),
                 IconButton(
@@ -1225,8 +1240,8 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
                 ),
                 Text(
                   'P${_offerFare.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: primaryText,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1241,10 +1256,10 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
           const SizedBox(height: 16),
           if (_destinationLocation == null) ...[
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Select a destination before requesting a cab.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70, fontSize: 12),
+              style: TextStyle(color: secondaryText, fontSize: 12),
             ),
           ],
           ElevatedButton(
@@ -1280,8 +1295,12 @@ class _TaxiFlowScreenState extends State<TaxiFlowScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: _cyan,
               foregroundColor: const Color(0xFF08233A),
-              disabledBackgroundColor: _panel,
-              disabledForegroundColor: Colors.white54,
+              disabledBackgroundColor: isDark
+                  ? _panel
+                  : const Color(0xFFE8EEF2),
+              disabledForegroundColor: isDark
+                  ? Colors.white54
+                  : const Color(0xFF718096),
               minimumSize: const Size.fromHeight(50),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),

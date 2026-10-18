@@ -36,4 +36,7 @@ class AppConstants {
   static const String supabasePublishableKey =
       'sb_publishable_7cqahorS_JAw4601eqpQkA_xPgA3YZL';
   static const String supabaseAnonKey = supabasePublishableKey;
+
+  // Supabase Auth redirect target registered by the Android and iOS apps.
+  static const String authRedirectUrl = 'smarttransit://auth-callback';
 }

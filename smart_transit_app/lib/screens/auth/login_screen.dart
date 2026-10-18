@@ -112,17 +112,20 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
 
-      final errorMsg = e
-          .toString()
-          .replaceAll('Exception: ', '')
-          .replaceAll('AuthApiException: ', '');
-      ScaffoldMessenger.of(context).showSnackBar(
+      _showAuthMessage(AuthService.formatAuthErrorMessage(e), isError: true);
+    }
+  }
+
+  void _showAuthMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
         SnackBar(
-          content: Text('Sign in failed: $errorMsg'),
-          backgroundColor: AppTheme.accentRed,
+          content: Text(message),
+          backgroundColor: isError ? AppTheme.accentRed : AppTheme.black,
+          behavior: SnackBarBehavior.floating,
         ),
       );
-    }
   }
 
   void _showForgotPasswordDialog() {
@@ -147,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Enter your registered email address and we will send you a Supabase password recovery link.',
+                'Enter your email address and we’ll send you a secure link to choose a new password.',
                 style: TextStyle(
                   fontSize: 13,
                   color: AppTheme.darkGrey,
@@ -180,25 +183,23 @@ class _LoginScreenState extends State<LoginScreen> {
           ElevatedButton(
             onPressed: () async {
               final email = emailCtrl.text.trim();
-              if (email.isEmpty) return;
+              if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+                _showAuthMessage('Enter a valid email address.', isError: true);
+                return;
+              }
               Navigator.pop(ctx);
               try {
                 await AuthService().sendPasswordResetEmail(email);
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Password recovery email sent to $email'),
-                      backgroundColor: AppTheme.black,
-                    ),
+                  _showAuthMessage(
+                    'If there’s a SmartTransit account for that email, a reset link is on its way. Check your inbox and spam folder.',
                   );
                 }
               } catch (err) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error: ${err.toString()}'),
-                      backgroundColor: AppTheme.accentRed,
-                    ),
+                  _showAuthMessage(
+                    AuthService.formatAuthErrorMessage(err),
+                    isError: true,
                   );
                 }
               }

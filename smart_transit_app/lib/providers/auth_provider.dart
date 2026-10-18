@@ -23,6 +23,7 @@ class AuthProvider extends ChangeNotifier {
   String _vehiclePlate = '';
   bool _isLoading = false;
   bool _isSessionReady = false;
+  bool _passwordRecoveryPending = false;
 
   AuthProvider() {
     _initAuth();
@@ -30,6 +31,7 @@ class AuthProvider extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
   bool get isSessionReady => _isSessionReady;
+  bool get passwordRecoveryPending => _passwordRecoveryPending;
   UserProfile? get profile => _profile;
   bool get isAuthenticated =>
       _profile != null || _authService.currentUser != null;
@@ -107,12 +109,22 @@ class AuthProvider extends ChangeNotifier {
 
     _authSubscription = _authService.onAuthStateChange.listen((data) {
       final session = data.session;
+      if (data.event == AuthChangeEvent.passwordRecovery) {
+        _passwordRecoveryPending = true;
+        notifyListeners();
+      }
       if (session != null) {
         loadProfile(session.user.id);
       } else if (data.event == AuthChangeEvent.signedOut) {
         _resetToGuest();
       }
     });
+  }
+
+  void finishPasswordRecovery() {
+    if (!_passwordRecoveryPending) return;
+    _passwordRecoveryPending = false;
+    notifyListeners();
   }
 
   Future<void> loadProfile(String uid) async {

@@ -107,6 +107,7 @@ class AuthService {
     final response = await _supabase.auth.signUp(
       email: email.trim(),
       password: password,
+      emailRedirectTo: AppConstants.authRedirectUrl,
       data: {
         'full_name': fullName.trim(),
         'phone_number': phoneNumber.trim(),
@@ -151,39 +152,59 @@ class AuthService {
         .replaceAll('Exception: ', '')
         .replaceAll('AuthException: ', '')
         .replaceAll('AuthRetryableFetchException: ', '');
+    final message = raw.toLowerCase();
 
-    if (raw.contains('Database error saving new user') ||
-        raw.contains('unexpected_failure')) {
-      return 'Server error saving driver profile. Please verify your selected corridor or try again.';
+    if (message.contains('database error saving new user') ||
+        message.contains('unexpected_failure')) {
+      return 'We couldn’t finish setting up your account right now. Please try again in a moment.';
     }
-    if (raw.contains('over_email_send_rate_limit') ||
-        raw.contains('rate limit')) {
-      return 'Email confirmation rate limit exceeded. Please wait a few minutes before trying again.';
+    if (message.contains('over_email_send_rate_limit') ||
+        message.contains('rate limit') ||
+        message.contains('too many requests')) {
+      return 'Too many emails have been requested recently. Please wait a few minutes and try again.';
     }
-    if (raw.contains('already registered') ||
-        raw.contains('already in use') ||
-        raw.contains('User already registered')) {
-      return 'An account with this email address already exists. Please sign in instead.';
+    if (message.contains('already registered') ||
+        message.contains('already in use') ||
+        message.contains('user already exists')) {
+      return 'There’s already a SmartTransit account with this email. Try signing in instead.';
     }
-    if (raw.contains('Password should be at least')) {
-      return 'Password must be at least 6 characters long.';
+    if (message.contains('password should be at least') ||
+        message.contains('password must contain') ||
+        message.contains('weak_password')) {
+      return 'Choose a stronger password. Use at least 6 characters.';
     }
-    if (raw.contains('Invalid login credentials') ||
-        raw.contains('invalid_credentials')) {
-      return 'Invalid email or password.';
+    if (message.contains('invalid login credentials') ||
+        message.contains('invalid_credentials')) {
+      return 'That email and password don’t match. Check them and try again.';
+    }
+    if (message.contains('email not confirmed')) {
+      return 'Please verify your email first. Open the confirmation link we sent, then sign in.';
+    }
+    if (message.contains('user not found') ||
+        message.contains('email not found')) {
+      return 'We couldn’t find an account with that email. Check the address or create an account.';
+    }
+    if (message.contains('invalid email') ||
+        message.contains('email address is invalid')) {
+      return 'Enter a valid email address, such as name@example.com.';
+    }
+    if (message.contains('same_password') ||
+        message.contains('should be different from the old password')) {
+      return 'Choose a password you haven’t used for this account before.';
+    }
+    if (message.contains('network') ||
+        message.contains('socketexception') ||
+        message.contains('failed host lookup') ||
+        message.contains('timed out')) {
+      return 'We couldn’t connect. Check your internet connection and try again.';
+    }
+    if (message.contains('otp_expired') ||
+        message.contains('expired') ||
+        message.contains('invalid token')) {
+      return 'This link has expired or was already used. Request a fresh email and try again.';
     }
 
-    // Try extracting clean message from JSON if embedded
-    final regex = RegExp(r'"message"\s*:\s*"([^"]+)"');
-    final match = regex.firstMatch(raw);
-    if (match != null && match.group(1) != null) {
-      final inner = match.group(1)!;
-      if (inner.isNotEmpty && inner != 'unexpected_failure') {
-        return inner;
-      }
-    }
-
-    return raw;
+    return 'Something went wrong. Please try again. If the problem continues, check your connection or contact support.';
   }
 
   /// Dynamically create or ensure an operating corridor exists in public.routes
@@ -238,6 +259,7 @@ class AuthService {
     final response = await _supabase.auth.signUp(
       email: email.trim(),
       password: password,
+      emailRedirectTo: AppConstants.authRedirectUrl,
       data: {
         'full_name': fullName.trim(),
         'phone_number': phoneNumber.trim(),
@@ -305,7 +327,14 @@ class AuthService {
 
   /// Request password reset email via Supabase Free Tier
   Future<void> sendPasswordResetEmail(String email) async {
-    await _supabase.auth.resetPasswordForEmail(email.trim());
+    await _supabase.auth.resetPasswordForEmail(
+      email.trim(),
+      redirectTo: AppConstants.authRedirectUrl,
+    );
+  }
+
+  Future<void> updatePassword(String password) async {
+    await _supabase.auth.updateUser(UserAttributes(password: password));
   }
 
   /// Sign out
