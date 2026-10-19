@@ -9,6 +9,8 @@ import '../services/auth_service.dart';
 class AuthProvider extends ChangeNotifier {
   static const String _sessionProfileKey = 'smarttransit_user_profile';
   static const String _sessionLoggedInKey = 'smarttransit_is_logged_in';
+  static const String _pendingVerificationEmailKey =
+      'smarttransit_pending_verification_email';
 
   final AuthService _authService = AuthService();
   StreamSubscription<AuthState>? _authSubscription;
@@ -24,6 +26,9 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isSessionReady = false;
   bool _passwordRecoveryPending = false;
+  bool _emailVerifiedWelcomePending = false;
+  String? _pendingVerificationEmail;
+  String? _authLinkError;
 
   AuthProvider() {
     _initAuth();
@@ -32,6 +37,8 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSessionReady => _isSessionReady;
   bool get passwordRecoveryPending => _passwordRecoveryPending;
+  bool get emailVerifiedWelcomePending => _emailVerifiedWelcomePending;
+  String? get authLinkError => _authLinkError;
   UserProfile? get profile => _profile;
   bool get isAuthenticated =>
       _profile != null || _authService.currentUser != null;
@@ -75,6 +82,8 @@ class AuthProvider extends ChangeNotifier {
         _role = UserRole.fromDatabase(p.role, p.serviceType);
         notifyListeners();
       }
+      _pendingVerificationEmail = prefs.getString(_pendingVerificationEmailKey);
+      _recognizeVerifiedEmail(_authService.currentUser);
     } catch (_) {
       // Continue into the signed-out flow if local session data is unavailable.
     } finally {
@@ -113,6 +122,9 @@ class AuthProvider extends ChangeNotifier {
         _passwordRecoveryPending = true;
         notifyListeners();
       }
+      if (data.event == AuthChangeEvent.signedIn) {
+        _recognizeVerifiedEmail(data.session?.user);
+      }
       if (session != null) {
         loadProfile(session.user.id);
       } else if (data.event == AuthChangeEvent.signedOut) {
@@ -124,6 +136,52 @@ class AuthProvider extends ChangeNotifier {
   void finishPasswordRecovery() {
     if (!_passwordRecoveryPending) return;
     _passwordRecoveryPending = false;
+    notifyListeners();
+  }
+
+  Future<void> markEmailVerificationPending(String email) async {
+    _pendingVerificationEmail = email.trim().toLowerCase();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _pendingVerificationEmailKey,
+        _pendingVerificationEmail!,
+      );
+    } catch (_) {}
+  }
+
+  void _recognizeVerifiedEmail(User? user) {
+    final email = user?.email?.trim().toLowerCase();
+    if (email == null ||
+        email.isEmpty ||
+        user?.emailConfirmedAt == null ||
+        email != _pendingVerificationEmail) {
+      return;
+    }
+    _emailVerifiedWelcomePending = true;
+    _pendingVerificationEmail = null;
+    unawaited(
+      SharedPreferences.getInstance().then(
+        (prefs) => prefs.remove(_pendingVerificationEmailKey),
+      ),
+    );
+    notifyListeners();
+  }
+
+  void finishEmailVerifiedWelcome() {
+    if (!_emailVerifiedWelcomePending) return;
+    _emailVerifiedWelcomePending = false;
+    notifyListeners();
+  }
+
+  void reportAuthLinkError(Object error) {
+    _authLinkError = AuthService.formatAuthErrorMessage(error);
+    notifyListeners();
+  }
+
+  void clearAuthLinkError() {
+    if (_authLinkError == null) return;
+    _authLinkError = null;
     notifyListeners();
   }
 

@@ -225,6 +225,13 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
 
       if (!mounted) return;
 
+      if (response.user != null) {
+        await Provider.of<AuthProvider>(
+          context,
+          listen: false,
+        ).markEmailVerificationPending(_emailController.text);
+      }
+
       // Email confirmation / prompt dialog
       showDialog(
         context: context,

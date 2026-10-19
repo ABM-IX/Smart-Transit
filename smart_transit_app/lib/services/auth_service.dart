@@ -203,6 +203,9 @@ class AuthService {
         message.contains('invalid token')) {
       return 'This link has expired or was already used. Request a fresh email and try again.';
     }
+    if (message.contains('code verifier could not be found')) {
+      return 'Open this link on the same phone where you requested it. If it still won’t open, request a fresh email from that phone.';
+    }
 
     return 'Something went wrong. Please try again. If the problem continues, check your connection or contact support.';
   }

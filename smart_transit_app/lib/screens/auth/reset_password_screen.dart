@@ -104,7 +104,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Use at least 6 characters. You can sign in with it as soon as it’s saved.',
+            "Use at least 6 characters. You can sign in with it as soon as it's saved.",
             textAlign: TextAlign.center,
             style: TextStyle(color: AppTheme.secondaryText),
           ),
@@ -137,7 +137,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             ),
             validator: (value) {
               if (value != _passwordController.text) {
-                return 'These passwords don’t match yet.';
+                return "These passwords don't match yet.";
               }
               return null;
             },

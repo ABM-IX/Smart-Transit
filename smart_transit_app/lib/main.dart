@@ -6,17 +6,24 @@ import 'core/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/transit_provider.dart';
 import 'providers/theme_provider.dart';
+import 'screens/auth/email_verified_screen.dart';
+import 'screens/auth/auth_link_error_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 import 'screens/splash/splash_screen.dart';
+import 'services/auth_deep_link_service.dart';
+
+final AuthDeepLinkService _authDeepLinkService = AuthDeepLinkService();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: AppConstants.supabaseUrl,
     publishableKey: AppConstants.supabasePublishableKey,
+    authOptions: const FlutterAuthClientOptions(detectSessionInUri: false),
   );
 
   final authProvider = AuthProvider();
+  _authDeepLinkService.start(onError: authProvider.reportAuthLinkError);
   final themeProvider = AppThemeProvider();
   await themeProvider.loadPreference();
 
@@ -47,6 +54,10 @@ class SmartTransitApp extends StatelessWidget {
           themeMode: appTheme.themeMode,
           home: auth.passwordRecoveryPending
               ? const ResetPasswordScreen()
+              : auth.authLinkError != null
+              ? const AuthLinkErrorScreen()
+              : auth.emailVerifiedWelcomePending
+              ? const EmailVerifiedScreen()
               : const SplashScreen(),
         ),
       ),

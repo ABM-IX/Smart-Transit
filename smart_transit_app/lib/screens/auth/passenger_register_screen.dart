@@ -81,6 +81,13 @@ class _PassengerRegisterScreenState extends State<PassengerRegisterScreen> {
 
       if (!mounted) return;
 
+      if (response.user != null) {
+        await Provider.of<AuthProvider>(
+          context,
+          listen: false,
+        ).markEmailVerificationPending(_emailController.text);
+      }
+
       // If confirmation email is sent or session requires login:
       showDialog(
         context: context,
