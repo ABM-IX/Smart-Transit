@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartTransit - A3 Academic Research Poster (BAC Template)</title>
+  <style>
+    /* ==========================================================================
+       SMARTTRANSIT A3 ACADEMIC RESEARCH POSTER (420mm x 297mm LANDSCAPE)
+       Strict 1-Page Layout Guarantee | Zero Clipping | High-DPI Vector Print
+       Institution: Botswana Accountancy College (BAC)
+       ========================================================================== */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+
+    :root {
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      /* Header Colors */
+      --header-bg: #092c63;
+      --header-gradient: linear-gradient(135deg, #071f45 0%, #0c3374 50%, #0d3d8a 100%);
+      --header-text: #ffffff;
+
+      /* Card 1: Intro (Soft Blue) */
+      --c1-border: #bcd5f2;
+      --c1-banner-bg: #d7e8fa;
+      --c1-num-bg: #0c4383;
+      --c1-title: #0c4383;
+      --c1-card-bg: #f4f8fe;
+
+      /* Card 2: Aim & Objectives (Soft Green) */
+      --c2-border: #b8e4c5;
+      --c2-banner-bg: #d2f0db;
+      --c2-num-bg: #1c6d3b;
+      --c2-title: #1c6d3b;
+      --c2-card-bg: #f3fbf6;
+
+      /* Card 3: Methodology (Soft Orange/Peach) */
+      --c3-border: #f8cfb2;
+      --c3-banner-bg: #fde4d3;
+      --c3-num-bg: #bd5216;
+      --c3-title: #bd5216;
+      --c3-card-bg: #fef8f4;
+
+      /* Card 4: Results & Discussion (Soft Purple/Lavender) */
+      --c4-border: #d7c5f4;
+      --c4-banner-bg: #ecddfd;
+      --c4-num-bg: #6338a8;
+      --c4-title: #6338a8;
+      --c4-card-bg: #f8f4fd;
+
+      /* Card 5: Conclusion (Soft Pink/Red) */
+      --c5-border: #f7bebe;
+      --c5-banner-bg: #fcd9d9;
+      --c5-num-bg: #ba2828;
+      --c5-title: #ba2828;
+      --c5-card-bg: #fef5f5;
+
+      /* Card 6: Recommendations (Soft Cyan/Teal) */
+      --c6-border: #a4e6df;
+      --c6-banner-bg: #d0f3ef;
+      --c6-num-bg: #15746d;
+      --c6-title: #15746d;
+      --c6-card-bg: #f1faf9;
+
+      /* Footer */
+      --footer-bg: #e8ecf2;
+      --footer-border: #cbd5e1;
+      --footer-text: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: #334155;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
+      margin: 0;
+      padding: 0;
+      overflow-x: auto;
+    }
+
+    /* Screen UI Toolbar */
+    .screen-toolbar {
+      position: sticky;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
+      padding: 8px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 1000;
+      color: #f8fafc;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .toolbar-title {
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-a3 {
+      background: #0284c7;
+      color: #ffffff;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-print {
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      padding: 7px 16px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+
+    .btn-print:hover {
+      background: #0369a1;
+    }
+
+    .btn-toggle-fit {
+      background: #334155;
+      color: #f1f5f9;
+      border: 1px solid #475569;
+      padding: 6px 12px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .print-tip {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .print-tip b {
+      color: #38bdf8;
+    }
+
+    /* Outer Wrapper for scaling */
+    .screen-stage {
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+      min-height: calc(100vh - 50px);
+    }
+
+    #posterWrapper {
+      transform-origin: top center;
+      transition: transform 0.2s ease;
+    }
+
+    /* ==========================================================================
+       CANVAS DEFINITION: EXACT A3 LANDSCAPE (420mm x 297mm)
+       ========================================================================== */
+    .poster-canvas {
+      width: 420mm;
+      height: 297mm;
+      max-width: 420mm;
+      max-height: 297mm;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    /* ==========================================================================
+       HEADER SECTION (Height: 36mm)
+       ========================================================================== */
+    .poster-header {
+      height: 36mm;
+      background: var(--header-gradient);
+      color: var(--header-text);
+      padding: 1.5mm 10mm;
+      position: relative;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 6mm;
+      text-align: center;
+      border-bottom: 2.5px solid #0284c7;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    /* Decorative Vector Accents (Contained in Header) */
+    .header-geo-left {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 60mm;
+      height: 36mm;
+      pointer-events: none;
+      opacity: 0.9;
+      z-index: 0;
+    }
+
+    .header-mesh-right {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 65mm;
+      height: 36mm;
+      pointer-events: none;
+      opacity: 0.5;
+      z-index: 0;
+    }
+
+    .poster-brand-lockup {
+      position: relative;
+      z-index: 1;
+      flex: 0 0 31mm;
+      width: 31mm;
+      height: 31mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.97);
+      border: 0.6px solid rgba(255, 255, 255, 0.9);
+      border-radius: 2.5mm;
+      padding: 1mm;
+      box-shadow: 0 1.5mm 4mm rgba(2, 8, 23, 0.2);
+    }
+
+    .poster-brand-lockup img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .poster-header-copy {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      min-width: 0;
+      padding: 0 7mm 0 0;
+    }
+
+    .poster-title {
+      font-size: 16pt;
+      font-weight: 900;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      line-height: 1.15;
+      margin-bottom: 1mm;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      max-width: 100%;
+    }
+
+    .poster-authors {
+      font-size: 8.5pt;
+      font-weight: 500;
+      color: #e2e8f0;
+      margin-bottom: 0.7mm;
+      line-height: 1.2;
+    }
+
+    .poster-authors span {
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .poster-affiliation {
+      font-size: 8pt;
+      font-weight: 600;
+      color: #94a3b8;
+      letter-spacing: 0.2px;
+    }
+
+    .poster-affiliation b {
+      color: #cbd5e1;
+    }
+
+    /* ==========================================================================
+       MAIN CONTENT: 2-COLUMN GRID (Height: 236mm)
+       ========================================================================== */
+    .poster-body {
+      height: 236mm;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3mm;
+      padding: 2.5mm 4mm;
+      background: #f8fafc;
+      flex-shrink: 0;
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 3mm;
+      height: 100%;
+    }
+
+    /* Card Base Styling */
+    .poster-card {
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border-width: 1.2px;
+      border-style: solid;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    /* Card Header Banner */
+    .card-banner {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 1.6mm 3mm;
+      border-bottom: 1.2px solid transparent;
+      flex-shrink: 0;
+    }
+
+    .card-num {
+      width: 5mm;
+      height: 5mm;
+      border-radius: 50%;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7.5pt;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    .card-title {
+      font-size: 8.5pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .card-content {
+      padding: 1.8mm 3mm;
+      font-size: 7pt;
+      line-height: 1.32;
+      color: #1e293b;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 1.8mm;
+      overflow: visible;
+    }
+
+    /* Exact Card Color Tokens & Calibrated Millimeter Heights (Left Column: 77 + 103 + 48 = 228mm; Right Column: 62 + 126 + 40 = 228mm) */
+    .card-1 { border-color: var(--c1-border); background: var(--c1-card-bg); height: 77mm; }
+    .card-1 .card-banner { background: var(--c1-banner-bg); border-color: var(--c1-border); }
+    .card-1 .card-num { background: var(--c1-num-bg); }
+    .card-1 .card-title { color: var(--c1-title); }
+
+    .card-2 { border-color: var(--c2-border); background: var(--c2-card-bg); height: 62mm; }
+    .card-2 .card-banner { background: var(--c2-banner-bg); border-color: var(--c2-border); }
+    .card-2 .card-num { background: var(--c2-num-bg); }
+    .card-2 .card-title { color: var(--c2-title); }
+
+    .card-3 { border-color: var(--c3-border); background: var(--c3-card-bg); height: 103mm; }
+    .card-3 .card-banner { background: var(--c3-banner-bg); border-color: var(--c3-border); }
+    .card-3 .card-num { background: var(--c3-num-bg); }
+    .card-3 .card-title { color: var(--c3-title); }
+
+    .card-4 { border-color: var(--c4-border); background: var(--c4-card-bg); height: 126mm; }
+    .card-4 .card-banner { background: var(--c4-banner-bg); border-color: var(--c4-border); }
+    .card-4 .card-num { background: var(--c4-num-bg); }
+    .card-4 .card-title { color: var(--c4-title); }
+
+    .card-5 { border-color: var(--c5-border); background: var(--c5-card-bg); height: 48mm; }
+    .card-5 .card-banner { background: var(--c5-banner-bg); border-color: var(--c5-border); }
+    .card-5 .card-num { background: var(--c5-num-bg); }
+    .card-5 .card-title { color: var(--c5-title); }
+
+    .card-6 { border-color: var(--c6-border); background: var(--c6-card-bg); height: 40mm; }
+    .card-6 .card-banner { background: var(--c6-banner-bg); border-color: var(--c6-border); }
+    .card-6 .card-num { background: var(--c6-num-bg); }
+    .card-6 .card-title { color: var(--c6-title); }
+
+    /* Typography & Utilities */
+    .section-subtitle {
+      font-weight: 700;
+      font-size: 7.6pt;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      margin-bottom: 0.5mm;
+    }
+
+    .bullet-list {
+      list-style: none;
+      padding-left: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1mm;
+    }
+
+    .bullet-list li {
+      position: relative;
+      padding-left: 9px;
+    }
+
+    .bullet-list li::before {
+      content: "•";
+      position: absolute;
+      left: 1px;
+      top: -0.5px;
+      font-size: 8.5pt;
+      font-weight: bold;
+      color: #475569;
+    }
+
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 3mm;
+      align-items: center;
+    }
+
+    .gaps-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5mm;
+      margin-top: 1mm;
+    }
+
+    .gap-chip {
+      background: #ffffff;
+      border: 0.8px solid #bfdbfe;
+      border-radius: 3.5px;
+      padding: 1.2mm 2mm;
+    }
+
+    .gap-chip b {
+      color: #1e40af;
+      font-size: 6.8pt;
+      display: block;
+    }
+
+    .gap-chip span {
+      font-size: 6.2pt;
+      color: #475569;
+      line-height: 1.2;
+      display: block;
+    }
+
+    /* Horizontal Process Flow (Card 3) */
+    .pipeline-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2mm;
+      padding: 1.5mm 2.5mm;
+      background: #ffffff;
+      border: 0.8px dashed #fbd38d;
+      border-radius: 4px;
+      margin: 1mm 0;
+    }
+
+    .pipe-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      flex: 1;
+    }
+
+    .pipe-ico {
+      width: 18px;
+      height: 18px;
+      border-radius: 3.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 9.5px;
+      margin-bottom: 1px;
+    }
+
+    .pipe-node:nth-child(1) .pipe-ico { background: #ef4444; }
+    .pipe-node:nth-child(3) .pipe-ico { background: #3b82f6; }
+    .pipe-node:nth-child(5) .pipe-ico { background: #8b5cf6; }
+    .pipe-node:nth-child(7) .pipe-ico { background: #10b981; }
+
+    .pipe-txt {
+      font-size: 6.2pt;
+      font-weight: 700;
+      color: #334155;
+      line-height: 1.1;
+    }
+
+    .pipe-arr {
+      color: #94a3b8;
+      font-size: 9pt;
+      font-weight: bold;
+    }
+
+    /* Compact Tables */
+    .compact-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 6.5pt;
+      background: #ffffff;
+      border-radius: 3.5px;
+      overflow: hidden;
+      border: 0.8px solid #e2e8f0;
+    }
+
+    .compact-table th {
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 700;
+      text-align: left;
+      padding: 1mm 1.5mm;
+      border-bottom: 0.8px solid #cbd5e1;
+    }
+
+    .compact-table td {
+      padding: 0.8mm 1.5mm;
+      border-bottom: 0.6px solid #f1f5f9;
+      color: #1e293b;
+      line-height: 1.25;
+    }
+
+    .compact-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .compact-table code {
+      font-family: var(--font-mono);
+      font-size: 6.1pt;
+      background: #f3f4f6;
+      padding: 0.5px 2px;
+      border-radius: 2px;
+      color: #0369a1;
+    }
+
+    /* Results Row (Card 4) */
+    .results-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2mm;
+      margin-top: 1mm;
+    }
+
+    .mockup-card {
+      background: #ffffff;
+      border: 0.8px solid #e9d5ff;
+      border-radius: 3.5px;
+      padding: 1.5mm 2mm;
+      display: flex;
+      flex-direction: column;
+      gap: 1mm;
+    }
+
+    .mock-hdr {
+      font-size: 6.8pt;
+      font-weight: 700;
+      color: #6b21a8;
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 0.6px solid #f3e8ff;
+      padding-bottom: 0.5mm;
+    }
+
+    .hud-badge {
+      display: inline-block;
+      padding: 1px 3.5px;
+      border-radius: 2.5px;
+      font-weight: 800;
+      font-size: 6pt;
+      text-transform: uppercase;
+    }
+    .hud-slow { background: #fee2e2; color: #991b1b; }
+    .hud-speed { background: #dcfce7; color: #166534; }
+    .hud-maintain { background: #e0f2fe; color: #075985; }
+
+    /* ==========================================================================
+       FOOTER SECTION (Height: 27mm)
+       ========================================================================== */
+    .poster-footer {
+      height: 25mm;
+      background: var(--footer-bg);
+      border-top: 1.5px solid var(--footer-border);
+      padding: 2mm 10mm;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 5mm;
+      flex-shrink: 0;
+    }
+
+    .footer-left {
+      flex: 1;
+      display: flex;
+      gap: 3mm;
+      align-items: flex-start;
+    }
+
+    .footer-ico {
+      font-size: 13pt;
+      margin-top: 0.5mm;
+      color: #475569;
+    }
+
+    .footer-content {
+      flex: 1;
+    }
+
+    .footer-title {
+      font-size: 7.5pt;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 0.8mm;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .footer-refs-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5mm 4mm;
+      font-size: 5.8pt;
+      line-height: 1.25;
+      color: #475569;
+    }
+
+    .footer-qr-side {
+      display: flex;
+      align-items: center;
+      gap: 2.5mm;
+      padding-left: 4mm;
+      border-left: 1.2px solid #cbd5e1;
+      flex-shrink: 0;
+    }
+
+    .qr-frame {
+      width: 17mm;
+      height: 17mm;
+      background: #ffffff;
+      border: 0.8px solid #94a3b8;
+      border-radius: 3px;
+      padding: 1mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qr-frame svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .qr-desc {
+      font-size: 6.4pt;
+      color: #475569;
+      line-height: 1.2;
+    }
+    .qr-desc b {
+      color: #0f172a;
+      display: block;
+      font-size: 7pt;
+    }
+
+    /* ==========================================================================
+       PRINT SPECIFICATION: EXACT 1-PAGE A3 LANDSCAPE
+       ========================================================================== */
+    @page {
+      size: 420mm 297mm;
+      margin: 0mm;
+    }
+
+    @media print {
+      html, body {
+        width: 420mm !important;
+        height: 297mm !important;
+        max-width: 420mm !important;
+        max-height: 297mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        background: #ffffff !important;
+      }
+      .screen-toolbar {
+        display: none !important;
+      }
+      .screen-stage {
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+      }
+      #posterWrapper {
+        transform: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .poster-canvas {
+        width: 420mm !important;
+        height: 297mm !important;
+        max-width: 420mm !important;
+        max-height: 297mm !important;
+        box-shadow: none !important;
+        page-break-after: avoid !important;
+        page-break-before: avoid !important;
+        page-break-inside: avoid !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen-Only Floating Toolbar -->
+  <header class="screen-toolbar">
+    <div class="toolbar-title">
+      <span class="badge-a3">A3 LANDSCAPE</span>
+      <span>SmartTransit Poster — BAC Capstone Defense</span>
+    </div>
+    <div class="print-tip">
+      Print Settings: <b>Destination: Save as PDF</b> | <b>Paper: A3</b> | <b>Layout: Landscape</b> | <b>Margins: None</b> | <b>Background graphics: Checked</b>
+    </div>
+    <div class="toolbar-actions">
+      <button class="btn-toggle-fit" onclick="toggleFit()">Toggle Zoom (100% / Fit)</button>
+      <button class="btn-print" onclick="window.print()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+        Download / Print PDF (A3)
+      </button>
+    </div>
+  </header>
+
+  <!-- Screen Stage with Dynamic Scaling -->
+  <div class="screen-stage">
+    <div id="posterWrapper">
+
+      <!-- THE A3 POSTER CANVAS (420mm x 297mm) -->
+      <article class="poster-canvas" id="posterCanvas">
+
+        <!-- HEADER BLOCK (38mm) -->
+        <header class="poster-header">
+          <div class="poster-brand-lockup">
+            <img src="../dashboard/SmartTransit%20logo.svg" alt="Smart Transit full logo and tagline" />
+          </div>
+          <!-- Left Vector Geometric Accents -->
+          <svg class="header-geo-left" viewBox="0 0 240 150" fill="none">
+            <polygon points="0,0 100,0 55,80 0,60" fill="#0284c7" opacity="0.65" />
+            <polygon points="55,80 150,25 110,135 15,115" fill="#38bdf8" opacity="0.4" />
+            <polygon points="120,0 220,0 170,90 75,60" fill="#0369a1" opacity="0.45" />
+          </svg>
+
+          <!-- Right Vector Network Topology -->
+          <svg class="header-mesh-right" viewBox="0 0 260 150" stroke="#38bdf8" stroke-width="1.2" fill="none">
+            <circle cx="50" cy="45" r="4.5" fill="#38bdf8" />
+            <circle cx="140" cy="30" r="4.5" fill="#38bdf8" />
+            <circle cx="210" cy="65" r="4.5" fill="#38bdf8" />
+            <circle cx="110" cy="110" r="4.5" fill="#38bdf8" />
+            <circle cx="185" cy="120" r="4.5" fill="#38bdf8" />
+            <line x1="50" y1="45" x2="140" y2="30" />
+            <line x1="140" y1="30" x2="210" y2="65" />
+            <line x1="50" y1="45" x2="110" y2="110" />
+            <line x1="140" y1="30" x2="110" y2="110" />
+            <line x1="210" y1="65" x2="185" y2="120" />
+            <line x1="110" y1="110" x2="185" y2="120" />
+          </svg>
+
+          <div class="poster-header-copy">
+          <h1 class="poster-title">A Real-Time Multi-Modal Intelligent Transport System for Gaborone</h1>
+          <div class="poster-authors">
+            <b>Group Members:</b> 
+            Tadiwanashe Jedidiah Musikavanhu <span>(cse24-012)</span> &nbsp;|&nbsp; 
+            Felix Kabira Kagwi <span>(cse24-106)</span> &nbsp;|&nbsp; 
+            Arabang B Mothofela <span>(cse24-102)</span> &nbsp;|&nbsp; 
+            Leon Green <span>(cse24-126)</span>
+          </div>
+          <div class="poster-affiliation">
+            Supervisor: <b>Resego Tom Rabalone</b> &nbsp;•&nbsp; 
+            School of Computing & Information Systems &nbsp;•&nbsp; 
+            <b>Botswana Accountancy College (BAC)</b>
+          </div>
+          </div>
+        </header>
+
+        <!-- POSTER BODY: 2 EQUAL COLUMNS (232mm) -->
+        <main class="poster-body">
+
+          <!-- LEFT COLUMN (BOXES 1, 3, 5) -->
+          <div class="column">
+
+            <!-- 1. INTRODUCTION & PROBLEM STATEMENT (68mm) -->
+            <section class="poster-card card-1">
+              <div class="card-banner">
+                <div class="card-num">1</div>
+                <h2 class="card-title">Introduction & Problem Statement</h2>
+              </div>
+              <div class="card-content">
+                <div class="grid-2col">
+                  <div>
+                    <div class="section-subtitle">Urban Paratransit Context</div>
+                    <p>Informal and semi-formal paratransit carries <b>70%–90%</b> of motorized passenger trips in developing African cities (Cervero, 2000). Greater Gaborone relies on three uncoordinated modes: combis (minibuses), standard/special taxis, and intercity buses (Lusenge, 2020).</p>
+                    <div class="section-subtitle" style="margin-top: 1.5mm;">Problem Statement</div>
+                    <p>Decentralized operation causes severe <b>vehicle bunching</b> (long service gaps followed by clustered arrivals), unpredictable commuter waiting times, arbitrary off-meter taxi fares, and fragmented transfers between suburban origins and arterial corridors.</p>
+                  </div>
+                  <!-- SVG Transit Cluster Illustration -->
+                  <div style="text-align: center; background: #ffffff; border: 0.8px solid #bfdbfe; border-radius: 4px; padding: 2mm;">
+                    <svg width="78" height="52" viewBox="0 0 100 70" fill="none">
+                      <circle cx="50" cy="35" r="26" stroke="#0284c7" stroke-width="1.8" stroke-dasharray="3 2" fill="#eff6ff"/>
+                      <rect x="42" y="20" width="16" height="11" rx="2" fill="#0284c7"/>
+                      <circle cx="68" cy="42" r="14" fill="#ffffff" stroke="#ef4444" stroke-width="2"/>
+                      <line x1="78" y1="52" x2="90" y2="64" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
+                      <text x="68" y="46" font-size="11" font-weight="bold" fill="#ef4444" text-anchor="middle">?</text>
+                    </svg>
+                    <div style="font-size: 6.2pt; font-weight: 700; color: #1e3a8a;">Gaborone Transit Corridors</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="section-subtitle">Literature Review & Identified Research Gaps</div>
+                  <div class="gaps-grid">
+                    <div class="gap-chip">
+                      <b>1. Passive Tracking Fallacy</b>
+                      <span>Apps display icons on maps but lack active headway spacing control loops (Daganzo, 2009).</span>
+                    </div>
+                    <div class="gap-chip">
+                      <b>2. First/Last-Mile Void</b>
+                      <span>Suburban commuters lack coordinated links between on-demand cabs and arterial combi routes.</span>
+                    </div>
+                    <div class="gap-chip">
+                      <b>3. Static GTFS Mismatch</b>
+                      <span>Fixed schedules fail in paratransit operating on "depart-when-full" occupant demand.</span>
+                    </div>
+                    <div class="gap-chip">
+                      <b>4. Zero Regulatory Observability</b>
+                      <span>DRTS regulators lack live telematics to audit route compliance, fares, and bottleneck patterns.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 3. METHODOLOGY & ARCHITECTURE (108mm) -->
+            <section class="poster-card card-3">
+              <div class="card-banner">
+                <div class="card-num">3</div>
+                <h2 class="card-title">Methodology & System Architecture</h2>
+              </div>
+              <div class="card-content">
+                <div class="grid-2col">
+                  <ul class="bullet-list">
+                    <li><b>Research Philosophy:</b> Pragmatist mixed-methods combining quantitative GPS telemetry/wait metrics with qualitative driver compliance and combi association focus groups.</li>
+                    <li><b>Agile Lifecycle:</b> 7 sprints over 12 weeks: Research &rarr; UI/UX &rarr; Core Telemetry &rarr; AI/Graph Routing &rarr; Integration &rarr; Pilot UAT &rarr; Optimization.</li>
+                  </ul>
+                  <div style="background: #ffffff; border: 0.8px solid #fed7aa; border-radius: 3.5px; padding: 1.5mm 2.5mm;">
+                    <div style="font-size: 6.8pt; font-weight: 700; color: #9a3412;">Tech Stack Architecture</div>
+                    <div style="font-size: 6.2pt; color: #475569; line-height: 1.25;">
+                      • <b>Mobile:</b> Flutter (Passenger & Driver HUD)<br>
+                      • <b>Gateway:</b> FastAPI + Python Socket.IO<br>
+                      • <b>Core Logic:</b> NetworkX, NumPy, GeoPy<br>
+                      • <b>Database:</b> PostgreSQL + Supabase / Asyncpg<br>
+                      • <b>Web Ops:</b> React + Vite + Leaflet Desktop
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 4-Stage Process Flow Matching Template -->
+                <div class="pipeline-row">
+                  <div class="pipe-node">
+                    <div class="pipe-ico">📡</div>
+                    <div class="pipe-txt">1. Data Collection<br><span style="font-size:5.5pt;color:#64748b;">1Hz GPS Telemetry</span></div>
+                  </div>
+                  <div class="pipe-arr">&rarr;</div>
+                  <div class="pipe-node">
+                    <div class="pipe-ico">⚙️</div>
+                    <div class="pipe-txt">2. Stream Processing<br><span style="font-size:5.5pt;color:#64748b;">FastAPI Socket Gateway</span></div>
+                  </div>
+                  <div class="pipe-arr">&rarr;</div>
+                  <div class="pipe-node">
+                    <div class="pipe-ico">🧠</div>
+                    <div class="pipe-txt">3. Core Algorithms<br><span style="font-size:5.5pt;color:#64748b;">Headway & Graph AI</span></div>
+                  </div>
+                  <div class="pipe-arr">&rarr;</div>
+                  <div class="pipe-node">
+                    <div class="pipe-ico">📊</div>
+                    <div class="pipe-txt">4. System Evaluation<br><span style="font-size:5.5pt;color:#64748b;">UAT & Telematics Audit</span></div>
+                  </div>
+                </div>
+
+                <!-- Four-Tier Layered Architecture Spec -->
+                <div style="background: #ffffff; border: 0.8px solid #fed7aa; border-radius: 3.5px; padding: 1.5mm 2.5mm;">
+                  <div style="font-size: 6.8pt; font-weight: 700; color: #9a3412; margin-bottom: 1mm;">Four-Tier Layered & Event-Driven Architecture</div>
+                  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2mm; font-size: 6.2pt; text-align: center;">
+                    <div style="background: #ffedd5; padding: 1mm; border-radius: 2.5px;"><b>Presentation</b><br>Flutter + React Leaflet</div>
+                    <div style="background: #ffedd5; padding: 1mm; border-radius: 2.5px;"><b>Gateway Layer</b><br>FastAPI + Socket.IO</div>
+                    <div style="background: #ffedd5; padding: 1mm; border-radius: 2.5px;"><b>Service Layer</b><br>geo, headway, fare, AI</div>
+                    <div style="background: #ffedd5; padding: 1mm; border-radius: 2.5px;"><b>Persistence</b><br>Postgres + Redis Cache</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 5. CONCLUSION (48mm) -->
+            <section class="poster-card card-5">
+              <div class="card-banner">
+                <div class="card-num">5</div>
+                <h2 class="card-title">Conclusion & Academic Contribution</h2>
+              </div>
+              <div class="card-content">
+                <div style="display: flex; gap: 3mm; align-items: center;">
+                  <!-- Document Icon -->
+                  <div style="background: #ffffff; border: 0.8px solid #fca5a5; border-radius: 4px; padding: 2mm; text-align: center; flex-shrink: 0;">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                      <line x1="16" y1="13" x2="8" y2="13"/>
+                      <line x1="16" y1="17" x2="8" y2="17"/>
+                      <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                  </div>
+                  <ul class="bullet-list" style="flex: 1;">
+                    <li><b>Active Coordination over Passive Tracking:</b> SmartTransit demonstrates that African paratransit can achieve service regularity without rigid, brittle timetables by deploying real-time inter-vehicle headway control and spatial dispatch.</li>
+                    <li><b>Turnkey Engineering Contribution:</b> Delivered an event-driven architecture with 6 mathematically formulated algorithms, transparent dual-rate DRTS fare enforcement, and a desktop macro-regulatory telemetry hub.</li>
+                    <li><b>Public Transit Parity:</b> Effectively bridges first/last-mile suburban connectivity by synchronizing local on-demand cabs with scheduled intercity coach services.</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+          </div>
+
+          <!-- RIGHT COLUMN (BOXES 2, 4, 6) -->
+          <div class="column">
+
+            <!-- 2. AIM & OBJECTIVES (60mm) -->
+            <section class="poster-card card-2">
+              <div class="card-banner">
+                <div class="card-num">2</div>
+                <h2 class="card-title">Aim & Research Objectives</h2>
+              </div>
+              <div class="card-content">
+                <div class="grid-2col">
+                  <div>
+                    <div class="section-subtitle" style="color: #14532d;">Project Aim</div>
+                    <p>To design, develop, and evaluate <b>SmartTransit</b>, a real-time multi-modal Intelligent Transportation System (ITS) that actively coordinates Gaborone's taxis, combis, and intercity buses rather than merely displaying them passively.</p>
+                  </div>
+                  <!-- Target Icon -->
+                  <div style="text-align: center; background: #ffffff; border: 0.8px solid #bbf7d0; border-radius: 4px; padding: 1.5mm;">
+                    <svg width="44" height="44" viewBox="0 0 60 60" fill="none">
+                      <circle cx="30" cy="30" r="26" stroke="#22c55e" stroke-width="2.2" fill="#f0fdf4"/>
+                      <circle cx="30" cy="30" r="18" stroke="#16a34a" stroke-width="1.8"/>
+                      <circle cx="30" cy="30" r="10" stroke="#15803d" stroke-width="1.8"/>
+                      <circle cx="30" cy="30" r="3" fill="#15803d"/>
+                      <line x1="44" y1="16" x2="31" y2="29" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"/>
+                    </svg>
+                    <div style="font-size: 6.2pt; font-weight: 700; color: #166534;">Targeted Outcomes</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="section-subtitle" style="color: #14532d;">Core Engineering Objectives</div>
+                  <ul class="bullet-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8mm 2mm;">
+                    <li><b>O1. Real-Time Telemetry:</b> Stream 1 Hz vehicle GPS telemetry over persistent WebSockets.</li>
+                    <li><b>O2. Spatial Taxi Dispatch:</b> Match commuters to the 5 nearest special cabs (k=5) within 500 ms.</li>
+                    <li><b>O3. Headway Regulation:</b> Detect corridor bunching and stream in-cab pacing advisories.</li>
+                    <li><b>O4. Automated Geofencing:</b> Detect boarding/alighting via distance and speed co-movement.</li>
+                    <li><b>O5. Multi-Modal Planning:</b> Synthesize taxi-combi-bus routes with backward buffers.</li>
+                    <li><b>O6. Regulatory Telematics:</b> Provide an operational React dashboard with 5 export reports.</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <!-- 4. RESULTS, ALGORITHMS & DISCUSSION (120mm) -->
+            <section class="poster-card card-4">
+              <div class="card-banner">
+                <div class="card-num">4</div>
+                <h2 class="card-title">Results, Core Algorithms & Evaluation</h2>
+              </div>
+              <div class="card-content">
+                <!-- Algorithm Formulations Table -->
+                <table class="compact-table">
+                  <thead>
+                    <tr>
+                      <th>Algorithm</th>
+                      <th>Mathematical Formulation / Rule</th>
+                      <th>Key Parameter / Target</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><b>Haversine Distance</b></td>
+                      <td><code>d = 2R · atan2(√a, √(1-a))</code></td>
+                      <td>R = 6,371 km; &lt;1 ms; &lt;0.3% error</td>
+                    </tr>
+                    <tr>
+                      <td><b>Spatial k-NN Dispatch</b></td>
+                      <td><code>argmin_{D' ⊆ D_avail, |D'|=k} ∑ H(p_req, coords(d_i))</code></td>
+                      <td>k = 5 nearest cabs; &lt;500 ms dispatch</td>
+                    </tr>
+                    <tr>
+                      <td><b>Headway Regulation</b></td>
+                      <td><code>Δd &lt; 200m &rarr; SLOW_DOWN; Δd &gt; 800m &rarr; SPEED_UP</code></td>
+                      <td>200m / 800m thresholds; 1s refresh</td>
+                    </tr>
+                    <tr>
+                      <td><b>Speed-Floored ETA</b></td>
+                      <td><code>v_eff = max(5.0 m/s, v_inst); τ_ETA = ⌊d / v_eff⌋</code></td>
+                      <td>18 km/h floor; prevents division by zero</td>
+                    </tr>
+                    <tr>
+                      <td><b>Co-Movement Geofence</b></td>
+                      <td><code>ON_BOARD: d ≤ 20m ∧ v &gt; 2m/s | COMPLETED: d &gt; 60m</code></td>
+                      <td>Hands-free ticketing; eliminates tap-in</td>
+                    </tr>
+                    <tr>
+                      <td><b>Multi-Modal AI Graph</b></td>
+                      <td><code>T_arr^combi = T_dep^bus - 15min; C(e)=ατ + βF + γPnl</code></td>
+                      <td>15-min transfer buffer; plan &lt;350 ms</td>
+                    </tr>
+                    <tr>
+                      <td><b>Piecewise Tariff Engine</b></td>
+                      <td><code>Combi: BWP 9.00 | Standard taxi: BWP 10.00 | Special: max(12, 10 + 2.5·max(0,d−1) + 0.3·max(0,t−3))</code></td>
+                      <td>Special-cab estimate: BWP 12 minimum; d in km, t in min</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <!-- Results Showcase: Evaluation Metrics + Headway Logic -->
+                <div class="results-row">
+                  <!-- Evaluation Metrics Table -->
+                  <div class="mockup-card">
+                    <div class="mock-hdr">
+                      <span>SYSTEM EVALUATION TARGETS</span>
+                      <span style="color:#15803d;">PILOT (N=15)</span>
+                    </div>
+                    <table class="compact-table" style="margin-top: 0.5mm;">
+                      <tr><td>App Response Latency</td><td><b>&lt; 2.0 s</b> (Observed: 340 ms)</td></tr>
+                      <tr><td>GPS Position Precision</td><td><b>Within 10 m</b> (Native Fused)</td></tr>
+                      <tr><td>Corridor Wait Reduction</td><td><b>25% improvement</b> (Target)</td></tr>
+                      <tr><td>AI Multi-Modal Success</td><td><b>&gt; 95%</b> feasible routes</td></tr>
+                      <tr><td>User Acceptance Score</td><td><b>&ge; 4.0 / 5.0</b> (UAT Survey)</td></tr>
+                    </table>
+                  </div>
+
+                  <!-- Headway pacing logic illustration (not live telemetry) -->
+                  <div class="mockup-card" style="background: #0f172a; color: #f8fafc; border-color: #334155;">
+                    <div class="mock-hdr" style="color: #38bdf8; border-color: #1e293b;">
+                      <span>HEADWAY PACING LOGIC</span>
+                      <span style="color:#fbbf24;">ILLUSTRATIVE</span>
+                    </div>
+                    <div style="margin-top: 1.5mm; padding: 1.5mm 2mm; background: #1e293b; border-radius: 3.5px;">
+                      <div style="display:flex; align-items:center; gap:1mm; font-size:5.2pt; color:#cbd5e1;">
+                        <span>Vehicle ahead</span><span style="flex:1; border-top:1px dashed #64748b;"></span><b style="color:#fbbf24;">&lt;200 m</b><span style="flex:1; border-top:1px dashed #64748b;"></span><span>You</span>
+                      </div>
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5mm;">
+                        <span style="font-size:5.2pt; color:#94a3b8;">Close gap</span>
+                        <span class="hud-badge hud-slow">SLOW DOWN</span>
+                        <span style="font-size:5.2pt; color:#94a3b8;">Wide gap &gt;800 m: SPEED UP</span>
+                      </div>
+                      <div style="font-size:4.9pt; color:#94a3b8; margin-top:1mm;">Rule example from the stated thresholds; no live corridor map or fleet count is shown.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <p style="font-size: 6.4pt; line-height: 1.35; color: #475569; margin-top: 1.2mm;">
+                  <b>Discussion:</b> The algorithms address different failure points in an irregular, demand-led network. Haversine distance and spatial k-NN support nearby-vehicle matching; the headway rule turns GPS updates into pacing advice intended to reduce bunching; and the speed floor keeps ETA estimates finite when traffic slows. Co-movement geofencing can record boarding and alighting without a manual tap, while the multi-modal graph applies a transfer buffer when joining combi and bus legs. The evaluation therefore combines a measured API response (340 ms) with design targets for GPS precision, waiting-time reduction, route feasibility and user acceptance. These targets need validation against a larger field sample before they can be treated as demonstrated service improvements. Together, the results show a technically integrated prototype; they do not yet establish network-wide impact.
+                </p>
+              </div>
+            </section>
+
+            <!-- 6. RECOMMENDATIONS & FUTURE WORK (44mm) -->
+            <section class="poster-card card-6">
+              <div class="card-banner">
+                <div class="card-num">6</div>
+                <h2 class="card-title">Recommendations & Future Work</h2>
+              </div>
+              <div class="card-content">
+                <div style="display: flex; gap: 3mm; align-items: center;">
+                  <!-- Lightbulb Icon -->
+                  <div style="background: #ffffff; border: 0.8px solid #99f6e4; border-radius: 4px; padding: 1.5mm; text-align: center; flex-shrink: 0;">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2">
+                      <path d="M9 18h6"/>
+                      <path d="M10 22h4"/>
+                      <path d="M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6h8c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"/>
+                    </svg>
+                  </div>
+                  <ul class="bullet-list" style="flex: 1;">
+                    <li><b>Policy Recommendations:</b> Deploy in-cab pacing tablets with local Combi Associations; utilize fleet telematic logs for municipal route restructuring and congestion pricing.</li>
+                    <li><b>Study Limitations:</b> 12-week prototype timeframe; geographic focus on Greater Gaborone; pilot UAT limited to 10–15 drivers and commuters; reliance on 3G/4G cellular coverage.</li>
+                    <li><b>Future Directions:</b> Integrate Orange Money / SmarTeam cashless payments; develop BLE offline mesh sync for dead-zones; scale graph routing across SADC corridors.</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+          </div>
+
+        </main>
+
+        <!-- FOOTER BLOCK: REFERENCES & QR CODE (27mm) -->
+        <footer class="poster-footer">
+          <div class="footer-left">
+            <div class="footer-ico">📚</div>
+            <div class="footer-content">
+              <div class="footer-title">References (Selected Literature)</div>
+              <div class="footer-refs-grid">
+                <div>• Bareth, G. & Kothari, H. (2015). Smart automated fare collection. <i>Procedia Comp. Sci.</i>, 57.</div>
+                <div>• Bast, H. et al. (2016). Route planning in transportation networks. <i>Algorithm Eng.</i>, LNCS 9220.</div>
+                <div>• Cervero, R. (2000). <i>Informal Transport in Developing World</i>. UN-Habitat, Nairobi.</div>
+                <div>• Daganzo, C. F. (2009). Headway-based approach to bus bunching. <i>Transp. Res. B</i>, 43(8).</div>
+                <div>• Delling, D. et al. (2014). Round-based public transit routing. <i>Transp. Sci.</i>, 49(3).</div>
+                <div>• Lusenge, A. (2020). Alleviating urban traffic congestion: Gaborone City. <i>JESD</i>, 11(8).</div>
+                <div>• Newell, G. F. (1974). Control of pairing of vehicles on transit route. <i>Transp. Res.</i>, 8(3).</div>
+                <div>• Sinnott, R. W. (1984). Virtues of the Haversine. <i>Sky & Telescope</i>, 68(2).</div>
+                <div>• Tirachini, A. (2020). Ride-hailing, ride-pooling & transit: Review. <i>Transp. Res. A</i>, 135.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="footer-qr-side">
+            <a href="https://github.com/ABM-IX/Smart-Transit" target="_blank" title="Scan or Click to open GitHub Repo" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 2.5mm;">
+              <div class="qr-frame">
+                <!-- Verified Scannable QR Code: https://github.com/ABM-IX/Smart-Transit -->
+                <svg viewBox="0 0 232 232" width="100%" height="100%" shape-rendering="crispEdges">
+                  <rect fill="#ffffff" width="232" height="232" />
+                  <path fill="#091e42" d="M 0,0 l 8,0 0,8 -8,0 z M 8,0 l 8,0 0,8 -8,0 z M 16,0 l 8,0 0,8 -8,0 z M 24,0 l 8,0 0,8 -8,0 z M 32,0 l 8,0 0,8 -8,0 z M 40,0 l 8,0 0,8 -8,0 z M 48,0 l 8,0 0,8 -8,0 z M 80,0 l 8,0 0,8 -8,0 z M 96,0 l 8,0 0,8 -8,0 z M 104,0 l 8,0 0,8 -8,0 z M 120,0 l 8,0 0,8 -8,0 z M 128,0 l 8,0 0,8 -8,0 z M 136,0 l 8,0 0,8 -8,0 z M 152,0 l 8,0 0,8 -8,0 z M 176,0 l 8,0 0,8 -8,0 z M 184,0 l 8,0 0,8 -8,0 z M 192,0 l 8,0 0,8 -8,0 z M 200,0 l 8,0 0,8 -8,0 z M 208,0 l 8,0 0,8 -8,0 z M 216,0 l 8,0 0,8 -8,0 z M 224,0 l 8,0 0,8 -8,0 z M 0,8 l 8,0 0,8 -8,0 z M 48,8 l 8,0 0,8 -8,0 z M 64,8 l 8,0 0,8 -8,0 z M 80,8 l 8,0 0,8 -8,0 z M 104,8 l 8,0 0,8 -8,0 z M 112,8 l 8,0 0,8 -8,0 z M 128,8 l 8,0 0,8 -8,0 z M 152,8 l 8,0 0,8 -8,0 z M 176,8 l 8,0 0,8 -8,0 z M 224,8 l 8,0 0,8 -8,0 z M 0,16 l 8,0 0,8 -8,0 z M 16,16 l 8,0 0,8 -8,0 z M 24,16 l 8,0 0,8 -8,0 z M 32,16 l 8,0 0,8 -8,0 z M 48,16 l 8,0 0,8 -8,0 z M 96,16 l 8,0 0,8 -8,0 z M 120,16 l 8,0 0,8 -8,0 z M 128,16 l 8,0 0,8 -8,0 z M 176,16 l 8,0 0,8 -8,0 z M 192,16 l 8,0 0,8 -8,0 z M 200,16 l 8,0 0,8 -8,0 z M 208,16 l 8,0 0,8 -8,0 z M 224,16 l 8,0 0,8 -8,0 z M 0,24 l 8,0 0,8 -8,0 z M 16,24 l 8,0 0,8 -8,0 z M 24,24 l 8,0 0,8 -8,0 z M 32,24 l 8,0 0,8 -8,0 z M 48,24 l 8,0 0,8 -8,0 z M 64,24 l 8,0 0,8 -8,0 z M 72,24 l 8,0 0,8 -8,0 z M 80,24 l 8,0 0,8 -8,0 z M 96,24 l 8,0 0,8 -8,0 z M 104,24 l 8,0 0,8 -8,0 z M 112,24 l 8,0 0,8 -8,0 z M 144,24 l 8,0 0,8 -8,0 z M 176,24 l 8,0 0,8 -8,0 z M 192,24 l 8,0 0,8 -8,0 z M 200,24 l 8,0 0,8 -8,0 z M 208,24 l 8,0 0,8 -8,0 z M 224,24 l 8,0 0,8 -8,0 z M 0,32 l 8,0 0,8 -8,0 z M 16,32 l 8,0 0,8 -8,0 z M 24,32 l 8,0 0,8 -8,0 z M 32,32 l 8,0 0,8 -8,0 z M 48,32 l 8,0 0,8 -8,0 z M 72,32 l 8,0 0,8 -8,0 z M 104,32 l 8,0 0,8 -8,0 z M 136,32 l 8,0 0,8 -8,0 z M 160,32 l 8,0 0,8 -8,0 z M 176,32 l 8,0 0,8 -8,0 z M 192,32 l 8,0 0,8 -8,0 z M 200,32 l 8,0 0,8 -8,0 z M 208,32 l 8,0 0,8 -8,0 z M 224,32 l 8,0 0,8 -8,0 z M 0,40 l 8,0 0,8 -8,0 z M 48,40 l 8,0 0,8 -8,0 z M 64,40 l 8,0 0,8 -8,0 z M 72,40 l 8,0 0,8 -8,0 z M 88,40 l 8,0 0,8 -8,0 z M 96,40 l 8,0 0,8 -8,0 z M 112,40 l 8,0 0,8 -8,0 z M 120,40 l 8,0 0,8 -8,0 z M 136,40 l 8,0 0,8 -8,0 z M 160,40 l 8,0 0,8 -8,0 z M 176,40 l 8,0 0,8 -8,0 z M 224,40 l 8,0 0,8 -8,0 z M 0,48 l 8,0 0,8 -8,0 z M 8,48 l 8,0 0,8 -8,0 z M 16,48 l 8,0 0,8 -8,0 z M 24,48 l 8,0 0,8 -8,0 z M 32,48 l 8,0 0,8 -8,0 z M 40,48 l 8,0 0,8 -8,0 z M 48,48 l 8,0 0,8 -8,0 z M 64,48 l 8,0 0,8 -8,0 z M 80,48 l 8,0 0,8 -8,0 z M 96,48 l 8,0 0,8 -8,0 z M 112,48 l 8,0 0,8 -8,0 z M 128,48 l 8,0 0,8 -8,0 z M 144,48 l 8,0 0,8 -8,0 z M 160,48 l 8,0 0,8 -8,0 z M 176,48 l 8,0 0,8 -8,0 z M 184,48 l 8,0 0,8 -8,0 z M 192,48 l 8,0 0,8 -8,0 z M 200,48 l 8,0 0,8 -8,0 z M 208,48 l 8,0 0,8 -8,0 z M 216,48 l 8,0 0,8 -8,0 z M 224,48 l 8,0 0,8 -8,0 z M 72,56 l 8,0 0,8 -8,0 z M 80,56 l 8,0 0,8 -8,0 z M 88,56 l 8,0 0,8 -8,0 z M 112,56 l 8,0 0,8 -8,0 z M 120,56 l 8,0 0,8 -8,0 z M 128,56 l 8,0 0,8 -8,0 z M 136,56 l 8,0 0,8 -8,0 z M 144,56 l 8,0 0,8 -8,0 z M 0,64 l 8,0 0,8 -8,0 z M 8,64 l 8,0 0,8 -8,0 z M 16,64 l 8,0 0,8 -8,0 z M 24,64 l 8,0 0,8 -8,0 z M 32,64 l 8,0 0,8 -8,0 z M 48,64 l 8,0 0,8 -8,0 z M 56,64 l 8,0 0,8 -8,0 z M 64,64 l 8,0 0,8 -8,0 z M 72,64 l 8,0 0,8 -8,0 z M 88,64 l 8,0 0,8 -8,0 z M 104,64 l 8,0 0,8 -8,0 z M 136,64 l 8,0 0,8 -8,0 z M 152,64 l 8,0 0,8 -8,0 z M 160,64 l 8,0 0,8 -8,0 z M 168,64 l 8,0 0,8 -8,0 z M 184,64 l 8,0 0,8 -8,0 z M 200,64 l 8,0 0,8 -8,0 z M 216,64 l 8,0 0,8 -8,0 z M 16,72 l 8,0 0,8 -8,0 z M 24,72 l 8,0 0,8 -8,0 z M 40,72 l 8,0 0,8 -8,0 z M 64,72 l 8,0 0,8 -8,0 z M 80,72 l 8,0 0,8 -8,0 z M 96,72 l 8,0 0,8 -8,0 z M 104,72 l 8,0 0,8 -8,0 z M 120,72 l 8,0 0,8 -8,0 z M 128,72 l 8,0 0,8 -8,0 z M 136,72 l 8,0 0,8 -8,0 z M 176,72 l 8,0 0,8 -8,0 z M 184,72 l 8,0 0,8 -8,0 z M 192,72 l 8,0 0,8 -8,0 z M 224,72 l 8,0 0,8 -8,0 z M 8,80 l 8,0 0,8 -8,0 z M 24,80 l 8,0 0,8 -8,0 z M 32,80 l 8,0 0,8 -8,0 z M 40,80 l 8,0 0,8 -8,0 z M 48,80 l 8,0 0,8 -8,0 z M 64,80 l 8,0 0,8 -8,0 z M 80,80 l 8,0 0,8 -8,0 z M 104,80 l 8,0 0,8 -8,0 z M 112,80 l 8,0 0,8 -8,0 z M 120,80 l 8,0 0,8 -8,0 z M 152,80 l 8,0 0,8 -8,0 z M 160,80 l 8,0 0,8 -8,0 z M 192,80 l 8,0 0,8 -8,0 z M 24,88 l 8,0 0,8 -8,0 z M 40,88 l 8,0 0,8 -8,0 z M 64,88 l 8,0 0,8 -8,0 z M 96,88 l 8,0 0,8 -8,0 z M 104,88 l 8,0 0,8 -8,0 z M 128,88 l 8,0 0,8 -8,0 z M 144,88 l 8,0 0,8 -8,0 z M 152,88 l 8,0 0,8 -8,0 z M 160,88 l 8,0 0,8 -8,0 z M 200,88 l 8,0 0,8 -8,0 z M 216,88 l 8,0 0,8 -8,0 z M 8,96 l 8,0 0,8 -8,0 z M 16,96 l 8,0 0,8 -8,0 z M 24,96 l 8,0 0,8 -8,0 z M 40,96 l 8,0 0,8 -8,0 z M 48,96 l 8,0 0,8 -8,0 z M 64,96 l 8,0 0,8 -8,0 z M 72,96 l 8,0 0,8 -8,0 z M 80,96 l 8,0 0,8 -8,0 z M 96,96 l 8,0 0,8 -8,0 z M 136,96 l 8,0 0,8 -8,0 z M 144,96 l 8,0 0,8 -8,0 z M 152,96 l 8,0 0,8 -8,0 z M 200,96 l 8,0 0,8 -8,0 z M 208,96 l 8,0 0,8 -8,0 z M 8,104 l 8,0 0,8 -8,0 z M 24,104 l 8,0 0,8 -8,0 z M 64,104 l 8,0 0,8 -8,0 z M 120,104 l 8,0 0,8 -8,0 z M 136,104 l 8,0 0,8 -8,0 z M 160,104 l 8,0 0,8 -8,0 z M 168,104 l 8,0 0,8 -8,0 z M 176,104 l 8,0 0,8 -8,0 z M 184,104 l 8,0 0,8 -8,0 z M 192,104 l 8,0 0,8 -8,0 z M 224,104 l 8,0 0,8 -8,0 z M 0,112 l 8,0 0,8 -8,0 z M 8,112 l 8,0 0,8 -8,0 z M 24,112 l 8,0 0,8 -8,0 z M 48,112 l 8,0 0,8 -8,0 z M 64,112 l 8,0 0,8 -8,0 z M 80,112 l 8,0 0,8 -8,0 z M 88,112 l 8,0 0,8 -8,0 z M 96,112 l 8,0 0,8 -8,0 z M 144,112 l 8,0 0,8 -8,0 z M 168,112 l 8,0 0,8 -8,0 z M 192,112 l 8,0 0,8 -8,0 z M 200,112 l 8,0 0,8 -8,0 z M 208,112 l 8,0 0,8 -8,0 z M 16,120 l 8,0 0,8 -8,0 z M 24,120 l 8,0 0,8 -8,0 z M 56,120 l 8,0 0,8 -8,0 z M 64,120 l 8,0 0,8 -8,0 z M 88,120 l 8,0 0,8 -8,0 z M 136,120 l 8,0 0,8 -8,0 z M 144,120 l 8,0 0,8 -8,0 z M 168,120 l 8,0 0,8 -8,0 z M 176,120 l 8,0 0,8 -8,0 z M 184,120 l 8,0 0,8 -8,0 z M 192,120 l 8,0 0,8 -8,0 z M 216,120 l 8,0 0,8 -8,0 z M 8,128 l 8,0 0,8 -8,0 z M 16,128 l 8,0 0,8 -8,0 z M 32,128 l 8,0 0,8 -8,0 z M 40,128 l 8,0 0,8 -8,0 z M 48,128 l 8,0 0,8 -8,0 z M 80,128 l 8,0 0,8 -8,0 z M 88,128 l 8,0 0,8 -8,0 z M 144,128 l 8,0 0,8 -8,0 z M 168,128 l 8,0 0,8 -8,0 z M 184,128 l 8,0 0,8 -8,0 z M 200,128 l 8,0 0,8 -8,0 z M 208,128 l 8,0 0,8 -8,0 z M 0,136 l 8,0 0,8 -8,0 z M 24,136 l 8,0 0,8 -8,0 z M 32,136 l 8,0 0,8 -8,0 z M 40,136 l 8,0 0,8 -8,0 z M 56,136 l 8,0 0,8 -8,0 z M 64,136 l 8,0 0,8 -8,0 z M 96,136 l 8,0 0,8 -8,0 z M 104,136 l 8,0 0,8 -8,0 z M 144,136 l 8,0 0,8 -8,0 z M 152,136 l 8,0 0,8 -8,0 z M 168,136 l 8,0 0,8 -8,0 z M 176,136 l 8,0 0,8 -8,0 z M 184,136 l 8,0 0,8 -8,0 z M 192,136 l 8,0 0,8 -8,0 z M 208,136 l 8,0 0,8 -8,0 z M 224,136 l 8,0 0,8 -8,0 z M 0,144 l 8,0 0,8 -8,0 z M 16,144 l 8,0 0,8 -8,0 z M 24,144 l 8,0 0,8 -8,0 z M 32,144 l 8,0 0,8 -8,0 z M 40,144 l 8,0 0,8 -8,0 z M 48,144 l 8,0 0,8 -8,0 z M 56,144 l 8,0 0,8 -8,0 z M 64,144 l 8,0 0,8 -8,0 z M 72,144 l 8,0 0,8 -8,0 z M 104,144 l 8,0 0,8 -8,0 z M 112,144 l 8,0 0,8 -8,0 z M 128,144 l 8,0 0,8 -8,0 z M 144,144 l 8,0 0,8 -8,0 z M 160,144 l 8,0 0,8 -8,0 z M 176,144 l 8,0 0,8 -8,0 z M 184,144 l 8,0 0,8 -8,0 z M 192,144 l 8,0 0,8 -8,0 z M 208,144 l 8,0 0,8 -8,0 z M 0,152 l 8,0 0,8 -8,0 z M 40,152 l 8,0 0,8 -8,0 z M 72,152 l 8,0 0,8 -8,0 z M 96,152 l 8,0 0,8 -8,0 z M 104,152 l 8,0 0,8 -8,0 z M 120,152 l 8,0 0,8 -8,0 z M 128,152 l 8,0 0,8 -8,0 z M 136,152 l 8,0 0,8 -8,0 z M 160,152 l 8,0 0,8 -8,0 z M 168,152 l 8,0 0,8 -8,0 z M 176,152 l 8,0 0,8 -8,0 z M 216,152 l 8,0 0,8 -8,0 z M 0,160 l 8,0 0,8 -8,0 z M 16,160 l 8,0 0,8 -8,0 z M 24,160 l 8,0 0,8 -8,0 z M 48,160 l 8,0 0,8 -8,0 z M 56,160 l 8,0 0,8 -8,0 z M 96,160 l 8,0 0,8 -8,0 z M 112,160 l 8,0 0,8 -8,0 z M 120,160 l 8,0 0,8 -8,0 z M 144,160 l 8,0 0,8 -8,0 z M 152,160 l 8,0 0,8 -8,0 z M 160,160 l 8,0 0,8 -8,0 z M 168,160 l 8,0 0,8 -8,0 z M 176,160 l 8,0 0,8 -8,0 z M 184,160 l 8,0 0,8 -8,0 z M 192,160 l 8,0 0,8 -8,0 z M 208,160 l 8,0 0,8 -8,0 z M 216,160 l 8,0 0,8 -8,0 z M 224,160 l 8,0 0,8 -8,0 z M 64,168 l 8,0 0,8 -8,0 z M 80,168 l 8,0 0,8 -8,0 z M 120,168 l 8,0 0,8 -8,0 z M 136,168 l 8,0 0,8 -8,0 z M 144,168 l 8,0 0,8 -8,0 z M 160,168 l 8,0 0,8 -8,0 z M 192,168 l 8,0 0,8 -8,0 z M 200,168 l 8,0 0,8 -8,0 z M 208,168 l 8,0 0,8 -8,0 z M 216,168 l 8,0 0,8 -8,0 z M 224,168 l 8,0 0,8 -8,0 z M 0,176 l 8,0 0,8 -8,0 z M 8,176 l 8,0 0,8 -8,0 z M 16,176 l 8,0 0,8 -8,0 z M 24,176 l 8,0 0,8 -8,0 z M 32,176 l 8,0 0,8 -8,0 z M 40,176 l 8,0 0,8 -8,0 z M 48,176 l 8,0 0,8 -8,0 z M 64,176 l 8,0 0,8 -8,0 z M 88,176 l 8,0 0,8 -8,0 z M 96,176 l 8,0 0,8 -8,0 z M 152,176 l 8,0 0,8 -8,0 z M 160,176 l 8,0 0,8 -8,0 z M 176,176 l 8,0 0,8 -8,0 z M 192,176 l 8,0 0,8 -8,0 z M 200,176 l 8,0 0,8 -8,0 z M 208,176 l 8,0 0,8 -8,0 z M 0,184 l 8,0 0,8 -8,0 z M 48,184 l 8,0 0,8 -8,0 z M 72,184 l 8,0 0,8 -8,0 z M 80,184 l 8,0 0,8 -8,0 z M 88,184 l 8,0 0,8 -8,0 z M 112,184 l 8,0 0,8 -8,0 z M 128,184 l 8,0 0,8 -8,0 z M 136,184 l 8,0 0,8 -8,0 z M 152,184 l 8,0 0,8 -8,0 z M 160,184 l 8,0 0,8 -8,0 z M 192,184 l 8,0 0,8 -8,0 z M 216,184 l 8,0 0,8 -8,0 z M 224,184 l 8,0 0,8 -8,0 z M 0,192 l 8,0 0,8 -8,0 z M 16,192 l 8,0 0,8 -8,0 z M 24,192 l 8,0 0,8 -8,0 z M 32,192 l 8,0 0,8 -8,0 z M 48,192 l 8,0 0,8 -8,0 z M 64,192 l 8,0 0,8 -8,0 z M 80,192 l 8,0 0,8 -8,0 z M 88,192 l 8,0 0,8 -8,0 z M 136,192 l 8,0 0,8 -8,0 z M 144,192 l 8,0 0,8 -8,0 z M 160,192 l 8,0 0,8 -8,0 z M 168,192 l 8,0 0,8 -8,0 z M 176,192 l 8,0 0,8 -8,0 z M 184,192 l 8,0 0,8 -8,0 z M 192,192 l 8,0 0,8 -8,0 z M 208,192 l 8,0 0,8 -8,0 z M 216,192 l 8,0 0,8 -8,0 z M 0,200 l 8,0 0,8 -8,0 z M 16,200 l 8,0 0,8 -8,0 z M 24,200 l 8,0 0,8 -8,0 z M 32,200 l 8,0 0,8 -8,0 z M 48,200 l 8,0 0,8 -8,0 z M 64,200 l 8,0 0,8 -8,0 z M 80,200 l 8,0 0,8 -8,0 z M 96,200 l 8,0 0,8 -8,0 z M 104,200 l 8,0 0,8 -8,0 z M 112,200 l 8,0 0,8 -8,0 z M 120,200 l 8,0 0,8 -8,0 z M 128,200 l 8,0 0,8 -8,0 z M 136,200 l 8,0 0,8 -8,0 z M 144,200 l 8,0 0,8 -8,0 z M 152,200 l 8,0 0,8 -8,0 z M 160,200 l 8,0 0,8 -8,0 z M 200,200 l 8,0 0,8 -8,0 z M 208,200 l 8,0 0,8 -8,0 z M 0,208 l 8,0 0,8 -8,0 z M 16,208 l 8,0 0,8 -8,0 z M 24,208 l 8,0 0,8 -8,0 z M 32,208 l 8,0 0,8 -8,0 z M 48,208 l 8,0 0,8 -8,0 z M 64,208 l 8,0 0,8 -8,0 z M 72,208 l 8,0 0,8 -8,0 z M 80,208 l 8,0 0,8 -8,0 z M 104,208 l 8,0 0,8 -8,0 z M 112,208 l 8,0 0,8 -8,0 z M 120,208 l 8,0 0,8 -8,0 z M 152,208 l 8,0 0,8 -8,0 z M 160,208 l 8,0 0,8 -8,0 z M 168,208 l 8,0 0,8 -8,0 z M 176,208 l 8,0 0,8 -8,0 z M 184,208 l 8,0 0,8 -8,0 z M 192,208 l 8,0 0,8 -8,0 z M 200,208 l 8,0 0,8 -8,0 z M 208,208 l 8,0 0,8 -8,0 z M 216,208 l 8,0 0,8 -8,0 z M 0,216 l 8,0 0,8 -8,0 z M 48,216 l 8,0 0,8 -8,0 z M 64,216 l 8,0 0,8 -8,0 z M 80,216 l 8,0 0,8 -8,0 z M 96,216 l 8,0 0,8 -8,0 z M 104,216 l 8,0 0,8 -8,0 z M 128,216 l 8,0 0,8 -8,0 z M 144,216 l 8,0 0,8 -8,0 z M 160,216 l 8,0 0,8 -8,0 z M 168,216 l 8,0 0,8 -8,0 z M 184,216 l 8,0 0,8 -8,0 z M 200,216 l 8,0 0,8 -8,0 z M 216,216 l 8,0 0,8 -8,0 z M 0,224 l 8,0 0,8 -8,0 z M 8,224 l 8,0 0,8 -8,0 z M 16,224 l 8,0 0,8 -8,0 z M 24,224 l 8,0 0,8 -8,0 z M 32,224 l 8,0 0,8 -8,0 z M 40,224 l 8,0 0,8 -8,0 z M 48,224 l 8,0 0,8 -8,0 z M 64,224 l 8,0 0,8 -8,0 z M 72,224 l 8,0 0,8 -8,0 z M 80,224 l 8,0 0,8 -8,0 z M 96,224 l 8,0 0,8 -8,0 z M 112,224 l 8,0 0,8 -8,0 z M 136,224 l 8,0 0,8 -8,0 z M 144,224 l 8,0 0,8 -8,0 z M 152,224 l 8,0 0,8 -8,0 z M 176,224 l 8,0 0,8 -8,0 z M 184,224 l 8,0 0,8 -8,0 z M 192,224 l 8,0 0,8 -8,0 z M 208,224 l 8,0 0,8 -8,0 z " />
+                </svg>
+              </div>
+              <div class="qr-desc">
+                <b>SMARTTRANSIT REPO</b>
+                <span>github.com/ABM-IX/Smart-Transit</span><br>
+                Full System Specs &amp; Source Code
+              </div>
+            </a>
+          </div>
+        </footer>
+
+      </article>
+
+    </div>
+  </div>
+
+  <script>
+    // Responsive auto-fit scaling for screen viewing
+    let isFitToWindow = true;
+
+    function adjustPosterScale() {
+      if (!isFitToWindow) {
+        document.getElementById('posterWrapper').style.transform = 'scale(1)';
+        return;
+      }
+      const canvas = document.getElementById('posterCanvas');
+      const wrapper = document.getElementById('posterWrapper');
+      const availableW = window.innerWidth - 30;
+      const availableH = window.innerHeight - 80;
+      const canvasW = canvas.offsetWidth;
+      const canvasH = canvas.offsetHeight;
+
+      const scale = Math.min(availableW / canvasW, availableH / canvasH, 1);
+      wrapper.style.transform = `scale(${scale})`;
+    }
+
+    function toggleFit() {
+      isFitToWindow = !isFitToWindow;
+      adjustPosterScale();
+    }
+
+    window.addEventListener('resize', adjustPosterScale);
+    window.addEventListener('DOMContentLoaded', adjustPosterScale);
+  </script>
+
+</body>
+</html>
