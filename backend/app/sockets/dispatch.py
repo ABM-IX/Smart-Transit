@@ -3,7 +3,7 @@ import uuid
 from app.sockets.gateway import (
     sio, active_drivers, active_passengers, active_hails,
     active_taxi_requests, taxi_assignments, active_boardings,
-    driver_ratings, active_trips, driver_can_accept_taxi
+    route_board_candidates, driver_ratings, active_trips, driver_can_accept_taxi
 )
 from app.services.fare import get_fare, estimate_special_taxi_fare
 from app.services.geo import haversine_distance, find_nearest_stop
@@ -47,7 +47,7 @@ async def passenger_request_taxi(sid, data):
         return
 
     _clear_taxi_requests_for_passenger(passenger_id)
-    request_id = f"req-{uuid.uuid4().hex[:8]}"
+    request_id = data.get("requestId") or data.get("request_id") or f"req-{uuid.uuid4().hex[:8]}"
     recommended_fare = get_fare(service_type, pickup, dropoff)
     offered_fare = data.get("offeredFare") or data.get("offered_fare")
     fare_estimate = max(12.0, float(offered_fare)) if service_type == "SPECIAL" and offered_fare is not None else recommended_fare
@@ -182,6 +182,10 @@ async def hail(sid, data):
         "serviceType": service_type,
         "service_type": service_type,
         "fareEstimate": fare_estimate,
+        "accuracy": data.get("accuracy"),
+        "speed": data.get("speed", 0.0),
+        "heading": data.get("heading", 0.0),
+        "updatedAt": data.get("updatedAt"),
         "requestedAt": time.time()
     }
 
@@ -204,7 +208,11 @@ async def hail(sid, data):
         "coords": pickup_loc,
         "socket_id": sid,
         "status": "WAITING",
-        "last_update": time.time()
+        "last_update": time.time(),
+        "accuracy": float(data.get("accuracy") or 999.0),
+        "speed": float(data.get("speed") or 0.0),
+        "heading": float(data.get("heading") or 0.0),
+        "gps_updated_at": time.time(),
     }
     await sio.emit('fleet-update', {
         'type': 'passenger',
@@ -333,6 +341,9 @@ async def cancel_hail(sid, data):
     request_id = requested_id or active_request_id
 
     active_hails.pop(passenger_id, None)
+    for candidate_key in list(route_board_candidates):
+        if candidate_key.startswith(f"{passenger_id}:"):
+            route_board_candidates.pop(candidate_key, None)
     active_passengers.pop(passenger_id, None)
     taxi_assignments.pop(passenger_id, None)
     _clear_taxi_requests_for_passenger(passenger_id, request_id)
@@ -609,7 +620,12 @@ async def boarding(sid, data):
             "route_id": route_id or (driver or {}).get("route_id"),
             "request_id": request_id,
             "since": time.time(),
+            "boarded_at": time.time(),
+            "service_type": str(data.get("serviceType") or (active_hails.get(passenger_id) or {}).get("serviceType") or "COMBI").upper(),
+            "last_separation_samples": [],
         }
+    elif active_boarding:
+        active_boarding.setdefault("boarded_at", active_boarding.get("since", time.time()))
     if assignment:
         assignment["boarded"] = True
         assignment["arrived"] = True
@@ -634,9 +650,7 @@ async def boarding(sid, data):
 
     # Broadcast to route & drivers to remove waiting hail badge
     if route_id:
-        await sio.emit('hail-cancelled', {"passengerId": passenger_id, "routeId": route_id}, room=f"drivers-{route_id}")
         await sio.emit('passenger-boarded', board_payload, room=f"drivers-{route_id}")
-    await sio.emit('hail-cancelled', {"passengerId": passenger_id, "routeId": route_id}, room="drivers")
     await sio.emit('passenger-boarded', board_payload, room="drivers")
     await sio.emit('fleet-remove', {
         'type': 'passenger',

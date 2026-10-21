@@ -93,16 +93,26 @@ CREATE TABLE IF NOT EXISTS public.driver_locations (
 -- 8. Live Hail Requests
 CREATE TABLE IF NOT EXISTS public.hails (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    request_id TEXT UNIQUE,
     passenger_id TEXT NOT NULL,
+    driver_id TEXT,
     route_id TEXT REFERENCES public.routes(id) ON DELETE SET NULL,
     service_type TEXT NOT NULL DEFAULT 'COMBI',
     status TEXT NOT NULL DEFAULT 'WAITING', -- WAITING, ACCEPTED, BOARDED, CANCELLED
     pickup_lat DOUBLE PRECISION NOT NULL,
     pickup_lng DOUBLE PRECISION NOT NULL,
+    passenger_lat DOUBLE PRECISION,
+    passenger_lng DOUBLE PRECISION,
+    passenger_accuracy DOUBLE PRECISION,
+    passenger_speed DOUBLE PRECISION,
+    passenger_heading DOUBLE PRECISION,
     dropoff_lat DOUBLE PRECISION,
     dropoff_lng DOUBLE PRECISION,
     fare_estimate NUMERIC(10, 2) DEFAULT 8.00,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMPTZ,
+    boarded_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ
 );
 
 -- 9. Row Level Security (RLS) Configuration
@@ -121,7 +131,8 @@ CREATE POLICY "Allow public read access for route_stops" ON public.route_stops F
 CREATE POLICY "Allow public read access for users" ON public.users FOR SELECT USING (true);
 CREATE POLICY "Allow public read access for trips" ON public.trips FOR SELECT USING (true);
 CREATE POLICY "Allow public read access for driver_locations" ON public.driver_locations FOR SELECT USING (true);
-CREATE POLICY "Allow public read access for hails" ON public.hails FOR SELECT USING (true);
+CREATE POLICY "Passengers read their own hails" ON public.hails
+    FOR SELECT TO authenticated USING (passenger_id = auth.uid()::text);
 
 -- Public / Anon Insert & Update Policies (Permits app users to request rides & update live state)
 CREATE POLICY "Allow insert/update for routes" ON public.routes FOR ALL USING (true);
@@ -130,7 +141,19 @@ CREATE POLICY "Allow insert/update for route_stops" ON public.route_stops FOR AL
 CREATE POLICY "Allow insert/update for users" ON public.users FOR ALL USING (true);
 CREATE POLICY "Allow insert/update for trips" ON public.trips FOR ALL USING (true);
 CREATE POLICY "Allow insert/update for driver_locations" ON public.driver_locations FOR ALL USING (true);
-CREATE POLICY "Allow insert/update for hails" ON public.hails FOR ALL USING (true);
+CREATE POLICY "Passengers create their own hails" ON public.hails
+    FOR INSERT TO authenticated WITH CHECK (passenger_id = auth.uid()::text);
+CREATE POLICY "Passengers update their own hails" ON public.hails
+    FOR UPDATE TO authenticated USING (passenger_id = auth.uid()::text)
+    WITH CHECK (passenger_id = auth.uid()::text);
+CREATE POLICY "Drivers update assigned hail lifecycle" ON public.hails
+    FOR UPDATE TO authenticated USING (driver_id = auth.uid()::text)
+    WITH CHECK (driver_id = auth.uid()::text);
+
+CREATE INDEX IF NOT EXISTS idx_hails_route_status ON public.hails (route_id, status);
+
+GRANT SELECT, INSERT, UPDATE ON TABLE public.hails TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.hails TO service_role;
 
 -- 10. Enable Supabase Realtime for Realtime Dispatch & Live Map Tracking
 BEGIN;

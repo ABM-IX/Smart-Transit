@@ -19,6 +19,7 @@ active_hails: Dict[str, Dict[str, Any]] = {}
 active_taxi_requests: Dict[str, Dict[str, Any]] = {}
 driver_ratings: Dict[str, Dict[str, Any]] = {}
 active_boardings: Dict[str, Dict[str, Any]] = {}
+route_board_candidates: Dict[str, Dict[str, Any]] = {}
 system_active: bool = True
 
 def driver_can_accept_taxi(driver_id: str, requested_service_type: str) -> bool:
@@ -111,6 +112,14 @@ async def resume_session(sid, data):
     request = active_hails.get(passenger_id)
     assignment = taxi_assignments.get(passenger_id)
     boarding = active_boardings.get(passenger_id)
+    if request is None and boarding:
+        request = {
+            "requestId": boarding.get("request_id"),
+            "routeId": boarding.get("route_id"),
+            "serviceType": boarding.get("service_type") or (passenger or {}).get("serviceType"),
+            "pickupLoc": (passenger or {}).get("coords"),
+            "status": "BOARDED",
+        }
     passenger = active_passengers.get(passenger_id)
     if passenger:
         passenger["socket_id"] = sid

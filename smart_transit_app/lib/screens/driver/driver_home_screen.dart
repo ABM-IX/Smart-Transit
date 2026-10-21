@@ -36,13 +36,15 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
   String? _lookupRequestId;
 
   Future<void> _resolveHailDetails(HailRequest hail) async {
-    if (_lookupRequestId == hail.requestId) return;
-    _lookupRequestId = hail.requestId;
+    final locationKey = '${hail.requestId}:${hail.pickupLat.toStringAsFixed(3)}:${hail.pickupLng.toStringAsFixed(3)}';
+    if (_lookupRequestId == locationKey) return;
+    _lookupRequestId = locationKey;
+    _resolvedHailPickupName = null;
     final name = await PlaceNameService.resolvePlaceName(
       LatLng(hail.pickupLat, hail.pickupLng),
       preferredName: hail.pickupName ?? hail.stopName,
     );
-    if (mounted) {
+    if (mounted && _lookupRequestId == locationKey) {
       setState(() => _resolvedHailPickupName = name);
     }
   }
@@ -229,6 +231,12 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                           label: '${relevantHails.length} Waiting on Route',
                           color: AppTheme.accentAmber,
                           icon: Icons.pan_tool_alt_outlined,
+                        ),
+                      if (transit.boardedRoutePassengers.isNotEmpty)
+                        StatusPill(
+                          label: '${transit.boardedRoutePassengers.length} Onboard',
+                          color: AppTheme.accentGreen,
+                          icon: Icons.directions_bus_filled_outlined,
                         ),
                       StatusPill(
                         label:
@@ -455,6 +463,29 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (transit.boardedRoutePassengers.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.accentGreen.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.accentGreen.withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.directions_bus_filled, color: AppTheme.accentGreen, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${transit.boardedRoutePassengers.length} passenger${transit.boardedRoutePassengers.length == 1 ? '' : 's'} onboard',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppTheme.black),
+                    ),
+                  ),
+                  const Text('Trip active', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.accentGreen)),
+                ],
+              ),
+            ),
           if (pendingHail != null)
             Container(
               margin: const EdgeInsets.only(bottom: 12),
@@ -513,7 +544,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                 ),
               ),
               Text(
-                '${transit.driverTripsCompleted} Trips • ${transit.passengersCarried} Passengers',
+                '${transit.driverTripsCompleted + transit.boardedRoutePassengers.length} Trips • ${transit.passengersCarried} Passengers',
                 style: TextStyle(fontSize: 12, color: AppTheme.midGrey),
               ),
             ],
