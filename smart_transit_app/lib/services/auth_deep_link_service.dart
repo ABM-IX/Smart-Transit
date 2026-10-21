@@ -7,24 +7,36 @@ class AuthDeepLinkService {
   StreamSubscription<Uri>? _subscription;
   final Set<String> _handledLinks = {};
 
+  Future<Uri?> getInitialLink() => _appLinks.getInitialLink();
+
+  bool isPasswordRecoveryLink(Uri? uri) {
+    if (uri == null ||
+        uri.scheme != 'smarttransit' ||
+        uri.host != 'auth-callback') {
+      return false;
+    }
+    try {
+      final fragment = Uri.splitQueryString(uri.fragment);
+      return uri.queryParameters['flow'] == 'recovery' ||
+          uri.queryParameters['type'] == 'recovery' ||
+          fragment['type'] == 'recovery';
+    } catch (_) {
+      return false;
+    }
+  }
+
   void start({
     required void Function(Object error) onError,
     required void Function() onPasswordRecovery,
+    Uri? initialLink,
   }) {
     _subscription ??= _appLinks.uriLinkStream.listen(
       (uri) => unawaited(_handle(uri, onError, onPasswordRecovery)),
       onError: (Object error) => onError(error),
     );
-    unawaited(
-      _appLinks
-          .getInitialLink()
-          .then((uri) {
-            if (uri != null) {
-              unawaited(_handle(uri, onError, onPasswordRecovery));
-            }
-          })
-          .catchError((Object error) => onError(error)),
-    );
+    if (initialLink != null) {
+      unawaited(_handle(initialLink, onError, onPasswordRecovery));
+    }
   }
 
   Future<void> _handle(
@@ -35,12 +47,8 @@ class AuthDeepLinkService {
     try {
       if (!_handledLinks.add(uri.toString())) return;
       if (uri.scheme != 'smarttransit' || uri.host != 'auth-callback') return;
+      if (isPasswordRecoveryLink(uri)) onPasswordRecovery();
       final fragment = Uri.splitQueryString(uri.fragment);
-      final isRecovery =
-          uri.queryParameters['flow'] == 'recovery' ||
-          uri.queryParameters['type'] == 'recovery' ||
-          fragment['type'] == 'recovery';
-      if (isRecovery) onPasswordRecovery();
       final hasAuthResponse =
           uri.queryParameters.containsKey('code') ||
           uri.queryParameters.containsKey('error') ||

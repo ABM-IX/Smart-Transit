@@ -23,9 +23,21 @@ void main() async {
   );
 
   final authProvider = AuthProvider();
+  Uri? initialAuthLink;
+  try {
+    initialAuthLink = await _authDeepLinkService.getInitialLink();
+  } catch (error) {
+    authProvider.reportAuthLinkError(error);
+  }
+  if (_authDeepLinkService.isPasswordRecoveryLink(initialAuthLink)) {
+    // Choose the recovery screen before the first frame so sign-in does not
+    // appear while Android's initial-link callback is being delivered.
+    authProvider.beginPasswordRecovery();
+  }
   _authDeepLinkService.start(
     onError: authProvider.reportAuthLinkError,
     onPasswordRecovery: authProvider.beginPasswordRecovery,
+    initialLink: initialAuthLink,
   );
   final themeProvider = AppThemeProvider();
   await themeProvider.loadPreference();
