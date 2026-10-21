@@ -66,6 +66,27 @@ class _CustomMapViewState extends State<CustomMapView> {
         );
       });
     }
+    final oldHailIds = oldWidget.activeHails
+        .map((hail) => hail.requestId)
+        .toSet();
+    final newHails = widget.activeHails
+        .where((hail) => !oldHailIds.contains(hail.requestId))
+        .toList();
+    if (newHails.isNotEmpty && widget.routePoints.length < 2) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _mapController.fitCamera(
+          CameraFit.coordinates(
+            coordinates: [
+              widget.userLocation,
+              ...newHails.map((hail) => LatLng(hail.pickupLat, hail.pickupLng)),
+            ],
+            padding: const EdgeInsets.fromLTRB(48, 100, 48, 300),
+            maxZoom: 15,
+          ),
+        );
+      });
+    }
   }
 
   @override

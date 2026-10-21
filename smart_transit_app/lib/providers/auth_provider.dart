@@ -139,6 +139,13 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void beginPasswordRecovery() {
+    if (_passwordRecoveryPending) return;
+    _passwordRecoveryPending = true;
+    _authLinkError = null;
+    notifyListeners();
+  }
+
   Future<void> markEmailVerificationPending(String email) async {
     _pendingVerificationEmail = email.trim().toLowerCase();
     try {
@@ -240,6 +247,16 @@ class AuthProvider extends ChangeNotifier {
     required String routeId,
     required String vehiclePlate,
   }) async {
+    // Route, vehicle and service type are registration-time assignments. Keep
+    // the saved driver assignment even if an old shift setup screen calls this.
+    if (_profile?.isDriver == true) {
+      _serviceType = _profile!.serviceType;
+      _assignedRouteId = _profile!.assignedRouteId ?? '';
+      _vehiclePlate = _profile!.vehiclePlate ?? '';
+      notifyListeners();
+      return;
+    }
+
     _serviceType = serviceType.toUpperCase().trim();
     _assignedRouteId = routeId;
     _vehiclePlate = vehiclePlate.toUpperCase().trim();
@@ -258,6 +275,32 @@ class AuthProvider extends ChangeNotifier {
         serviceType: _serviceType,
       );
     }
+    notifyListeners();
+  }
+
+  Future<void> updatePhoneNumber(String phoneNumber) async {
+    final cleanPhone = phoneNumber.trim();
+    if (cleanPhone.isEmpty || _profile == null) return;
+    await _authService.updatePhoneNumber(
+      userId: _profile!.id,
+      phoneNumber: cleanPhone,
+    );
+    _profile = _profile!.copyWith(phoneNumber: cleanPhone);
+    await _saveSession(_profile!);
+    notifyListeners();
+  }
+
+  Future<void> updateProfile({String? fullName, String? avatarUrl}) async {
+    if (_profile == null) return;
+    final cleanName = fullName?.trim() ?? _profile!.fullName;
+    await _authService.updateProfile(
+      userId: _profile!.id,
+      fullName: cleanName,
+      avatarUrl: avatarUrl,
+    );
+    _profile = _profile!.copyWith(fullName: cleanName, avatarUrl: avatarUrl);
+    _userName = cleanName;
+    await _saveSession(_profile!);
     notifyListeners();
   }
 

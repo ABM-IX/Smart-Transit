@@ -5,6 +5,7 @@ import LiveMap from './components/LiveMap';
 import FleetChart from './components/FleetChart';
 import { socketService } from './services/socketService';
 import { fetchDashboardBaseline, getDefaultBackendUrl, isSafeBackendUrl } from './services/apiService';
+import { fetchDriverProfiles } from './services/supabaseClient';
 import {
   AlertTriangle,
   BarChart3,
@@ -66,6 +67,8 @@ function normalizeFleetUnit(record = {}) {
     ...record,
     driverId,
     driver_id: driverId,
+    driverName: record.driverName || record.driver_name || record.full_name || record.name || '',
+    avatarUrl: record.avatarUrl || record.avatar_url || record.profile_image_url || '',
     serviceType: getServiceType(record),
     routeId: record.routeId || record.route_id || 'Unassigned',
     vehicleId: record.vehicleId || record.vehicle_id || record.vehiclePlate || record.vehicle_plate || 'Unregistered',
@@ -371,6 +374,10 @@ export default function App() {
   };
 
   const driversList = useMemo(() => Array.from(drivers.values()).map(normalizeFleetUnit), [drivers]);
+  const driverProfileLookupKey = useMemo(
+    () => driversList.map((unit) => unit.driverId).filter((id) => id && id !== 'driver').sort().join('|'),
+    [driversList],
+  );
   const passengersList = useMemo(() => Array.from(passengers.values()).map(normalizePassenger), [passengers]);
   const routes = Array.isArray(baseline.routes.data) ? baseline.routes.data : [];
   const stops = Array.isArray(baseline.stops.data) ? baseline.stops.data : [];
@@ -385,7 +392,7 @@ export default function App() {
       .filter((unit) => !modeForData || unit.serviceType === modeForData)
       .filter((unit) => {
         if (!term) return true;
-        return [unit.driverId, unit.vehiclePlate, unit.vehicleId, unit.routeId, unit.serviceType]
+        return [unit.driverName, unit.driverId, unit.vehiclePlate, unit.vehicleId, unit.routeId, unit.serviceType]
           .filter(Boolean)
           .some((value) => String(value).toLowerCase().includes(term));
       })
@@ -393,6 +400,40 @@ export default function App() {
   }, [driversList, modeForData, searchTerm]);
 
   const selectedVehicle = driversList.find((unit) => unit.driverId === selectedVehicleId) || null;
+
+  useEffect(() => {
+    const driverIds = driverProfileLookupKey ? driverProfileLookupKey.split('|') : [];
+    if (driverIds.length === 0) return undefined;
+    let active = true;
+    const refreshProfiles = async () => {
+      try {
+        const profiles = await fetchDriverProfiles(driverIds);
+        if (!active) return;
+        setDrivers((previous) => {
+          let changed = false;
+          const next = new Map(previous);
+          Object.entries(profiles).forEach(([id, profile]) => {
+            const current = next.get(id);
+            if (!current) return;
+            const driverName = profile.full_name || current.driverName || '';
+            const avatarUrl = profile.avatar_url || current.avatarUrl || '';
+            if (current.driverName === driverName && current.avatarUrl === avatarUrl) return;
+            changed = true;
+            next.set(id, { ...current, driverName, avatarUrl });
+          });
+          return changed ? next : previous;
+        });
+      } catch (error) {
+        console.warn('Unable to load driver profiles for the registry', error);
+      }
+    };
+    refreshProfiles();
+    const timer = window.setInterval(refreshProfiles, 45000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [driverProfileLookupKey]);
 
   const metrics = useMemo(() => {
     const liveUnits = driversList.filter(isFresh);
@@ -952,7 +993,15 @@ function FleetTable({ fleet, onSelectVehicle, selectedVehicleId }) {
                 <strong>{unit.vehiclePlate}</strong>
                 <span>{unit.serviceType}</span>
               </td>
-              <td>{unit.driverId}</td>
+              <td>
+                <div className="driver-identity-cell">
+                  <DriverAvatar unit={unit} />
+                  <span>
+                    <strong>{unit.driverName || 'Name unavailable'}</strong>
+                    <small>{unit.driverId ? `ID ${String(unit.driverId).slice(-6)}` : 'Driver'}</small>
+                  </span>
+                </div>
+              </td>
               <td>{unit.routeId || 'Unassigned'}</td>
               <td>{unit.occupancy !== undefined ? `${unit.occupancy} pax` : 'Unavailable'}</td>
               <td><StatusBadge status={isFresh(unit) ? 'Live' : unit.last_update ? 'Stale' : 'No GPS'} /></td>
@@ -974,7 +1023,13 @@ function VehicleDetail({ vehicle }) {
     <div className="detail-stack">
       <DetailRow label="Vehicle ID" value={vehicle.vehicleId} />
       <DetailRow label="Registration" value={vehicle.vehiclePlate} />
-      <DetailRow label="Assigned driver" value={vehicle.driverId} />
+      <div className="driver-detail-identity">
+        <DriverAvatar unit={vehicle} large />
+        <div>
+          <strong>{vehicle.driverName || 'Name unavailable'}</strong>
+          <small>{vehicle.driverId ? `Driver ID ${String(vehicle.driverId).slice(-8)}` : 'Driver'}</small>
+        </div>
+      </div>
       <DetailRow label="Assigned route" value={vehicle.routeId || 'Unassigned'} />
       <DetailRow label="Capacity" value="Unavailable from API" />
       <DetailRow label="Occupancy" value={vehicle.occupancy !== undefined ? `${vehicle.occupancy} passengers` : 'Unavailable'} />
@@ -982,6 +1037,25 @@ function VehicleDetail({ vehicle }) {
       <DetailRow label="Last GPS update" value={formatLastSeen(vehicle.last_update)} />
       <DetailRow label="Maintenance" value="Not exposed by backend" />
     </div>
+  );
+}
+
+function DriverAvatar({ unit, large = false }) {
+  const name = unit.driverName || 'Driver';
+  const size = large ? 48 : 34;
+  return unit.avatarUrl ? (
+    <img
+      className={`driver-avatar${large ? ' large' : ''}`}
+      src={unit.avatarUrl}
+      alt={`${name} profile`}
+      width={size}
+      height={size}
+      loading="lazy"
+    />
+  ) : (
+    <span className={`driver-avatar fallback${large ? ' large' : ''}`} aria-label={name}>
+      {name.trim().slice(0, 1).toUpperCase() || 'D'}
+    </span>
   );
 }
 

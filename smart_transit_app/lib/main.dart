@@ -23,7 +23,10 @@ void main() async {
   );
 
   final authProvider = AuthProvider();
-  _authDeepLinkService.start(onError: authProvider.reportAuthLinkError);
+  _authDeepLinkService.start(
+    onError: authProvider.reportAuthLinkError,
+    onPasswordRecovery: authProvider.beginPasswordRecovery,
+  );
   final themeProvider = AppThemeProvider();
   await themeProvider.loadPreference();
 

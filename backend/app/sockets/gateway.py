@@ -21,6 +21,22 @@ driver_ratings: Dict[str, Dict[str, Any]] = {}
 active_boardings: Dict[str, Dict[str, Any]] = {}
 system_active: bool = True
 
+def driver_can_accept_taxi(driver_id: str, requested_service_type: str) -> bool:
+    """Standard rides may be queued together; a special ride is exclusive."""
+    active_types = {
+        str(assignment.get("serviceType") or "STANDARD").upper()
+        for assignment in taxi_assignments.values()
+        if (assignment.get("driver_id") or assignment.get("driverId")) == driver_id
+        and str(assignment.get("serviceType") or "STANDARD").upper()
+        in ("STANDARD", "SPECIAL", "TAXI")
+    }
+    if "SPECIAL" in active_types:
+        return False
+    requested = str(requested_service_type or "STANDARD").upper()
+    if requested == "SPECIAL" and active_types:
+        return False
+    return requested in ("STANDARD", "SPECIAL")
+
 @sio.event
 async def connect(sid, environ, auth=None):
     print(f"[SOCKET CONNECT] Client SID: {sid}")

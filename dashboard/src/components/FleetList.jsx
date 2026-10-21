@@ -85,7 +85,16 @@ export default function FleetList({ drivers = [], passengers = [], hails = [] })
                     <Car size={16} />
                   </div>
                   <div className="item-meta">
-                    <b>Driver {d.driverId?.length > 12 ? d.driverId.slice(-6) : d.driverId}</b>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {d.avatarUrl ? (
+                        <img className="fleet-driver-avatar" src={d.avatarUrl} alt="" />
+                      ) : (
+                        <span className="fleet-driver-avatar fallback">
+                          {(d.driverName || 'D').trim().slice(0, 1).toUpperCase()}
+                        </span>
+                      )}
+                      <b>{d.driverName || `Driver ${d.driverId?.length > 12 ? d.driverId.slice(-6) : d.driverId}`}</b>
+                    </div>
                     <span>
                       {d.routeId || typeLabel} • {d.vehiclePlate || 'B-BW'}
                       {d.rating && ` • ⭐ ${Number(d.rating).toFixed(1)}`}

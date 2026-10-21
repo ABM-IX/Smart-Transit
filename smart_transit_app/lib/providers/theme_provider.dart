@@ -20,29 +20,38 @@ class AppThemeProvider extends ChangeNotifier with WidgetsBindingObserver {
               Brightness.dark);
 
   Future<void> loadPreference() async {
-    final preferences = await SharedPreferences.getInstance();
-    final value = preferences.getString(_preferenceKey);
-    if (value != null) {
-      _themeMode = switch (value) {
-        'light' => ThemeMode.light,
-        'dark' => ThemeMode.dark,
-        _ => ThemeMode.system,
-      };
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      final value = preferences.getString(_preferenceKey);
+      if (value != null) {
+        _themeMode = switch (value) {
+          'light' => ThemeMode.light,
+          'dark' => ThemeMode.dark,
+          _ => ThemeMode.system,
+        };
+      }
+    } catch (_) {
+      // Keep the system/default theme if local preferences are unavailable.
+    } finally {
+      _syncPalette();
+      notifyListeners();
     }
-    _syncPalette();
-    notifyListeners();
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
     _themeMode = mode;
     _syncPalette();
     notifyListeners();
-    final preferences = await SharedPreferences.getInstance();
-    await preferences.setString(_preferenceKey, switch (mode) {
-      ThemeMode.light => 'light',
-      ThemeMode.dark => 'dark',
-      ThemeMode.system => 'system',
-    });
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setString(_preferenceKey, switch (mode) {
+        ThemeMode.light => 'light',
+        ThemeMode.dark => 'dark',
+        ThemeMode.system => 'system',
+      });
+    } catch (_) {
+      // The chosen theme still applies for this session if saving fails.
+    }
   }
 
   void _syncPalette() {

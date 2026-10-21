@@ -608,8 +608,9 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
     final assignedDrivers = routeDrivers
         .where((driver) => driver.driverId == transit.assignedDriverId)
         .toList();
-    final assignedDriver =
-        assignedDrivers.isNotEmpty ? assignedDrivers.first : null;
+    final assignedDriver = assignedDrivers.isNotEmpty
+        ? assignedDrivers.first
+        : null;
     double? distMeters = transit.etaDistanceMeters;
     if (distMeters == null && assignedDriver != null) {
       distMeters = _calculateDistanceMeters(
@@ -667,8 +668,8 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                 Expanded(
                   child: Text(
                     driverHasArrived
-                        ? 'Driver has arrived at $pickupArea!'
-                        : 'Vehicle is coming to $pickupArea',
+                        ? '${widget.mode == TransportMode.bus ? 'A bus' : 'A combi'} is near $pickupArea!'
+                        : '${widget.mode == TransportMode.bus ? 'A bus' : 'A combi'} is approaching $pickupArea',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 14,
@@ -723,8 +724,8 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                       transit.matchedDriverName?.isNotEmpty == true
                           ? transit.matchedDriverName!
                           : (driverHasArrived
-                                ? 'Driver has arrived'
-                                : 'Driver accepted your hail'),
+                                ? '${widget.mode == TransportMode.bus ? 'Bus' : 'Combi'} nearby'
+                                : 'Vehicles on your route'),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -750,7 +751,7 @@ class _BusCombiMapScreenState extends State<BusCombiMapScreen> {
                     ),
                     Text(
                       driverHasArrived
-                          ? 'Your driver is at $pickupArea. Please board now.'
+                          ? 'Your ${widget.mode == TransportMode.bus ? 'bus' : 'combi'} is near. Please board at a safe stop.'
                           : (distMeters != null
                                 ? 'En route (${distMeters < 1000 ? "${distMeters.toStringAsFixed(0)}m" : "${(distMeters / 1000).toStringAsFixed(1)} km"} away) • Est. arrival: ${transit.etaDisplay}'
                                 : 'En route to $pickupArea • Est. arrival: ${transit.etaDisplay}'),

@@ -79,6 +79,7 @@ class TransitProvider extends ChangeNotifier {
   static const _savedDriverPresenceKey = 'smarttransit_driver_presence';
   SpacingAdvisory? _spacingAdvisory;
   final List<HailRequest> _incomingHails = [];
+  final List<HailRequest> _acceptedSharedHails = [];
   HailRequest? _latestHailAlert;
   HailRequest? _acceptedDriverHail;
   bool _driverAtPickup = false;
@@ -125,6 +126,21 @@ class TransitProvider extends ChangeNotifier {
   bool get driverTripEnded => _driverTripEnded;
   double? get driverTripEndedFare => _driverTripEndedFare;
   HailRequest? get acceptedDriverHail => _acceptedDriverHail;
+  List<HailRequest> get acceptedSharedHails =>
+      List.unmodifiable(_acceptedSharedHails);
+  bool get canAcceptSharedTaxiRequests =>
+      _acceptedDriverHail?.serviceType.toUpperCase() == 'STANDARD' &&
+      _acceptedSharedHails.every(
+        (hail) => hail.serviceType.toUpperCase() == 'STANDARD',
+      );
+
+  void _promoteNextSharedHail() {
+    if (_acceptedDriverHail != null || _acceptedSharedHails.isEmpty) return;
+    _acceptedDriverHail = _acceptedSharedHails.removeAt(0);
+    _driverAtPickup = false;
+    _driverTripStarted = false;
+  }
+
   String? get driverTripCancelledRequestId => _driverTripCancelledRequestId;
   void acknowledgeDriverTripCancelled(String requestId) {
     if (_driverTripCancelledRequestId == requestId) {
@@ -180,9 +196,22 @@ class TransitProvider extends ChangeNotifier {
   }
 
   void _checkProximityArrival() {
-    if (_passengerStatus != PassengerTripStatus.driverAccepted) return;
+    final routeHail =
+        _passengerStatus == PassengerTripStatus.hailPending &&
+        (_activeServiceType == 'COMBI' || _activeServiceType == 'BUS');
+    if (!routeHail && _passengerStatus != PassengerTripStatus.driverAccepted) {
+      return;
+    }
     final dist = _etaDistanceMeters;
     if (dist == null || dist > 35.0) return;
+
+    if (routeHail) {
+      _arrivalCheckTimer?.cancel();
+      _passengerStatus = PassengerTripStatus.driverArrived;
+      unawaited(_persistPassengerTrip());
+      notifyListeners();
+      return;
+    }
 
     final acceptedAt = _driverAcceptedAt ?? DateTime.now();
     final elapsedMs = DateTime.now().difference(acceptedAt).inMilliseconds;
@@ -203,6 +232,53 @@ class TransitProvider extends ChangeNotifier {
             notifyListeners();
           }
         },
+      );
+    }
+  }
+
+  bool _isRouteHailForDriver(LiveDriver driver) =>
+      _passengerStatus == PassengerTripStatus.hailPending &&
+      (_activeServiceType == 'COMBI' || _activeServiceType == 'BUS') &&
+      driver.routeId == (_selectedRoute?.id ?? '') &&
+      driver.serviceType.toUpperCase() == _activeServiceType;
+
+  void _refreshIncomingHailLocation(String? passengerId, LatLng location) {
+    if (passengerId == null || passengerId.isEmpty) return;
+    for (var index = 0; index < _incomingHails.length; index++) {
+      final hail = _incomingHails[index];
+      if (hail.passengerId != passengerId) continue;
+      _incomingHails[index] = HailRequest(
+        requestId: hail.requestId,
+        passengerId: hail.passengerId,
+        routeId: hail.routeId,
+        pickupLat: location.latitude,
+        pickupLng: location.longitude,
+        destinationLat: hail.destinationLat,
+        destinationLng: hail.destinationLng,
+        serviceType: hail.serviceType,
+        fareEstimate: hail.fareEstimate,
+        stopName: hail.stopName,
+        pickupName: hail.pickupName,
+        destinationName: hail.destinationName,
+        message: hail.message,
+      );
+    }
+    final alert = _latestHailAlert;
+    if (alert?.passengerId == passengerId) {
+      _latestHailAlert = HailRequest(
+        requestId: alert!.requestId,
+        passengerId: alert.passengerId,
+        routeId: alert.routeId,
+        pickupLat: location.latitude,
+        pickupLng: location.longitude,
+        destinationLat: alert.destinationLat,
+        destinationLng: alert.destinationLng,
+        serviceType: alert.serviceType,
+        fareEstimate: alert.fareEstimate,
+        stopName: alert.stopName,
+        pickupName: alert.pickupName,
+        destinationName: alert.destinationName,
+        message: alert.message,
       );
     }
   }
@@ -525,6 +601,18 @@ class TransitProvider extends ChangeNotifier {
           if (data is Map<String, dynamic>) {
             final driver = LiveDriver.fromJson(data);
             _activeDrivers[driver.driverId] = driver;
+            if (_isRouteHailForDriver(driver) &&
+                driver.latitude != 0.0 &&
+                driver.longitude != 0.0) {
+              _vehicleSpeedKmh = driver.speed;
+              _updateEtaFromDriverCoords(
+                LatLng(driver.latitude, driver.longitude),
+                speedKmh: driver.speed,
+              );
+              if (_passengerStatus == PassengerTripStatus.driverArrived) {
+                _assignedDriverId = driver.driverId;
+              }
+            }
             if (_assignedDriverId != null &&
                 driver.driverId == _assignedDriverId &&
                 driver.latitude != 0.0 &&
@@ -534,6 +622,9 @@ class TransitProvider extends ChangeNotifier {
                 LatLng(driver.latitude, driver.longitude),
                 speedKmh: driver.speed,
               );
+              if (_passengerStatus == PassengerTripStatus.driverArrived) {
+                _assignedDriverId = driver.driverId;
+              }
             }
             notifyListeners();
           }
@@ -542,6 +633,18 @@ class TransitProvider extends ChangeNotifier {
           if (data is Map<String, dynamic>) {
             final driver = LiveDriver.fromJson(data);
             _activeDrivers[driver.driverId] = driver;
+            if (_isRouteHailForDriver(driver) &&
+                driver.latitude != 0.0 &&
+                driver.longitude != 0.0) {
+              _vehicleSpeedKmh = driver.speed;
+              _updateEtaFromDriverCoords(
+                LatLng(driver.latitude, driver.longitude),
+                speedKmh: driver.speed,
+              );
+              if (_passengerStatus == PassengerTripStatus.driverArrived) {
+                _assignedDriverId = driver.driverId;
+              }
+            }
             if (_assignedDriverId != null &&
                 driver.driverId == _assignedDriverId &&
                 driver.latitude != 0.0 &&
@@ -578,6 +681,14 @@ class TransitProvider extends ChangeNotifier {
             _etaDistanceMeters =
                 (data['distanceMeters'] as num?)?.toDouble() ??
                 _etaDistanceMeters;
+            if (_passengerStatus == PassengerTripStatus.hailPending &&
+                (_activeServiceType == 'COMBI' ||
+                    _activeServiceType == 'BUS') &&
+                etaDriverId != null &&
+                _etaDistanceMeters != null &&
+                _etaDistanceMeters! <= 35.0) {
+              _assignedDriverId = etaDriverId;
+            }
             final speed = (data['speed'] as num?)?.toDouble() ?? 0.0;
             // Keep vehicle speed updated so passenger UI can show "I've Arrived" when stationary
             _vehicleSpeedKmh = speed;
@@ -664,6 +775,10 @@ class TransitProvider extends ChangeNotifier {
               final lng = (coords['lng'] ?? coords['longitude']) as num?;
               if (lat != null && lng != null) {
                 _livePassengerLocation = LatLng(lat.toDouble(), lng.toDouble());
+                _refreshIncomingHailLocation(
+                  (data['passengerId'] ?? data['passenger_id'])?.toString(),
+                  _livePassengerLocation!,
+                );
                 notifyListeners();
               }
             }
@@ -710,8 +825,7 @@ class TransitProvider extends ChangeNotifier {
                 _acceptedDriverHail != null &&
                 (isThisRequest(_acceptedDriverHail!) ||
                     data['driverId']?.toString() == userId)) {
-              _driverTripCancelledRequestId =
-                  _acceptedDriverHail!.requestId;
+              _driverTripCancelledRequestId = _acceptedDriverHail!.requestId;
               _acceptedDriverHail = null;
               _driverAtPickup = false;
               _driverTripStarted = false;
@@ -722,10 +836,14 @@ class TransitProvider extends ChangeNotifier {
         'hail-accept-rejected': (data) {
           if (data is Map<String, dynamic>) {
             final requestId = data['requestId']?.toString();
+            _acceptedSharedHails.removeWhere(
+              (hail) => hail.requestId == requestId,
+            );
             if (_acceptedDriverHail?.requestId == requestId) {
               _acceptedDriverHail = null;
               _driverAtPickup = false;
               _driverTripStarted = false;
+              _promoteNextSharedHail();
             }
             notifyListeners();
           }
@@ -914,6 +1032,14 @@ class TransitProvider extends ChangeNotifier {
           final hail = _acceptedDriverHail;
           final passengerId = (data['passengerId'] ?? data['passenger_id'])
               ?.toString();
+          final queuedIndex = _acceptedSharedHails.indexWhere(
+            (item) => item.passengerId == passengerId,
+          );
+          if (queuedIndex >= 0) {
+            _acceptedSharedHails.removeAt(queuedIndex);
+            notifyListeners();
+            return;
+          }
           if (hail == null || hail.passengerId != passengerId) return;
 
           final fare =
@@ -925,6 +1051,7 @@ class TransitProvider extends ChangeNotifier {
           _acceptedDriverHail = null;
           _driverAtPickup = false;
           _driverTripStarted = false;
+          _promoteNextSharedHail();
           unawaited(endTrip(hail, userId, fare));
           notifyListeners();
         },
@@ -936,6 +1063,17 @@ class TransitProvider extends ChangeNotifier {
           final hail = _acceptedDriverHail;
           final passengerId = (data['passengerId'] ?? data['passenger_id'])
               ?.toString();
+          final requestId = (data['requestId'] ?? data['tripId'])?.toString();
+          final queuedCount = _acceptedSharedHails.length;
+          _acceptedSharedHails.removeWhere(
+            (item) =>
+                item.passengerId == passengerId ||
+                (requestId != null && item.requestId == requestId),
+          );
+          if (_acceptedSharedHails.length < queuedCount) {
+            notifyListeners();
+            return;
+          }
           if (hail == null ||
               (passengerId != null && hail.passengerId != passengerId)) {
             return;
@@ -944,6 +1082,7 @@ class TransitProvider extends ChangeNotifier {
           _acceptedDriverHail = null;
           _driverAtPickup = false;
           _driverTripStarted = false;
+          _promoteNextSharedHail();
           notifyListeners();
         },
         'trip-completed': (data) {
@@ -986,8 +1125,12 @@ class TransitProvider extends ChangeNotifier {
             : 'COMBI');
     _activeServiceType = resolvedType.toUpperCase();
     _passengerStatus = PassengerTripStatus.hailPending;
+    _assignedDriverId = null;
     _estimatedFare = _selectedRoute!.baseFare;
     _taxiPickupLocation = _currentLocation;
+    _livePassengerLocation = _currentLocation;
+    _etaSeconds = null;
+    _etaDistanceMeters = null;
     unawaited(_persistPassengerTrip());
     notifyListeners();
 
@@ -1012,6 +1155,22 @@ class TransitProvider extends ChangeNotifier {
       'stopName': pickupName,
       'serviceType': resolvedType,
       'fareEstimate': _selectedRoute!.baseFare,
+    });
+    final routeId = _selectedRoute!.id;
+    _location.startLocationTracking((position, _, _) {
+      if (requestGeneration != _taxiRequestGeneration ||
+          _passengerStatus != PassengerTripStatus.hailPending) {
+        return;
+      }
+      _currentLocation = position;
+      _livePassengerLocation = position;
+      _taxiPickupLocation = position;
+      _socket.emit('passenger-location', {
+        'passengerId': passengerId,
+        'routeId': routeId,
+        'coords': {'lat': position.latitude, 'lng': position.longitude},
+      });
+      notifyListeners();
     });
     notifyListeners();
   }
@@ -1104,6 +1263,7 @@ class TransitProvider extends ChangeNotifier {
       'driverId': driverId,
       'passengerId': passengerId,
       'routeId': routeId,
+      if (_activeServiceType != null) 'serviceType': _activeServiceType,
       if (_currentRequestId != null) 'requestId': _currentRequestId,
     });
     _assignedDriverId = driverId;
@@ -1480,9 +1640,22 @@ class TransitProvider extends ChangeNotifier {
     String? driverPhone,
     String? driverPlate,
   }) {
-    _acceptedDriverHail = hail;
-    _driverAtPickup = false;
-    _driverTripStarted = false;
+    final isAdditionalSharedRide = _acceptedDriverHail != null;
+    if (isAdditionalSharedRide) {
+      if (!canAcceptSharedTaxiRequests ||
+          hail.serviceType.toUpperCase() != 'STANDARD') {
+        return;
+      }
+      if (!_acceptedSharedHails.any(
+        (item) => item.requestId == hail.requestId,
+      )) {
+        _acceptedSharedHails.add(hail);
+      }
+    } else {
+      _acceptedDriverHail = hail;
+      _driverAtPickup = false;
+      _driverTripStarted = false;
+    }
     _socket.emit('accept-hail', {
       'passengerId': hail.passengerId,
       'driverId': driverId,
@@ -1572,9 +1745,12 @@ class TransitProvider extends ChangeNotifier {
   }
 
   Future<bool> endTrip(HailRequest hail, String driverId, double fare) async {
-    _acceptedDriverHail = null;
-    _driverAtPickup = false;
-    _driverTripStarted = false;
+    if (_acceptedDriverHail?.requestId == hail.requestId) {
+      _acceptedDriverHail = null;
+      _driverAtPickup = false;
+      _driverTripStarted = false;
+      _promoteNextSharedHail();
+    }
     final resolvedPickup = await PlaceNameService.resolvePlaceName(
       LatLng(hail.pickupLat, hail.pickupLng),
       preferredName: hail.pickupName ?? hail.stopName,

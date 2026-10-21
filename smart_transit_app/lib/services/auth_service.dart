@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/constants.dart';
 
@@ -11,6 +12,7 @@ class UserProfile {
   final String serviceType; // 'PASSENGER', 'COMBI', 'BUS', 'TAXI'
   final String? vehiclePlate;
   final String? assignedRouteId;
+  final String? avatarUrl;
   final double rating;
   final bool isActive;
 
@@ -23,6 +25,7 @@ class UserProfile {
     required this.serviceType,
     this.vehiclePlate,
     this.assignedRouteId,
+    this.avatarUrl,
     this.rating = 5.0,
     this.isActive = true,
   });
@@ -41,6 +44,7 @@ class UserProfile {
           .toUpperCase(),
       vehiclePlate: json['vehicle_plate'] as String?,
       assignedRouteId: json['assigned_route_id'] as String?,
+      avatarUrl: json['avatar_url'] as String?,
       rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
       isActive: json['is_active'] as bool? ?? true,
     );
@@ -56,6 +60,7 @@ class UserProfile {
       'service_type': serviceType,
       'vehicle_plate': vehiclePlate,
       'assigned_route_id': assignedRouteId,
+      'avatar_url': avatarUrl,
       'rating': rating,
       'is_active': isActive,
     };
@@ -68,6 +73,7 @@ class UserProfile {
     String? serviceType,
     String? vehiclePlate,
     String? assignedRouteId,
+    String? avatarUrl,
     double? rating,
     bool? isActive,
   }) {
@@ -80,6 +86,7 @@ class UserProfile {
       serviceType: serviceType ?? this.serviceType,
       vehiclePlate: vehiclePlate ?? this.vehiclePlate,
       assignedRouteId: assignedRouteId ?? this.assignedRouteId,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
       rating: rating ?? this.rating,
       isActive: isActive ?? this.isActive,
     );
@@ -332,12 +339,63 @@ class AuthService {
   Future<void> sendPasswordResetEmail(String email) async {
     await _supabase.auth.resetPasswordForEmail(
       email.trim(),
-      redirectTo: AppConstants.authRedirectUrl,
+      redirectTo: AppConstants.passwordRecoveryRedirectUrl,
     );
   }
 
   Future<void> updatePassword(String password) async {
     await _supabase.auth.updateUser(UserAttributes(password: password));
+  }
+
+  Future<void> updatePhoneNumber({
+    required String userId,
+    required String phoneNumber,
+  }) async {
+    await _supabase
+        .from('users')
+        .update({
+          'phone_number': phoneNumber.trim(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', userId);
+  }
+
+  Future<String> uploadProfilePhoto({
+    required String userId,
+    required Uint8List bytes,
+    required String extension,
+  }) async {
+    final path =
+        '$userId/profile-${DateTime.now().millisecondsSinceEpoch}.$extension';
+    await _supabase.storage
+        .from('profile-photos')
+        .uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(
+            upsert: true,
+            contentType: extension == 'png' ? 'image/png' : 'image/jpeg',
+          ),
+        );
+    return _supabase.storage.from('profile-photos').getPublicUrl(path);
+  }
+
+  Future<void> updateProfile({
+    required String userId,
+    required String fullName,
+    String? avatarUrl,
+  }) async {
+    final metadata = <String, dynamic>{'full_name': fullName.trim()};
+    final row = <String, dynamic>{
+      'full_name': fullName.trim(),
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    };
+    if (avatarUrl != null) {
+      metadata['avatar_url'] = avatarUrl;
+      row['avatar_url'] = avatarUrl;
+    }
+    await _supabase.from('users').update(row).eq('id', userId);
+    await _supabase.auth.updateUser(UserAttributes(data: metadata));
   }
 
   /// Sign out
@@ -375,6 +433,7 @@ class AuthService {
             .toUpperCase(),
         vehiclePlate: meta['vehicle_plate'] as String?,
         assignedRouteId: meta['assigned_route_id'] as String?,
+        avatarUrl: meta['avatar_url'] as String?,
       );
     }
     return null;

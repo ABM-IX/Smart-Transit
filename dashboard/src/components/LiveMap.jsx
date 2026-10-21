@@ -42,6 +42,16 @@ function lastSeen(timestamp) {
   return `${Math.floor(seconds / 60)}m ago`;
 }
 
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character]);
+}
+
 export default function LiveMap({
   drivers = [],
   passengers = [],
@@ -125,11 +135,12 @@ export default function LiveMap({
           fillOpacity: fresh ? 0.9 : 0.45,
         }).addTo(map);
 
+        const driverLabel = escapeHtml(driver.driverName || `${type} unit ${String(id || 'unknown').slice(-8)}`);
         marker.bindPopup(`
           <div style="font-family:Inter,Arial,sans-serif;color:#0f172a;min-width:180px">
-            <strong>${type} unit ${String(id || 'unknown').slice(-8)}</strong>
-            <div>Vehicle: ${driver.vehiclePlate || driver.vehicleId || 'Unregistered'}</div>
-            <div>Route: ${driver.routeId || driver.route_id || 'Unassigned'}</div>
+            <strong>${driverLabel}</strong>
+            <div>Vehicle: ${escapeHtml(driver.vehiclePlate || driver.vehicleId || 'Unregistered')}</div>
+            <div>Route: ${escapeHtml(driver.routeId || driver.route_id || 'Unassigned')}</div>
             <div>Status: ${fresh ? 'Live' : 'Stale or missing timestamp'}</div>
             <div>Last update: ${lastSeen(driver.last_update || driver.lastUpdate)}</div>
           </div>

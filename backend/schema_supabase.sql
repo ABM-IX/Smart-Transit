@@ -14,8 +14,12 @@ CREATE TABLE IF NOT EXISTS public.users (
     phone_number VARCHAR(32) UNIQUE,
     email VARCHAR(128) UNIQUE,
     role VARCHAR(20) NOT NULL DEFAULT 'PASSENGER', -- PASSENGER, DRIVER, ADMIN
+    avatar_url TEXT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now());
 
 -- 3. Vehicles Registry Table
 CREATE TABLE IF NOT EXISTS public.vehicles (
@@ -233,6 +237,31 @@ CREATE POLICY "Allow insert/update for taxi_bookings" ON public.taxi_bookings FO
 
 CREATE POLICY "Allow public read access for reviews" ON public.reviews FOR SELECT USING (true);
 CREATE POLICY "Allow insert/update for reviews" ON public.reviews FOR ALL USING (true);
+
+-- Public profile photos; uploads are restricted to the signed-in user's folder.
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('profile-photos', 'profile-photos', true, 5242880, ARRAY['image/jpeg', 'image/png'])
+ON CONFLICT (id) DO UPDATE SET
+    public = EXCLUDED.public,
+    file_size_limit = EXCLUDED.file_size_limit,
+    allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+DROP POLICY IF EXISTS "Profile photos are publicly readable" ON storage.objects;
+CREATE POLICY "Profile photos are publicly readable"
+    ON storage.objects FOR SELECT USING (bucket_id = 'profile-photos');
+DROP POLICY IF EXISTS "Users upload their own profile photos" ON storage.objects;
+CREATE POLICY "Users upload their own profile photos"
+    ON storage.objects FOR INSERT TO authenticated
+    WITH CHECK (bucket_id = 'profile-photos' AND (storage.foldername(name))[1] = auth.uid()::text);
+DROP POLICY IF EXISTS "Users update their own profile photos" ON storage.objects;
+CREATE POLICY "Users update their own profile photos"
+    ON storage.objects FOR UPDATE TO authenticated
+    USING (bucket_id = 'profile-photos' AND (storage.foldername(name))[1] = auth.uid()::text)
+    WITH CHECK (bucket_id = 'profile-photos' AND (storage.foldername(name))[1] = auth.uid()::text);
+DROP POLICY IF EXISTS "Users delete their own profile photos" ON storage.objects;
+CREATE POLICY "Users delete their own profile photos"
+    ON storage.objects FOR DELETE TO authenticated
+    USING (bucket_id = 'profile-photos' AND (storage.foldername(name))[1] = auth.uid()::text);
 
 -- Default Metropolitan Taxi Dispatch corridor
 INSERT INTO public.routes (id, name, origin_name, destination_name, route_type, base_fare)

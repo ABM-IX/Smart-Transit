@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../models/route_model.dart';
 import '../../models/user_role.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../providers/transit_provider.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
@@ -343,6 +344,8 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AppThemeProvider>();
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
       backgroundColor: AppTheme.white,
       appBar: AppBar(
@@ -469,12 +472,12 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                               child: Text('Join Existing Corridor'),
                             ),
                             selected: !_createNewRoute,
-                            selectedColor: AppTheme.black,
+                            selectedColor: colors.primary,
                             backgroundColor: AppTheme.offWhite,
                             labelStyle: TextStyle(
                               color: !_createNewRoute
-                                  ? AppTheme.onPrimary
-                                  : AppTheme.black,
+                                  ? colors.onPrimary
+                                  : colors.onSurface,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
@@ -489,12 +492,12 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
                               child: Text('+ Add New Corridor'),
                             ),
                             selected: _createNewRoute,
-                            selectedColor: AppTheme.black,
+                            selectedColor: colors.primary,
                             backgroundColor: AppTheme.offWhite,
                             labelStyle: TextStyle(
                               color: _createNewRoute
-                                  ? AppTheme.onPrimary
-                                  : AppTheme.black,
+                                  ? colors.onPrimary
+                                  : colors.onSurface,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
@@ -948,6 +951,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
     required String title,
     required IconData icon,
   }) {
+    final colors = Theme.of(context).colorScheme;
     final isSelected = _selectedMode == mode;
     return InkWell(
       onTap: () => _onModeChanged(mode),
@@ -955,10 +959,10 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.black : AppTheme.white,
+          color: isSelected ? colors.primary : colors.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? AppTheme.black : AppTheme.lightGrey,
+            color: isSelected ? colors.primary : colors.outline,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -966,7 +970,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
           children: [
             Icon(
               icon,
-              color: isSelected ? AppTheme.onPrimary : AppTheme.black,
+              color: isSelected ? colors.onPrimary : colors.onSurface,
               size: 26,
             ),
             const SizedBox(height: 6),
@@ -975,7 +979,7 @@ class _DriverRegisterScreenState extends State<DriverRegisterScreen> {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
-                color: isSelected ? AppTheme.onPrimary : AppTheme.black,
+                color: isSelected ? colors.onPrimary : colors.onSurface,
               ),
             ),
           ],

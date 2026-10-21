@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../models/route_model.dart';
 import '../../providers/transit_provider.dart';
+import '../../providers/theme_provider.dart';
 import 'mode_selection_screen.dart';
 import 'destinations_browser_screen.dart';
 import 'bus_combi_map_screen.dart';
@@ -37,12 +38,15 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AppThemeProvider>();
     final resetVersion = context.select<TransitProvider, int>(
       (t) => t.tripResetVersion,
     );
     if (resetVersion != _lastSeenTripResetVersion) {
       _lastSeenTripResetVersion = resetVersion;
-      if (_selectedMode != null || _selectedRoute != null || _currentTabIndex != 0) {
+      if (_selectedMode != null ||
+          _selectedRoute != null ||
+          _currentTabIndex != 0) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _returnToLandingScreen();
         });
@@ -119,9 +123,7 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
     }
 
     if (_selectedMode == TransportMode.taxi) {
-      return TaxiFlowScreen(
-        onExitToMain: _returnToLandingScreen,
-      );
+      return TaxiFlowScreen(onExitToMain: _returnToLandingScreen);
     }
 
     // Bus or Combi Flow

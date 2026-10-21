@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../core/constants.dart';
 import '../../core/theme.dart';
-import '../../models/route_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../providers/transit_provider.dart';
 import '../../widgets/theme_preference_tile.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/profile_identity_editor.dart';
 import '../auth/login_screen.dart';
 
 class DriverProfileScreen extends StatefulWidget {
@@ -59,155 +60,61 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     } catch (_) {}
   }
 
-  void _showEditVehicleRouteDialog(
+  Future<void> _showEditPhoneDialog(
     BuildContext context,
     AuthProvider auth,
-    TransitProvider transit,
-  ) {
-    final plateController = TextEditingController(text: auth.vehiclePlate);
-    TransitRoute? selectedRoute;
-    try {
-      final friendlyFallback = auth.assignedRouteId
-          .replaceAll('-', ' ')
-          .replaceAll('_', ' ')
-          .split(' ')
-          .where((w) => w.isNotEmpty)
-          .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
-          .join(' ');
-
-      selectedRoute = transit.routes.firstWhere(
-        (r) => r.id == auth.assignedRouteId,
-        orElse: () => TransitRoute(
-          id: auth.assignedRouteId,
-          name: friendlyFallback.isNotEmpty
-              ? friendlyFallback
-              : 'Assigned Corridor',
-          originName: 'Terminal A',
-          destinationName: 'Terminal B',
-          routeType: auth.serviceType,
-          baseFare: auth.serviceType.toUpperCase() == 'BUS'
-              ? 0.0
-              : AppConstants.standardFareBWP,
-        ),
-      );
-    } catch (_) {}
-
-    showDialog(
+  ) async {
+    final phoneController = TextEditingController(text: auth.phoneNumber);
+    final formKey = GlobalKey<FormState>();
+    final updated = await showDialog<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit phone number'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: phoneController,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(labelText: 'Phone number'),
+            validator: (value) => (value ?? '').trim().length < 7
+                ? 'Enter a valid phone number.'
+                : null,
           ),
-          title: Row(
-            children: [
-              Icon(Icons.edit_note, color: AppTheme.black),
-              SizedBox(width: 8),
-              Text(
-                'Update Shift Config',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Vehicle Number Plate',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: plateController,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: InputDecoration(
-                    hintText: 'e.g. B-123-BW',
-                    filled: true,
-                    fillColor: AppTheme.offWhite,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                if (auth.serviceType != 'TAXI') ...[
-                  const Text(
-                    'Assigned Corridor',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.offWhite,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.lightGrey),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<TransitRoute>(
-                        isExpanded: true,
-                        value: selectedRoute,
-                        items: transit.routes.map((r) {
-                          return DropdownMenuItem<TransitRoute>(
-                            value: r,
-                            child: Text(
-                              r.name,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (r) {
-                          setDialogState(() => selectedRoute = r);
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('Cancel', style: TextStyle(color: AppTheme.midGrey)),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final newPlate = plateController.text.trim().toUpperCase();
-                final newRouteId = selectedRoute?.id ?? auth.assignedRouteId;
-                if (newPlate.isNotEmpty) {
-                  await auth.updateDriverConfig(
-                    serviceType: auth.serviceType,
-                    routeId: newRouteId,
-                    vehiclePlate: newPlate,
-                  );
-                }
-                if (context.mounted) {
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Vehicle and route updated in Supabase.'),
-                      backgroundColor: AppTheme.black,
-                    ),
-                  );
-                }
-              },
-              child: const Text('Save Changes'),
-            ),
-          ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(dialogContext, true);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
+    if (updated != true || !context.mounted) return;
+    try {
+      await auth.updatePhoneNumber(phoneController.text);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Phone number updated.')));
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AuthService.formatAuthErrorMessage(error))),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AppThemeProvider>();
     final auth = Provider.of<AuthProvider>(context);
     final transit = Provider.of<TransitProvider>(context);
 
@@ -227,9 +134,8 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.edit, color: AppTheme.black),
-            tooltip: 'Update Vehicle & Route',
-            onPressed: () =>
-                _showEditVehicleRouteDialog(context, auth, transit),
+            tooltip: 'Edit phone number',
+            onPressed: () => _showEditPhoneDialog(context, auth),
           ),
           const SizedBox(width: 8),
         ],
@@ -248,29 +154,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
               ),
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: AppTheme.black,
-                    child: Text(
-                      auth.userName.isNotEmpty
-                          ? auth.userName[0].toUpperCase()
-                          : 'D',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.onPrimary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    auth.userName,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 20,
-                      color: AppTheme.black,
-                    ),
-                  ),
+                  ProfileIdentityEditor(auth: auth),
                   const SizedBox(height: 2),
                   Text(
                     '${auth.serviceType} Operator • Plate: ${auth.vehiclePlate}',
@@ -381,15 +265,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                     subtitle: Text(
                       '${auth.vehiclePlate} (${auth.serviceType} Service)',
                     ),
-                    trailing: IconButton(
-                      icon: Icon(
-                        Icons.edit_outlined,
-                        size: 18,
-                        color: AppTheme.midGrey,
-                      ),
-                      onPressed: () =>
-                          _showEditVehicleRouteDialog(context, auth, transit),
-                    ),
+                    trailing: const Icon(Icons.lock_outline, size: 18),
                   ),
                   Divider(height: 1, color: AppTheme.lightGrey),
                   ListTile(
@@ -422,6 +298,11 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       ),
                     ),
                     subtitle: Text(auth.phoneNumber),
+                    trailing: IconButton(
+                      tooltip: 'Edit phone number',
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      onPressed: () => _showEditPhoneDialog(context, auth),
+                    ),
                   ),
                   Divider(height: 1, color: AppTheme.lightGrey),
                   ListTile(

@@ -39,4 +39,6 @@ class AppConstants {
 
   // Supabase Auth redirect target registered by the Android and iOS apps.
   static const String authRedirectUrl = 'smarttransit://auth-callback';
+  static const String passwordRecoveryRedirectUrl =
+      'smarttransit://auth-callback?flow=recovery';
 }

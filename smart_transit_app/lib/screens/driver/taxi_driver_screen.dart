@@ -309,7 +309,21 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
     final taxiHails = transit.incomingHails
         .where((h) => h.routeId == 'taxi-service' || h.serviceType == 'TAXI')
         .toList();
-    if (taxiHails.isNotEmpty &&
+    final acceptedHail = transit.acceptedDriverHail;
+    if (_currentHail == null &&
+        acceptedHail != null &&
+        transit.isDriverOnline) {
+      _currentHail = acceptedHail;
+      _phase = TaxiDriverTripPhase.enRouteToPickup;
+      _pickupLabel = null;
+      _destinationLabel = null;
+      _routeKey = null;
+      _lastRouteOrigin = null;
+      _driverRoutePoints = const [];
+      _riderName = null;
+      _riderPhone = null;
+      _loadRiderContact(transit, acceptedHail.passengerId);
+    } else if (taxiHails.isNotEmpty &&
         _phase == TaxiDriverTripPhase.searching &&
         transit.isDriverOnline) {
       _routeKey = null;
@@ -502,6 +516,14 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
     TransitProvider transit,
     AuthProvider auth,
   ) {
+    final sharedOffers = transit.incomingHails
+        .where(
+          (hail) =>
+              (hail.routeId == 'taxi-service' ||
+                  hail.serviceType.toUpperCase() == 'TAXI') &&
+              hail.serviceType.toUpperCase() == 'STANDARD',
+        )
+        .toList();
     if (!transit.isDriverOnline) {
       return Container(
         padding: const EdgeInsets.all(24),
@@ -862,6 +884,76 @@ class _TaxiDriverScreenState extends State<TaxiDriverScreen> {
             ],
           ),
           const SizedBox(height: 16),
+
+          if (transit.canAcceptSharedTaxiRequests &&
+              (sharedOffers.isNotEmpty ||
+                  transit.acceptedSharedHails.isNotEmpty)) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: AppTheme.offWhite,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.lightGrey),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Shared ride requests',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.black,
+                    ),
+                  ),
+                  if (transit.acceptedSharedHails.isNotEmpty)
+                    ...transit.acceptedSharedHails.map(
+                      (hail) => Padding(
+                        padding: const EdgeInsets.only(top: 5),
+                        child: Text(
+                          'Next: ${hail.pickupName ?? 'Pickup'} → ${hail.destinationName ?? 'Destination'}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppTheme.darkGrey,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ...sharedOffers
+                      .take(3)
+                      .map(
+                        (hail) => Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${hail.pickupName ?? 'Nearby pickup'} → ${hail.destinationName ?? 'Destination'}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(color: AppTheme.darkGrey),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton(
+                                onPressed: () => transit.acceptHail(
+                                  hail,
+                                  auth.userId,
+                                  driverName: auth.userName,
+                                  driverPlate: auth.vehiclePlate,
+                                ),
+                                child: const Text('Accept'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                ],
+              ),
+            ),
+          ],
 
           if (_phase == TaxiDriverTripPhase.enRouteToPickup &&
               _currentHail != null) ...[

@@ -4,7 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme.dart';
 import '../../core/constants.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/theme_preference_tile.dart';
+import '../../widgets/profile_identity_editor.dart';
 import '../auth/login_screen.dart';
 
 class PassengerProfileScreen extends StatefulWidget {
@@ -55,6 +57,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AppThemeProvider>();
     final auth = Provider.of<AuthProvider>(context);
 
     return Scaffold(
@@ -85,46 +88,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
               ),
               child: Column(
                 children: [
-                  Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: AppTheme.black,
-                        child: Text(
-                          auth.userName.isNotEmpty
-                              ? auth.userName[0].toUpperCase()
-                              : 'P',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.onPrimary,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: AppTheme.accentGreen,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.check,
-                          size: 14,
-                          color: AppTheme.onPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    auth.userName,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 20,
-                      color: AppTheme.black,
-                    ),
-                  ),
+                  ProfileIdentityEditor(auth: auth),
                   const SizedBox(height: 2),
                   Text(
                     'Passenger ID: ${auth.userId}',

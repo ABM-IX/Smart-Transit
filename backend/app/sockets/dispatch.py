@@ -3,7 +3,7 @@ import uuid
 from app.sockets.gateway import (
     sio, active_drivers, active_passengers, active_hails,
     active_taxi_requests, taxi_assignments, active_boardings,
-    driver_ratings, active_trips
+    driver_ratings, active_trips, driver_can_accept_taxi
 )
 from app.services.fare import get_fare, estimate_special_taxi_fare
 from app.services.geo import haversine_distance, find_nearest_stop
@@ -100,13 +100,14 @@ async def passenger_request_taxi(sid, data):
     await sio.emit('new-hail', request, room='dashboard')
     if not request_is_active():
         return
-    await sio.emit('new-taxi-request', request, room='drivers-taxi-service')
-
     # Find nearest online taxi drivers
     online_taxis = [
         d for d in active_drivers.values()
         if (d.get("service_type") == "TAXI" or d.get("serviceType") == "TAXI")
         and d.get("status") == "ONLINE" and d.get("coords")
+        and driver_can_accept_taxi(
+            str(d.get("driver_id") or d.get("driverId") or ""), service_type
+        )
     ]
     online_taxis.sort(key=lambda d: haversine_distance(pickup, d["coords"]))
     closest_taxis = online_taxis[:5]
@@ -146,11 +147,12 @@ async def hail(sid, data):
         return
 
     service_type = str(data.get("serviceType") or data.get("type") or "").upper()
-    if not service_type or service_type == "STANDARD":
+    if not service_type:
         if route_id.startswith("bus-"):
             service_type = "BUS"
         elif route_id == "taxi-service":
-            service_type = "TAXI"
+            # A taxi hail without a selected class is the shared standard tier.
+            service_type = "STANDARD"
         else:
             service_type = "COMBI"
 
@@ -217,11 +219,15 @@ async def hail(sid, data):
     if not request_is_active():
         return
 
-    # Emit to drivers on route & general drivers room & dashboard
-    await sio.emit('new-hail', hail_payload, room=f"drivers-{route_id}")
+    # Route hails are alerts for vehicles already assigned to that corridor.
+    # Taxi requests use the general dispatch room because taxis are not route-bound.
+    if service_type not in ("TAXI", "SPECIAL", "STANDARD"):
+        await sio.emit('new-hail', hail_payload, room=f"drivers-{route_id}")
     if not request_is_active():
         return
-    await sio.emit('new-hail', hail_payload, room='drivers')
+    is_taxi_request = service_type in ("TAXI", "SPECIAL", "STANDARD")
+    if is_taxi_request and route_id != "taxi-service":
+        await sio.emit('new-hail', hail_payload, room='drivers')
     if not request_is_active():
         return
     await sio.emit('new-hail', hail_payload, room='dashboard')
@@ -238,7 +244,19 @@ async def hail(sid, data):
     for d in active_drivers.values():
         if not request_is_active():
             return
-        if (d.get("routeId") == route_id or d.get("route_id") == route_id or d.get("serviceType") == "TAXI") and d.get("socket_id"):
+        driver_type = str(d.get("serviceType") or "").upper()
+        is_route_match = (
+            d.get("routeId") == route_id or d.get("route_id") == route_id
+        )
+        driver_id = str(d.get("driver_id") or d.get("driverId") or "")
+        taxi_driver_eligible = (
+            not is_taxi_request
+            or (driver_type == "TAXI" and driver_can_accept_taxi(driver_id, service_type))
+        )
+        if (
+            (is_route_match and taxi_driver_eligible)
+            or (is_taxi_request and taxi_driver_eligible)
+        ) and d.get("socket_id"):
             await sio.emit('new-hail', hail_payload, to=d["socket_id"])
 
 sio.on('hail', hail)
@@ -351,11 +369,20 @@ async def accept_hail(sid, data):
     request_matches = bool(req) and request_passenger_id == passenger_id
     if request_id and active_request_id != request_id:
         request_matches = False
-    if not request_matches or passenger_id in taxi_assignments:
+    service_type = str((req or {}).get("serviceType") or "STANDARD").upper()
+    is_taxi_request = route_id == "taxi-service" or service_type in ("TAXI", "STANDARD", "SPECIAL")
+    driver_has_capacity = (
+        not is_taxi_request or driver_can_accept_taxi(driver_id, service_type)
+    )
+    if not request_matches or passenger_id in taxi_assignments or not driver_has_capacity:
         await sio.emit('hail-accept-rejected', {
             "passengerId": passenger_id,
             "requestId": request_id,
-            "status": "REQUEST_NO_LONGER_AVAILABLE",
+            "status": (
+                "DRIVER_BUSY_WITH_SPECIAL_RIDE"
+                if request_matches and not driver_has_capacity
+                else "REQUEST_NO_LONGER_AVAILABLE"
+            ),
         }, to=sid)
         return
 
@@ -591,7 +618,11 @@ async def boarding(sid, data):
             "passenger_id": passenger_id,
             "passengerId": passenger_id,
             "route_id": route_id or "taxi-service",
-            "service_type": assignment.get("serviceType", "TAXI"),
+            "service_type": (
+                assignment.get("serviceType")
+                or data.get("serviceType")
+                or ("TAXI" if route_id == "taxi-service" else "COMBI")
+            ),
             "start_time": time.time(),
             "start_coords": driver.get("coords"),
         }

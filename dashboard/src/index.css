@@ -486,6 +486,61 @@ td span {
   font-size: 0.78rem;
 }
 
+.driver-identity-cell,
+.driver-detail-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 170px;
+}
+
+.driver-identity-cell > span,
+.driver-detail-identity > div {
+  min-width: 0;
+}
+
+.driver-identity-cell small,
+.driver-detail-identity small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.driver-avatar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(34, 211, 238, 0.16);
+  color: var(--combi);
+  font-weight: 800;
+}
+
+.driver-avatar.large {
+  width: 48px;
+  height: 48px;
+}
+
+.fleet-driver-avatar {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.fleet-driver-avatar.fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(34, 211, 238, 0.16);
+  color: var(--combi);
+  font-weight: 800;
+}
+
 tr {
   cursor: pointer;
 }

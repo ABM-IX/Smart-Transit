@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../models/route_model.dart';
 import '../../models/user_role.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../providers/transit_provider.dart';
 import '../../services/api_service.dart';
 import 'driver_home_screen.dart';
@@ -95,6 +96,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<AppThemeProvider>();
     final auth = Provider.of<AuthProvider>(context);
     final transit = Provider.of<TransitProvider>(context);
 

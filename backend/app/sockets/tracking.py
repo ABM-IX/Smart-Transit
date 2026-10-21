@@ -3,8 +3,8 @@ from sqlalchemy import select
 from app.database import AsyncSessionLocal
 from app.models.user import DriverProfile
 from app.sockets.gateway import (
-    sio, active_drivers, active_passengers, active_taxi_requests,
-    taxi_assignments, system_active
+    sio, active_drivers, active_passengers, active_hails, active_taxi_requests,
+    taxi_assignments, system_active, driver_can_accept_taxi
 )
 from app.services.geo import haversine_distance, calculate_eta
 from app.services.headway import calculate_spacing_advisories
@@ -93,8 +93,27 @@ async def driver_online(sid, data):
     await sio.emit('driver-location', {**driver_data}, room=f"passengers-{route_id}")
     for request in active_taxi_requests.values():
         passenger_id = request.get("passengerId") or request.get("passenger_id")
-        if passenger_id and passenger_id not in taxi_assignments:
+        if (
+            passenger_id
+            and passenger_id not in taxi_assignments
+            and driver_can_accept_taxi(driver_id, request.get("serviceType"))
+        ):
             await sio.emit('new-taxi-request', request, to=sid)
+
+    # Bring an on-route driver up to date when they come online after a
+    # passenger has already raised a hail on this route.
+    for request in active_hails.values():
+        request_route = request.get("routeId") or request.get("route_id")
+        request_type = str(request.get("serviceType") or "").upper()
+        request_passenger_id = request.get("passengerId") or request.get(
+            "passenger_id"
+        )
+        if (
+            request_route == route_id
+            and request_type in ("COMBI", "BUS")
+            and request_passenger_id not in taxi_assignments
+        ):
+            await sio.emit('new-hail', request, to=sid)
 
 sio.on('driver-online', driver_online)
 
@@ -315,11 +334,22 @@ async def passenger_location(sid, data):
         "route_id": route_id,
         "coords": coords,
         "socket_id": sid,
-        "status": "WAITING",
+        "status": active_passengers.get(passenger_id, {}).get(
+            "status", "WAITING"
+        ),
         "last_update": time.time()
     }
     active_passengers[passenger_id] = passenger_data
-    
+
+    hail = active_hails.get(passenger_id)
+    if hail and (
+        hail.get("routeId") == route_id or hail.get("route_id") == route_id
+    ):
+        hail["pickupLoc"] = coords
+        hail["pickup_loc"] = coords
+        passenger_data["requestId"] = hail.get("requestId")
+        passenger_data["serviceType"] = hail.get("serviceType")
+
     await sio.emit('passenger-location', passenger_data, room=f"drivers-{route_id}")
     await sio.emit('fleet-update', {'type': 'passenger', **passenger_data}, room='dashboard')
 
