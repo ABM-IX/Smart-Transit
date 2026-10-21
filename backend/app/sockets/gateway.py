@@ -69,43 +69,18 @@ async def join(sid, data):
             # Send current full snapshot to dashboard
             await sio.emit('dashboard-snapshot', {
                 'drivers': list(active_drivers.values()),
-                'passengers': list(active_passengers.values()),
+                # Only passengers who currently have an active hail are visible
+                # in the fleet dashboard. Accepted/on-trip records stay private.
+                'passengers': [
+                    {key: value for key, value in passenger.items() if key != 'socket_id'}
+                    for passenger_id, passenger in active_passengers.items()
+                    if passenger_id in active_hails
+                ],
                 'hails': list(active_hails.values()),
                 'trips': list(active_trips.values())
             }, to=sid)
 
         if role == 'passengers':
-            p_id = payload.get("passengerId") or payload.get("id")
-            coords = payload.get("coords")
-            service_type = str(payload.get("serviceType") or payload.get("type") or "").upper()
-            if not service_type:
-                service_type = "BUS" if route_id.startswith("bus-") else ("TAXI" if route_id == "taxi-service" else "COMBI")
-            if p_id:
-                previous = active_passengers.get(p_id, {})
-                active_passengers[p_id] = {
-                    "passenger_id": p_id,
-                    "passengerId": p_id,
-                    "route_id": route_id,
-                    "routeId": route_id,
-                    "serviceType": service_type,
-                    "service_type": service_type,
-                    "coords": coords or previous.get("coords"),
-                    "status": previous.get("status", "WAITING"),
-                    "socket_id": sid,
-                    "last_update": time.time()
-                }
-                if coords:
-                    await sio.emit('fleet-update', {
-                        'type': 'passenger',
-                        'passengerId': p_id,
-                        'passenger_id': p_id,
-                        'routeId': route_id,
-                        'serviceType': service_type,
-                        'service_type': service_type,
-                        'coords': coords,
-                        'status': 'WAITING'
-                    }, room='dashboard')
-
             # Send snapshot of currently active drivers to passenger
             active_list = [d for d in active_drivers.values() if d.get("status") == "ONLINE"]
             await sio.emit('active-drivers-snapshot', active_list, to=sid)

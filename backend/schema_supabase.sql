@@ -7,6 +7,18 @@
 -- 1. Enable UUID Extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Grant future public-schema tables created by this migration role access to
+-- the Supabase Data API. Explicit grants below also cover existing tables on
+-- every schema rebuild, regardless of when they were originally created.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT SELECT ON TABLES TO anon;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT USAGE, SELECT ON SEQUENCES TO authenticated, service_role;
+
 -- 2. Users Table (Core Platform Identity)
 CREATE TABLE IF NOT EXISTS public.users (
     id VARCHAR(64) PRIMARY KEY,
@@ -18,6 +30,9 @@ CREATE TABLE IF NOT EXISTS public.users (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+GRANT SELECT ON TABLE public.users TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.users TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.users TO service_role;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now());
 
@@ -30,6 +45,9 @@ CREATE TABLE IF NOT EXISTS public.vehicles (
     model VARCHAR(64),
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+GRANT SELECT ON TABLE public.vehicles TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.vehicles TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.vehicles TO service_role;
 
 -- 4. Transit Corridors / Routes Table
 CREATE TABLE IF NOT EXISTS public.routes (
@@ -42,6 +60,9 @@ CREATE TABLE IF NOT EXISTS public.routes (
     waypoints JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+GRANT SELECT ON TABLE public.routes TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.routes TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.routes TO service_role;
 
 -- 5. Transit Stops Table
 CREATE TABLE IF NOT EXISTS public.stops (
@@ -52,6 +73,9 @@ CREATE TABLE IF NOT EXISTS public.stops (
     description VARCHAR(255),
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+GRANT SELECT ON TABLE public.stops TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.stops TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.stops TO service_role;
 
 -- 6. Route Stops Junction Table (Sequential Topology & Distances)
 CREATE TABLE IF NOT EXISTS public.route_stops (
@@ -62,6 +86,10 @@ CREATE TABLE IF NOT EXISTS public.route_stops (
     distance_from_start_meters FLOAT NOT NULL DEFAULT 0.0,
     UNIQUE(route_id, stop_id)
 );
+GRANT SELECT ON TABLE public.route_stops TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.route_stops TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.route_stops TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE public.route_stops_id_seq TO authenticated, service_role;
 
 -- 7. Driver Profiles Table (Operational State & Real-time Metadata)
 CREATE TABLE IF NOT EXISTS public.driver_profiles (
@@ -76,6 +104,9 @@ CREATE TABLE IF NOT EXISTS public.driver_profiles (
     current_lng DOUBLE PRECISION,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+GRANT SELECT ON TABLE public.driver_profiles TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.driver_profiles TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.driver_profiles TO service_role;
 
 -- 8. Trips Table (Completed Journey Records & Analytics)
 CREATE TABLE IF NOT EXISTS public.trips (
@@ -103,6 +134,9 @@ CREATE TABLE IF NOT EXISTS public.trips (
     started_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
     ended_at TIMESTAMPTZ
 );
+GRANT SELECT ON TABLE public.trips TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.trips TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.trips TO service_role;
 
 -- Keep databases created from an earlier version of this schema compatible.
 ALTER TABLE public.trips
@@ -127,6 +161,9 @@ CREATE TABLE IF NOT EXISTS public.taxi_bookings (
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
     completed_at TIMESTAMPTZ
 );
+GRANT SELECT ON TABLE public.taxi_bookings TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.taxi_bookings TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.taxi_bookings TO service_role;
 
 -- Keep the existing SmartTransit identity and booking tables while adding the
 -- destination and bidding fields needed by direct taxi dispatch.
@@ -148,6 +185,9 @@ CREATE TABLE IF NOT EXISTS public.taxi_booking_offers (
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+GRANT SELECT ON TABLE public.taxi_booking_offers TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.taxi_booking_offers TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.taxi_booking_offers TO service_role;
 CREATE INDEX IF NOT EXISTS idx_taxi_booking_offers_booking ON public.taxi_booking_offers(booking_id, created_at);
 ALTER TABLE public.taxi_booking_offers ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read access for taxi booking offers" ON public.taxi_booking_offers FOR SELECT USING (true);
@@ -188,6 +228,10 @@ CREATE TABLE IF NOT EXISTS public.reviews (
     comment VARCHAR(255),
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+GRANT SELECT ON TABLE public.reviews TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.reviews TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.reviews TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE public.reviews_id_seq TO authenticated, service_role;
 
 -- Indexes for Fast Geospatial & Telemetry Lookups
 CREATE INDEX IF NOT EXISTS idx_driver_profiles_coords ON public.driver_profiles(current_lat, current_lng);

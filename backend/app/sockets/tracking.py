@@ -100,6 +100,20 @@ async def driver_online(sid, data):
         ):
             await sio.emit('new-taxi-request', request, to=sid)
 
+    # Restore the pickup marker privately after an assigned driver reconnects.
+    for passenger_id, assignment in taxi_assignments.items():
+        assigned_driver_id = assignment.get("driver_id") or assignment.get("driverId")
+        passenger = active_passengers.get(passenger_id)
+        if (
+            assigned_driver_id == driver_id
+            and not assignment.get("boarded")
+            and passenger
+            and passenger.get("coords")
+        ):
+            await sio.emit('passenger-location', {
+                **{key: value for key, value in passenger.items() if key != 'socket_id'},
+            }, to=sid)
+
     # Bring an on-route driver up to date when they come online after a
     # passenger has already raised a hail on this route.
     for request in active_hails.values():
@@ -326,31 +340,75 @@ async def passenger_location(sid, data):
     coords = data.get("coords")
     if not passenger_id or not coords:
         return
-    
-    passenger_data = {
-        "passengerId": passenger_id,
-        "passenger_id": passenger_id,
-        "routeId": route_id,
-        "route_id": route_id,
-        "coords": coords,
-        "socket_id": sid,
-        "status": active_passengers.get(passenger_id, {}).get(
-            "status", "WAITING"
-        ),
-        "last_update": time.time()
-    }
-    active_passengers[passenger_id] = passenger_data
-
     hail = active_hails.get(passenger_id)
-    if hail and (
-        hail.get("routeId") == route_id or hail.get("route_id") == route_id
-    ):
+    assignment = taxi_assignments.get(passenger_id)
+    passenger = active_passengers.get(passenger_id)
+
+    # Do not accept unsolicited GPS reports. The active hail creates the
+    # passenger record, and only that passenger's socket may update it.
+    if not passenger or passenger.get("socket_id") != sid:
+        return
+    if not hail and not assignment:
+        return
+
+    passenger_route = (
+        (hail or {}).get("routeId")
+        or (hail or {}).get("route_id")
+        or (assignment or {}).get("routeId")
+        or (assignment or {}).get("route_id")
+    )
+    if passenger_route and passenger_route != route_id:
+        return
+    if assignment and assignment.get("boarded"):
+        return
+
+    passenger["coords"] = coords
+    passenger["last_update"] = time.time()
+    passenger["routeId"] = passenger_route or route_id
+    passenger["route_id"] = passenger_route or route_id
+
+    if hail:
         hail["pickupLoc"] = coords
         hail["pickup_loc"] = coords
-        passenger_data["requestId"] = hail.get("requestId")
-        passenger_data["serviceType"] = hail.get("serviceType")
+        passenger["requestId"] = hail.get("requestId")
+        passenger["serviceType"] = hail.get("serviceType")
+    elif assignment:
+        passenger["requestId"] = assignment.get("request_id") or assignment.get("requestId")
+        passenger["serviceType"] = assignment.get("serviceType")
 
-    await sio.emit('passenger-location', passenger_data, room=f"drivers-{route_id}")
+    # An accepted ride is private to its assigned driver. While a hail is
+    # waiting, it is visible to its route drivers (or eligible taxi drivers)
+    # and to the admin dashboard.
+    if assignment:
+        driver_id = assignment.get("driver_id") or assignment.get("driverId")
+        driver = active_drivers.get(driver_id, {})
+        if driver.get("socket_id"):
+            await sio.emit('passenger-location', {
+                **{key: value for key, value in passenger.items() if key != 'socket_id'},
+                'coords': coords,
+                'status': passenger.get('status'),
+            }, to=driver['socket_id'])
+        return
+
+    passenger_data = {
+        **{key: value for key, value in passenger.items() if key != 'socket_id'},
+        'coords': coords,
+        'last_update': passenger['last_update'],
+    }
+    service_type = str(hail.get("serviceType") or "").upper()
+    if service_type in ("TAXI", "STANDARD", "SPECIAL"):
+        for driver in active_drivers.values():
+            driver_id = str(driver.get("driver_id") or driver.get("driverId") or "")
+            driver_type = str(driver.get("service_type") or driver.get("serviceType") or "").upper()
+            if (
+                driver_type == "TAXI"
+                and driver.get("status") == "ONLINE"
+                and driver.get("socket_id")
+                and driver_can_accept_taxi(driver_id, service_type)
+            ):
+                await sio.emit('passenger-location', passenger_data, to=driver['socket_id'])
+    else:
+        await sio.emit('passenger-location', passenger_data, room=f"drivers-{route_id}")
     await sio.emit('fleet-update', {'type': 'passenger', **passenger_data}, room='dashboard')
 
 sio.on('passenger-location', passenger_location)

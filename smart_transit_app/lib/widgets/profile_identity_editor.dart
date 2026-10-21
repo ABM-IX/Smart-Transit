@@ -47,7 +47,7 @@ class _ProfileIdentityEditorState extends State<ProfileIdentityEditor> {
       );
       await widget.auth.updateProfile(avatarUrl: url);
     } catch (error) {
-      _showMessage(AuthService.formatAuthErrorMessage(error), isError: true);
+      _showMessage(AuthService.formatProfilePhotoError(error), isError: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }

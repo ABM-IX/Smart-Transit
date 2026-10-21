@@ -217,6 +217,50 @@ class AuthService {
     return 'Something went wrong. Please try again. If the problem continues, check your connection or contact support.';
   }
 
+  /// Formats upload failures with storage-specific guidance instead of the
+  /// generic authentication fallback used by sign-in and registration.
+  static String formatProfilePhotoError(Object error) {
+    final raw = error
+        .toString()
+        .replaceAll('Exception: ', '')
+        .replaceAll('StorageException: ', '');
+    final message = raw.toLowerCase();
+
+    if (message.contains('bucket not found') ||
+        message.contains('bucket does not exist') ||
+        message.contains('storage bucket')) {
+      return 'Profile photo storage is not set up yet. Ask the SmartTransit administrator to apply backend/profile_photo_migration.sql in Supabase.';
+    }
+    if (message.contains('row-level security') ||
+        message.contains('permission denied') ||
+        message.contains('unauthorized') ||
+        message.contains('statuscode: 401') ||
+        message.contains('statuscode: 403') ||
+        message.contains('not allowed')) {
+      return 'SmartTransit could not access profile photo storage. Sign out and sign back in. If it still fails, the administrator needs to apply backend/profile_photo_migration.sql in Supabase.';
+    }
+    if (message.contains('payload too large') ||
+        message.contains('file size') ||
+        message.contains('statuscode: 413')) {
+      return 'That photo is too large. Choose a JPG or PNG smaller than 5 MB.';
+    }
+    if (message.contains('mime type') ||
+        message.contains('content type') ||
+        message.contains('unsupported media')) {
+      return 'That photo format is not supported. Choose a JPG or PNG image.';
+    }
+    if (message.contains('network') ||
+        message.contains('socketexception') ||
+        message.contains('failed host lookup') ||
+        message.contains('timed out')) {
+      return 'We could not upload your photo. Check your internet connection and try again.';
+    }
+    if (message.contains('session') || message.contains('jwt')) {
+      return 'Your sign-in has expired. Sign out and sign back in, then try adding your photo again.';
+    }
+    return 'We could not upload your photo. Try a JPG or PNG smaller than 5 MB. If this keeps happening, contact SmartTransit support.';
+  }
+
   /// Dynamically create or ensure an operating corridor exists in public.routes
   Future<String> createOrGetRoute({
     required String name,
@@ -365,6 +409,12 @@ class AuthService {
     required Uint8List bytes,
     required String extension,
   }) async {
+    final signedInUser = _supabase.auth.currentUser;
+    if (signedInUser == null || signedInUser.id != userId) {
+      throw StateError(
+        'An active Supabase session for this user is required to upload a profile photo.',
+      );
+    }
     final path =
         '$userId/profile-${DateTime.now().millisecondsSinceEpoch}.$extension';
     await _supabase.storage

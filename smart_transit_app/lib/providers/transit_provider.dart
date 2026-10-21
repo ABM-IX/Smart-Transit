@@ -477,15 +477,6 @@ class TransitProvider extends ChangeNotifier {
     _selectedRoute = route;
     if (_isConnected) {
       _socket.emit('subscribe-route', {'role': role, 'routeId': route.id});
-      if (role == 'passengers') {
-        _socket.emit('passenger-location', {
-          'routeId': route.id,
-          'coords': {
-            'lat': _currentLocation.latitude,
-            'lng': _currentLocation.longitude,
-          },
-        });
-      }
     }
     notifyListeners();
   }
@@ -507,21 +498,7 @@ class TransitProvider extends ChangeNotifier {
           'driverId': userId,
           'passengerId': userId,
           'routeId': routeId ?? _selectedRoute?.id ?? '',
-          'coords': {
-            'lat': _currentLocation.latitude,
-            'lng': _currentLocation.longitude,
-          },
         });
-        if (role == 'passengers') {
-          _socket.emit('passenger-location', {
-            'passengerId': userId,
-            'routeId': routeId ?? _selectedRoute?.id ?? '',
-            'coords': {
-              'lat': _currentLocation.latitude,
-              'lng': _currentLocation.longitude,
-            },
-          });
-        }
         if (role == 'drivers' &&
             _isDriverOnline &&
             _driverOnlinePayload != null) {
@@ -1004,6 +981,7 @@ class TransitProvider extends ChangeNotifier {
         },
         'boarding-confirmed': (data) {
           _arrivalCheckTimer?.cancel();
+          _location.stopLocationTracking();
           _passengerStatus = PassengerTripStatus.onBoard;
           unawaited(_persistPassengerTrip());
           notifyListeners();
@@ -1019,6 +997,7 @@ class TransitProvider extends ChangeNotifier {
             notifyListeners();
             return;
           }
+          _location.stopLocationTracking();
           _passengerStatus = PassengerTripStatus.onBoard;
           unawaited(_persistPassengerTrip());
           notifyListeners();
@@ -1087,6 +1066,7 @@ class TransitProvider extends ChangeNotifier {
         },
         'trip-completed': (data) {
           _arrivalCheckTimer?.cancel();
+          _location.stopLocationTracking();
           if (data is Map<String, dynamic>) {
             _estimatedFare =
                 (data['fare'] as num?)?.toDouble() ?? _estimatedFare;
@@ -1097,6 +1077,7 @@ class TransitProvider extends ChangeNotifier {
         },
         'taxi-trip-ended': (data) {
           _arrivalCheckTimer?.cancel();
+          _location.stopLocationTracking();
           if (data is Map<String, dynamic>) {
             _estimatedFare =
                 (data['fare'] as num?)?.toDouble() ?? _estimatedFare;
@@ -1159,7 +1140,11 @@ class TransitProvider extends ChangeNotifier {
     final routeId = _selectedRoute!.id;
     _location.startLocationTracking((position, _, _) {
       if (requestGeneration != _taxiRequestGeneration ||
-          _passengerStatus != PassengerTripStatus.hailPending) {
+          !{
+            PassengerTripStatus.hailPending,
+            PassengerTripStatus.driverAccepted,
+            PassengerTripStatus.driverArrived,
+          }.contains(_passengerStatus)) {
         return;
       }
       _currentLocation = position;
@@ -1237,6 +1222,14 @@ class TransitProvider extends ChangeNotifier {
     }
     _socket.emit('passenger-request-taxi', payload);
     _location.startLocationTracking((pos, _, _) {
+      if (requestGeneration != _taxiRequestGeneration ||
+          !{
+            PassengerTripStatus.searchingTaxi,
+            PassengerTripStatus.driverAccepted,
+            PassengerTripStatus.driverArrived,
+          }.contains(_passengerStatus)) {
+        return;
+      }
       _currentLocation = pos;
       _livePassengerLocation = pos;
       _socket.emit('passenger-location', {
@@ -1251,6 +1244,7 @@ class TransitProvider extends ChangeNotifier {
 
   void confirmBoarding(String passengerId) {
     _arrivalCheckTimer?.cancel();
+    _location.stopLocationTracking();
     final driverId =
         _assignedDriverId ??
         (_activeDrivers.isNotEmpty ? _activeDrivers.keys.first : 'driver-1');

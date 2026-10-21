@@ -451,6 +451,11 @@ async def accept_hail(sid, data):
     }
     await sio.emit('hail-cancelled', unavailable_payload, room=f"drivers-{route_id}")
     await sio.emit('hail-cancelled', unavailable_payload, room='drivers')
+    await sio.emit('fleet-remove', {
+        'type': 'passenger',
+        'id': passenger_id,
+        'passengerId': passenger_id,
+    }, room='dashboard')
 
     payload = {
         "passengerId": passenger_id,
@@ -633,6 +638,11 @@ async def boarding(sid, data):
         await sio.emit('passenger-boarded', board_payload, room=f"drivers-{route_id}")
     await sio.emit('hail-cancelled', {"passengerId": passenger_id, "routeId": route_id}, room="drivers")
     await sio.emit('passenger-boarded', board_payload, room="drivers")
+    await sio.emit('fleet-remove', {
+        'type': 'passenger',
+        'id': passenger_id,
+        'passengerId': passenger_id,
+    }, room='dashboard')
     await sio.emit('boarding', board_payload, room='dashboard')
 
     if driver and driver.get("socket_id"):
@@ -725,6 +735,12 @@ async def trip_end(sid, data):
         active_taxi_requests.pop(request_id, None)
 
     await sio.emit('trip-completed', {"tripId": trip_id, "driverId": driver_id, "fare": revenue}, room='dashboard')
+    if passenger_id:
+        await sio.emit('fleet-remove', {
+            'type': 'passenger',
+            'id': passenger_id,
+            'passengerId': passenger_id,
+        }, room='dashboard')
 
 sio.on('trip-end', trip_end)
 
@@ -770,6 +786,11 @@ async def passenger_end_trip(sid, data):
             await sio.emit('passenger-trip-ended', end_payload, to=driver["socket_id"])
 
     # Broadcast to dashboard
+    await sio.emit('fleet-remove', {
+        'type': 'passenger',
+        'id': passenger_id,
+        'passengerId': passenger_id,
+    }, room='dashboard')
     await sio.emit('passenger-alighted', end_payload, room='dashboard')
     await sio.emit('trip-completed', end_payload, room='dashboard')
 
