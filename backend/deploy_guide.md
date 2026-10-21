@@ -8,8 +8,8 @@ This guide explains how to host the SmartTransit Backend & Database so that the 
 
 1. Open your **Supabase Dashboard**: [https://supabase.com/dashboard/project/xpphmiajwjkcxtxitcex](https://supabase.com/dashboard/project/xpphmiajwjkcxtxitcex)
 2. Navigate to **SQL Editor** -> **New Query**.
-3. Copy and paste the contents of `backend/schema_supabase.sql` (or `supabase/migrations/20260822000000_smarttransit_schema.sql`).
-4. Click **Run**.
+3. Copy and run the contents of `backend/schema_supabase.sql` (or `supabase/migrations/20260822000000_smarttransit_schema.sql`).
+4. In a new SQL Editor query, run `supabase/migrations/20261021000000_profile_photo_storage.sql` to create the profile photo bucket and its upload policies. Profile photo uploads will fail until this migration is applied.
    - This creates all tables: `routes`, `stops`, `route_stops`, `trips`, `hails`, `driver_locations`, `users`.
    - Enables Row Level Security (RLS) policies allowing public read & mobile ride requests.
    - Enables Supabase Realtime for live vehicle tracking.

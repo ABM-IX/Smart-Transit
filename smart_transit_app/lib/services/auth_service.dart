@@ -229,7 +229,7 @@ class AuthService {
     if (message.contains('bucket not found') ||
         message.contains('bucket does not exist') ||
         message.contains('storage bucket')) {
-      return 'Profile photo storage is not set up yet. Ask the SmartTransit administrator to apply backend/profile_photo_migration.sql in Supabase.';
+      return 'Profile photo storage is not set up yet. Ask the SmartTransit administrator to apply supabase/migrations/20261021000000_profile_photo_storage.sql in Supabase.';
     }
     if (message.contains('row-level security') ||
         message.contains('permission denied') ||
@@ -237,7 +237,7 @@ class AuthService {
         message.contains('statuscode: 401') ||
         message.contains('statuscode: 403') ||
         message.contains('not allowed')) {
-      return 'SmartTransit could not access profile photo storage. Sign out and sign back in. If it still fails, the administrator needs to apply backend/profile_photo_migration.sql in Supabase.';
+      return 'SmartTransit could not access profile photo storage. Sign out and sign back in. If it still fails, the administrator needs to apply supabase/migrations/20261021000000_profile_photo_storage.sql in Supabase.';
     }
     if (message.contains('payload too large') ||
         message.contains('file size') ||
