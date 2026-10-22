@@ -75,7 +75,7 @@ class LocationService {
 
     _positionStream = Geolocator.getPositionStream(
       locationSettings: defaultTargetPlatform == TargetPlatform.android
-          ? const AndroidSettings(
+          ? AndroidSettings(
               accuracy: LocationAccuracy.bestForNavigation,
               distanceFilter: 5,
               intervalDuration: Duration(seconds: 4),

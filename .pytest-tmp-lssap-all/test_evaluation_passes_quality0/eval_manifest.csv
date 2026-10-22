@@ -1,0 +1,2 @@
+audio_path,transcript,language,speaker_id,verified,consent_status,source
+tests/fixtures/clean_16k.wav,account 12345678,bw_tsn,spk_1,true,consented,test

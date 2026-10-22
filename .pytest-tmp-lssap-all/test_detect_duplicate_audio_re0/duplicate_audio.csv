@@ -1,0 +1,3 @@
+audio_path,transcript,language,speaker_id,verified,consent_status,source
+tests/fixtures/clean_16k.wav,Dumela rra,bw_tsn,spk_1,true,consented,test
+tests/fixtures/clean_16k.wav,Dumela rra,bw_tsn,spk_2,true,consented,test
