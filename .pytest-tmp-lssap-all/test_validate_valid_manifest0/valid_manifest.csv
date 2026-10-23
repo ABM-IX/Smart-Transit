@@ -1,5 +1,0 @@
-audio_path,transcript,language,speaker_id,verified,consent_status,source
-tests/fixtures/clean_16k.wav,"Dumela rra, ke kopa balance ya me.",bw_tsn,spk_001,true,consented,call_center
-tests/fixtures/clean_16k.wav,Ke batla go bua le m'me wa support.,bw_tsn,spk_002,true,consented,call_center
-tests/fixtures/clean_16k.wav,Ga ke n'we tee mo office.,bw_tsn,spk_003,true,consented,call_center
-tests/fixtures/clean_16k.wav,Please send my bank statement.,bw_tsn,spk_004,false,consented,call_center

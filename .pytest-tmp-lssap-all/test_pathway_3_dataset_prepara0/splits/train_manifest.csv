@@ -1,5 +1,0 @@
-audio_path,transcript,language,speaker_id,verified,consent_status,source
-C:\Users\araba\Desktop\SmartTransit\.pytest-tmp-lssap-all\test_pathway_3_dataset_prepara0\e2e_audio_5.wav,"Dumela, account number ya me ke ACC100005",bw_tsn,caller_5,true,consented,call_centre_telephony
-C:\Users\araba\Desktop\SmartTransit\.pytest-tmp-lssap-all\test_pathway_3_dataset_prepara0\e2e_audio_0.wav,"Dumela, account number ya me ke ACC100000",bw_tsn,caller_0,true,consented,call_centre_telephony
-C:\Users\araba\Desktop\SmartTransit\.pytest-tmp-lssap-all\test_pathway_3_dataset_prepara0\e2e_audio_2.wav,"Dumela, account number ya me ke ACC100002",bw_tsn,caller_2,true,consented,call_centre_telephony
-C:\Users\araba\Desktop\SmartTransit\.pytest-tmp-lssap-all\test_pathway_3_dataset_prepara0\e2e_audio_4.wav,"Dumela, account number ya me ke ACC100004",bw_tsn,caller_4,true,consented,call_centre_telephony

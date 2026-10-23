@@ -898,6 +898,25 @@
       color: #93c5fd;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      transition: color 0.15s ease;
+    }
+
+    .qr-slot a {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      outline: none;
+    }
+
+    .qr-slot a:focus-visible .qr-frame,
+    .qr-slot a:hover .qr-frame {
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.45);
+    }
+
+    .qr-slot a:focus-visible .qr-label,
+    .qr-slot a:hover .qr-label {
+      color: #38bdf8;
     }
 
     /* ==========================================================================
@@ -1411,17 +1430,21 @@
           <!-- Two QR Codes Mandated by Template (DEMO QR & CODE QR) -->
           <div class="footer-qr-side">
             <div class="qr-slot">
-              <div class="qr-frame">
-                <img src="repo_qr.svg" alt="SmartTransit Demo QR" />
-              </div>
-              <div class="qr-label">DEMO QR</div>
+              <a href="https://youtu.be/n9U-m6KITuw?si=-WglXUzjwEu0hQPd" target="_blank" rel="noopener noreferrer" title="Watch SmartTransit Demonstration Video on YouTube">
+                <div class="qr-frame">
+                  <img src="demo_qr.svg" alt="SmartTransit Demo Video QR" />
+                </div>
+                <div class="qr-label">DEMO QR</div>
+              </a>
             </div>
 
             <div class="qr-slot">
-              <div class="qr-frame">
-                <img src="repo_qr.svg" alt="SmartTransit Code QR" />
-              </div>
-              <div class="qr-label">CODE QR</div>
+              <a href="https://github.com/ABM-IX/Smart-Transit" target="_blank" rel="noopener noreferrer" title="View SmartTransit Code Repository on GitHub">
+                <div class="qr-frame">
+                  <img src="repo_qr.svg" alt="SmartTransit Code QR" />
+                </div>
+                <div class="qr-label">CODE QR</div>
+              </a>
             </div>
           </div>
         </footer>

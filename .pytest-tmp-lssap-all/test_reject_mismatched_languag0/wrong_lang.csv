@@ -1,2 +1,0 @@
-audio_path,transcript,language,speaker_id,verified,consent_status,source
-tests/fixtures/clean_16k.wav,Hello world,en,spk_1,true,consented,test

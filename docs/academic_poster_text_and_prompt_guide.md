@@ -38,7 +38,9 @@ The poster MUST follow this exact institutional template structure:
      • Box 6 (Soft Teal/Cyan, #d0f3ef banner): "6 RECOMMENDATIONS & FUTURE WORK" (Policy recommendations for DRTS and Combi Associations, 4 study limitations, 3 future extensions: Orange Money/BURS, BLE offline mesh, SADC corridors).
 3. Bottom Footer Banner (#e8ecf2):
    - Left: Book icon + 9-10 APA 7th edition academic references (Cervero 2000, Daganzo 2009, Newell 1974, Bast 2016, Bareth & Kothari 2015, Delling 2014, Lusenge 2020, Sinnott 1984, Tirachini 2020).
-   - Right: Clean vector QR code box + label "SMARTTRANSIT REPO: Full System Specs, FastAPI & Flutter Code".
+   - Right: Dual vector QR code slots:
+     • "DEMO QR": Links to YouTube demonstration/promo video (`https://youtu.be/n9U-m6KITuw?si=-WglXUzjwEu0hQPd`).
+     • "CODE QR": Links to official SmartTransit GitHub repository (`https://github.com/ABM-IX/Smart-Transit`).
 
 Aesthetic and Technical Constraints:
 - Use WCAG 2.2 AA compliant contrast and modern typography (Inter / Segoe UI).
@@ -167,7 +169,8 @@ Use this text if you are manually designing or copying into PowerPoint, Canva, F
   9. Sinnott, R. W. (1984). Virtues of the Haversine. *Sky & Telescope*, 68(2), 159.
   10. Tirachini, A. (2020). Ride-hailing, ride-pooling and public transport: A review. *Transp. Res. Part A*, 135, 201–221.
 - **Scan Code Callout:**
-  - QR Code linked to SmartTransit repository, live Swagger API docs, and architectural defense specifications.
+  - **DEMO QR:** Linked directly to the SmartTransit system demo video on YouTube (`https://youtu.be/n9U-m6KITuw?si=-WglXUzjwEu0hQPd`).
+  - **CODE QR:** Linked to the SmartTransit GitHub repository (`https://github.com/ABM-IX/Smart-Transit`), live Swagger API docs, and architectural defense specifications.
 
 ---
 

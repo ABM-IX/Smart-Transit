@@ -1,2 +1,0 @@
-audio_path,transcript,language,speaker_id,verified,consent_status,source
-nonexistent_audio_path_1234.wav,hello world,bw_tsn,spk_1,true,consented,test
